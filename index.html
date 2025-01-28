@@ -76,440 +76,552 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 
     <style>
-:root {
-    --app-height: 100vh;
-    --header-height: 48px;
-    --sidebar-width: 280px;
-    --primary-bg: #1a1a1a;
-    --secondary-bg: #2a2a2a;
-    --border-color: #3a3a3a;
-    --hover-bg: #3a3a3a;
-}
-
-body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',;
-    background: var(--primary-bg);
-    color: #ffffff;
-}
-
-.app-container {
-    display: grid;
-    grid-template-columns: var(--sidebar-width) 1fr;
-    grid-template-rows: var(--header-height) 1fr;
-    height: var(--app-height);
-}
-
-.header {
-    grid-column: 1 / -1;
-    background: var(--secondary-bg);
-    border-bottom: 1px solid var(--border-color);
-    padding: 0 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.header-title {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin-right: auto;
-}
-
-.sidebar {
-    background: var(--secondary-bg);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.sidebar-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-}
-
-.tool-section {
-    margin-bottom: 24px;
-}
-
-.tool-section-title {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    color: #888;
-    margin-bottom: 8px;
-    padding: 0 8px;
-}
-
-.tool-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    padding: 0 8px;
-}
-
-.tool-button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: var(--primary-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.tool-button:hover {
-    background: var(--hover-bg);
-}
-
-.tool-button.active {
-    background: var(--sl-color-primary-600);
-    border-color: var(--sl-color-primary-400);
-}
-
-.tool-button sl-icon {
-    font-size: 24px;
-    margin-bottom: 4px;
-}
-
-.tool-button-label {
-    font-size: 0.8rem;
-    text-align: center;
-}
-
-.layers-header {
-    padding: 16px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.layers-panel {
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-    border-right: 1px solid #444;
-}
-
-.layer-item {
-    background: #3d3d3d;
-    border-radius: 4px;
-    padding: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.layer-item:hover {
-    background: #4d4d4d;
-}
-
-.layer-item.selected {
-    background: #505050;
-    border: 1px solid #666;
-}
-
-.layer-item.editing {
-    background: #2c5a2c;
-}
-
-.layer-content {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.layer-thumbnail {
-    width: 40px;
-    height: 40px;
-    background: #555;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.layer-thumbnail img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.layer-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.layer-name {
-    font-weight: 500;
-    margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.layer-dimensions {
-    font-size: 0.8em;
-    color: #aaa;
-}
-
-.layer-controls {
-    display: flex;
-    gap: 4px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.layer-item:hover .layer-controls {
-    opacity: 1;
-}
-
-.canvas-container {
-    position: relative;
-    overflow: hidden;
-    background: var(--primary-bg);
-}
-
-#mainCanvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-
-.room-block {
-    position: absolute;
-    background: rgba(128, 128, 128, 0.3);
-    border: 2px solid rgba(255, 255, 255, 0.7);
-    transition: all 0.2s ease;
-}
-
-.room-block.highlighted {
-    background: rgba(128, 128, 255, 0.4);
-    border-color: rgba(255, 255, 255, 0.9);
-}
-
-.room-block.editing {
-    background: rgba(0, 255, 0, 0.2);
-    border-color: #4caf50;
-}
-
-.room-block .resize-handle {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background: white;
-    border: 1px solid #333;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    cursor: pointer;
-}
-
-.tool-button .material-icons {
-    font-size: 24px;
-    margin-bottom: 4px;
-    color: #fff;
-}
-
-.tool-button:hover .material-icons {
-    color: var(--sl-color-primary-400);
-}
-
-.tool-button.active .material-icons {
-    color: var(--sl-color-primary-500);
-}
-
-.tool-button.active .tool-button-label {
-    color: white;
-}
-
-.room-block.circle-room {
-    border-radius: 50%;
-}
-
-.room-block .resize-handle.nw {
-    top: 0;
-    left: 0;
-    cursor: nw-resize;
-}
-
-.room-block .resize-handle.ne {
-    top: 0;
-    left: 100%;
-    cursor: ne-resize;
-}
-
-.room-block .resize-handle.sw {
-    top: 100%;
-    left: 0;
-    cursor: sw-resize;
-}
-
-.room-block .resize-handle.se {
-    top: 100%;
-    left: 100%;
-    cursor: se-resize;
-}
-
-.room-controls {
-    opacity: 0.8;
-    transition: opacity 0.2s ease;
-}
-
-.room-block:hover .room-controls {
-    opacity: 1;
-}
-
-.room-controls .material-icons {
-    user-select: none;
-    transition: transform 0.2s ease;
-}
-
-.room-controls .material-icons:hover {
-    transform: scale(1.1);
-}
-
-sl-dialog::part(base) {
-    --sl-panel-background-color: white;
-    color: black;
-}
-
-sl-input::part(form-control-label) {
-    color: black;
-}
-
-.polygon-preview {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1000;
-}
-
-.polygon-point {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    background: white;
-    border: 1px solid #333;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-}
-
-.polygon-point:first-child {
-    background: #4caf50;
-    width: 10px;
-    height: 10px;
-}
-
-.room-block.polygon-room {
-    background: none !important;
-    border: none !important;
-}
-
-.room-block.polygon-room svg path {
-    transition: all 0.2s ease;
-}
-
-.room-block.polygon-room:hover svg path {
-    fill: rgba(128, 128, 255, 0.4);
-    stroke: rgba(255, 255, 255, 0.9);
-}
-
-.room-block.polygon-room .polygon-fill {
-    transition: all 0.2s ease;
-}
-
-.room-block.polygon-room .polygon-hover {
-    transition: opacity 0.2s ease;
-}
-
-.room-block.polygon-room.highlighted .polygon-hover {
-    opacity: 1 !important;
-}
-
-.room-block.polygon-room.editing .polygon-fill {
-    fill: rgba(0, 255, 0, 0.2);
-    stroke: #4caf50;
-}
-
-.polygon-vertex {
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
-    pointer-events: none !important;
-}
-
-.room-block.polygon-room.highlighted .polygon-vertex {
-    opacity: 1;
-}
-
-.room-block.polygon-room .polygon-base {
-    transition: all 0.2s ease;
-}
-
-.room-block.polygon-room .polygon-highlight {
-    transition: opacity 0.2s ease;
-}
-
-.room-block.polygon-room.highlighted .polygon-highlight {
-    opacity: 1 !important;
-}
-
-.room-block.polygon-room.editing .polygon-base {
-    fill: rgba(0, 255, 0, 0.2) !important;
-    stroke: #4CAF50 !important;
-}
-
-.room-block.polygon-room .polygon-vertex {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    background: white;
-    border: 1px solid #333;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
-    pointer-events: none;
-}
-
-.room-block.polygon-room:hover .polygon-base {
-    fill: rgba(128, 128, 255, 0.4) !important;
-    stroke: rgba(255, 255, 255, 0.9) !important;
-}
-
-.room-block.polygon-room.highlighted .polygon-base {
-    fill: rgba(128, 128, 255, 0.4) !important;
-    stroke: rgba(255, 255, 255, 0.9) !important;
-}
-
-.room-block .room-background {
-    transition: all 0.2s ease;
-}
-
-.room-block.highlighted .room-background {
-    background: rgba(128, 128, 255, 0.4) !important;
-    border-color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.room-block.circle-room .room-background {
-    border-radius: 50%;
-}
-
-.room-block.editing .room-background {
-    background: rgba(0, 255, 0, 0.2) !important;
-    border-color: #4CAF50 !important;
-}
-
-
+      :root {
+        --app-height: 100vh;
+        --header-height: 48px;
+        --sidebar-width: 280px;
+        --primary-bg: #1a1a1a;
+        --secondary-bg: #2a2a2a;
+        --border-color: #3a3a3a;
+        --hover-bg: #3a3a3a;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI';
+        background: var(--primary-bg);
+        color: #ffffff;
+      }
+
+      .app-container {
+        display: grid;
+        grid-template-columns: var(--sidebar-width) 1fr;
+        grid-template-rows: var(--header-height) 1fr;
+        height: var(--app-height);
+      }
+
+      .header {
+        grid-column: 1 / -1;
+        background: var(--secondary-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .header-title {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-right: auto;
+      }
+
+      .sidebar {
+        background: var(--secondary-bg);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+      }
+
+      .tool-section {
+        margin-bottom: 24px;
+      }
+
+      .tool-section-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: #888;
+        margin-bottom: 8px;
+        padding: 0 8px;
+      }
+
+      .tool-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 0 8px;
+      }
+
+      .tool-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tool-button:hover {
+        background: var(--hover-bg);
+      }
+
+      .tool-button.active {
+        background: var(--sl-color-primary-600);
+        border-color: var(--sl-color-primary-400);
+      }
+
+      .tool-button sl-icon {
+        font-size: 24px;
+        margin-bottom: 4px;
+      }
+
+      .tool-button-label {
+        font-size: 0.8rem;
+        text-align: center;
+      }
+
+      .layers-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .layers-panel {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        border-right: 1px solid #444;
+      }
+
+      .layer-item {
+        background: #3d3d3d;
+        border-radius: 4px;
+        padding: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .layer-item:hover {
+        background: #4d4d4d;
+      }
+
+      .layer-item.selected {
+        background: #505050;
+        border: 1px solid #666;
+      }
+
+      .layer-item.editing {
+        background: #2c5a2c;
+      }
+
+      .layer-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .layer-thumbnail {
+        width: 40px;
+        height: 40px;
+        background: #555;
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .layer-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .layer-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .layer-name {
+        font-weight: 500;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .layer-dimensions {
+        font-size: 0.8em;
+        color: #aaa;
+      }
+
+      .layer-controls {
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .layer-item:hover .layer-controls {
+        opacity: 1;
+      }
+
+      .canvas-container {
+        position: relative;
+        overflow: hidden;
+        background: var(--primary-bg);
+      }
+
+      #mainCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      .room-block {
+        position: absolute;
+        background: rgba(128, 128, 128, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.7);
+        transition: all 0.2s ease;
+      }
+
+      .room-block.highlighted {
+        background: rgba(128, 128, 255, 0.4);
+        border-color: rgba(255, 255, 255, 0.9);
+      }
+
+      .room-block.editing {
+        background: rgba(0, 255, 0, 0.2);
+        border-color: #4caf50;
+      }
+
+      .room-block .resize-handle {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: white;
+        border: 1px solid #333;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+      }
+
+      .tool-button .material-icons {
+        font-size: 24px;
+        margin-bottom: 4px;
+        color: #fff;
+      }
+
+      .tool-button:hover .material-icons {
+        color: var(--sl-color-primary-400);
+      }
+
+      .tool-button.active .material-icons {
+        color: var(--sl-color-primary-500);
+      }
+
+      .tool-button.active .tool-button-label {
+        color: white;
+      }
+
+      .room-block.circle-room {
+        border-radius: 50%;
+      }
+
+      .room-block .resize-handle.nw {
+        top: 0;
+        left: 0;
+        cursor: nw-resize;
+      }
+
+      .room-block .resize-handle.ne {
+        top: 0;
+        left: 100%;
+        cursor: ne-resize;
+      }
+
+      .room-block .resize-handle.sw {
+        top: 100%;
+        left: 0;
+        cursor: sw-resize;
+      }
+
+      .room-block .resize-handle.se {
+        top: 100%;
+        left: 100%;
+        cursor: se-resize;
+      }
+
+      .room-controls {
+        opacity: 0.8;
+        transition: opacity 0.2s ease;
+      }
+
+      .room-block:hover .room-controls {
+        opacity: 1;
+      }
+
+      .room-controls .material-icons {
+        user-select: none;
+        transition: transform 0.2s ease;
+      }
+
+      .room-controls .material-icons:hover {
+        transform: scale(1.1);
+      }
+
+      sl-dialog::part(base) {
+        --sl-panel-background-color: white;
+        color: black;
+      }
+
+      sl-input::part(form-control-label) {
+        color: black;
+      }
+
+      .polygon-preview {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1000;
+      }
+
+      .polygon-point {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: white;
+        border: 1px solid #333;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+
+      .polygon-point:first-child {
+        background: #4caf50;
+        width: 10px;
+        height: 10px;
+      }
+
+      .room-block.polygon-room {
+        background: none !important;
+        border: none !important;
+      }
+
+      .room-block.polygon-room svg path {
+        transition: all 0.2s ease;
+      }
+
+      .room-block.polygon-room:hover svg path {
+        fill: rgba(128, 128, 255, 0.4);
+        stroke: rgba(255, 255, 255, 0.9);
+      }
+
+      .room-block.polygon-room .polygon-fill {
+        transition: all 0.2s ease;
+      }
+
+      .room-block.polygon-room .polygon-hover {
+        transition: opacity 0.2s ease;
+      }
+
+      .room-block.polygon-room.highlighted .polygon-hover {
+        opacity: 1 !important;
+      }
+
+      .room-block.polygon-room.editing .polygon-fill {
+        fill: rgba(0, 255, 0, 0.2);
+        stroke: #4caf50;
+      }
+
+      .polygon-vertex {
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+        pointer-events: none !important;
+      }
+
+      .room-block.polygon-room.highlighted .polygon-vertex {
+        opacity: 1;
+      }
+
+      .room-block.polygon-room .polygon-base {
+        transition: all 0.2s ease;
+      }
+
+      .room-block.polygon-room .polygon-highlight {
+        transition: opacity 0.2s ease;
+      }
+
+      .room-block.polygon-room.highlighted .polygon-highlight {
+        opacity: 1 !important;
+      }
+
+      .room-block.polygon-room.editing .polygon-base {
+        fill: rgba(0, 255, 0, 0.2) !important;
+        stroke: #4caf50 !important;
+      }
+
+      .room-block.polygon-room .polygon-vertex {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: white;
+        border: 1px solid #333;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+        pointer-events: none;
+      }
+
+      .room-block.polygon-room:hover .polygon-base {
+        fill: rgba(128, 128, 255, 0.4) !important;
+        stroke: rgba(255, 255, 255, 0.9) !important;
+      }
+
+      .room-block.polygon-room.highlighted .polygon-base {
+        fill: rgba(128, 128, 255, 0.4) !important;
+        stroke: rgba(255, 255, 255, 0.9) !important;
+      }
+
+      .room-block .room-background {
+        transition: all 0.2s ease;
+      }
+
+      .room-block.highlighted .room-background {
+        background: rgba(128, 128, 255, 0.4) !important;
+        border-color: rgba(255, 255, 255, 0.9) !important;
+      }
+
+      .room-block.circle-room .room-background {
+        border-radius: 50%;
+      }
+
+      .room-block.editing .room-background {
+        background: rgba(0, 255, 0, 0.2) !important;
+        border-color: #4caf50 !important;
+      }
+
+      .map-marker {
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      .map-marker .material-icons {
+        font-size: 32px;
+        filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+      }
+
+      .map-marker:hover {
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+
+      .marker-player-start .material-icons {
+        color: #4caf50;
+      }
+
+      .marker-encounter .material-icons {
+        color: #f44336;
+      }
+
+      .marker-treasure .material-icons {
+        color: #ffd700;
+      }
+
+      .marker-trap .material-icons {
+        color: #ff5722;
+      }
+
+      .marker-tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 1000;
+        white-space: nowrap;
+      }
+
+      /* Add to your existing styles */
+      .map-marker.marker-teleport .material-icons {
+        color: #9c27b0; /* Purple for teleport points */
+      }
+
+      .map-marker.highlighted {
+        transform: translate(-50%, -50%) scale(1.2);
+        filter: brightness(1.3);
+      }
+
+      .map-marker[data-teleport-point='a'] .material-icons {
+        color: #2196f3; /* Blue for point A */
+      }
+
+      .map-marker[data-teleport-point='b'] .material-icons {
+        color: #ff9800; /* Orange for point B */
+      }
+
+      /* layour for tools ver 2 */
+
+      .tool-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* Keep 2 columns */
+        gap: 4px; /* Reduce gap between buttons */
+        padding: 0 8px;
+      }
+
+      .tool-button {
+        display: flex;
+        flex-direction: row; /* Change from column to row */
+        align-items: center;
+        background: var(--primary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 6px 8px; /* Reduce padding */
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: 32px; /* Fixed height for consistency */
+      }
+
+      .tool-button .material-icons {
+        font-size: 20px; /* Slightly smaller icons */
+        margin-right: 8px; /* Space between icon and text */
+        margin-bottom: 0; /* Remove bottom margin since we're horizontal now */
+      }
+
+      .tool-button-label {
+        font-size: 0.8rem;
+        white-space: nowrap; /* Prevent text wrapping */
+        overflow: hidden;
+        text-overflow: ellipsis; /* Add ellipsis for long text */
+      }
+
+      /* Optional: make the tool sections more compact too */
+      .tool-section {
+        margin-bottom: 16px; /* Reduce margin between sections */
+      }
+
+      .tool-section-title {
+        font-size: 0.8rem;
+        margin-bottom: 4px;
+        padding: 0 8px;
+      }
     </style>
   </head>
 
@@ -567,6 +679,52 @@ sl-input::part(form-control-label) {
               <div class="tool-button" id="panTool" data-tooltip="Pan [Space]">
                 <span class="material-icons">pan_tool</span>
                 <span class="tool-button-label">Pan</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-section">
+            <div class="tool-section-title">Map Markers</div>
+            <div class="tool-grid">
+              <div
+                class="tool-button"
+                id="playerStartTool"
+                data-tooltip="Player Start [S]"
+              >
+                <span class="material-icons">person_pin_circle</span>
+                <span class="tool-button-label">Start Point</span>
+              </div>
+              <div
+                class="tool-button"
+                id="encounterTool"
+                data-tooltip="Add Encounter [E]"
+              >
+                <span class="material-icons">local_fire_department</span>
+                <span class="tool-button-label">Encounter</span>
+              </div>
+              <div
+                class="tool-button"
+                id="treasureTool"
+                data-tooltip="Add Treasure [T]"
+              >
+                <span class="material-icons">workspace_premium</span>
+                <span class="tool-button-label">Treasure</span>
+              </div>
+              <div
+                class="tool-button"
+                id="trapTool"
+                data-tooltip="Add Trap [X]"
+              >
+                <span class="material-icons">warning</span>
+                <span class="tool-button-label">Trap</span>
+              </div>
+              <div
+                class="tool-button"
+                id="teleportTool"
+                data-tooltip="Add Teleport [T]"
+              >
+                <span class="material-icons">swap_calls</span>
+                <span class="tool-button-label">Teleport</span>
               </div>
             </div>
           </div>
@@ -630,6 +788,622 @@ sl-input::part(form-control-label) {
         }
         return null
       }
+
+      class MonsterManager {
+        constructor(mapEditor) {
+          this.mapEditor = mapEditor
+          this.monsterDatabase = this.loadDatabase()
+        }
+
+        loadDatabase() {
+          try {
+            const dbText = localStorage.getItem('monsterDatabase')
+            return dbText ? JSON.parse(dbText) : { monsters: {} }
+          } catch (e) {
+            console.error('Error loading monster database:', e)
+            return { monsters: {} }
+          }
+        }
+
+        async saveMonsterToDatabase(monsterData) {
+          const key = monsterData.basic.name.toLowerCase().replace(/\s+/g, '_')
+          this.monsterDatabase.monsters[key] = monsterData
+          localStorage.setItem(
+            'monsterDatabase',
+            JSON.stringify(this.monsterDatabase)
+          )
+        }
+
+        // async showMonsterSelector(marker) {
+        //   const dialog = document.createElement('sl-dialog')
+        //   dialog.label = 'Link Monster'
+        //   dialog.innerHTML = `
+        //     <div style="display: flex; flex-direction: column; gap: 16px;">
+        //         <sl-input id="monsterUrl" 
+        //                  label="5e.tools Monster URL"
+        //                  placeholder="Paste monster URL here"
+        //                  style="width: 100%;">
+        //         </sl-input>
+        //         <div id="monsterPreview" style="display: none;">
+        //             <h3 class="monster-name" style="margin: 0;"></h3>
+        //             <div class="monster-stats"></div>
+        //         </div>
+        //         <div id="loadingIndicator" style="display: none; text-align: center;">
+        //             <sl-spinner></sl-spinner>
+        //             <div>Loading monster data...</div>
+        //         </div>
+        //         <div id="errorMessage" style="display: none; color: #f44336;"></div>
+        //     </div>
+        //     <div slot="footer">
+        //         <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+        //         <sl-button variant="primary" class="link-btn" disabled>Link Monster</sl-button>
+        //     </div>
+        // `
+
+        //   document.body.appendChild(dialog)
+        //   dialog.show()
+
+        //   const urlInput = dialog.querySelector('#monsterUrl')
+        //   const linkBtn = dialog.querySelector('.link-btn')
+        //   const cancelBtn = dialog.querySelector('.cancel-btn')
+        //   const loadingIndicator = dialog.querySelector('#loadingIndicator')
+        //   const errorMessage = dialog.querySelector('#errorMessage')
+        //   const preview = dialog.querySelector('#monsterPreview')
+
+        //   urlInput.addEventListener('input', async () => {
+        //     const url = urlInput.value.trim()
+        //     if (url) {
+        //       try {
+        //         loadingIndicator.style.display = 'block'
+        //         errorMessage.style.display = 'none'
+        //         preview.style.display = 'none'
+        //         linkBtn.disabled = true
+
+        //         const monsterData = await this.extractMonsterData(url)
+        //         if (monsterData) {
+        //           preview.querySelector('.monster-name').textContent =
+        //             monsterData.basic.name
+        //           preview.querySelector('.monster-stats').innerHTML = `
+        //                     <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-top: 8px;">
+        //                         <div>CR:</div><div>${monsterData.basic.cr} (${monsterData.basic.xp} XP)</div>
+        //                         <div>HP:</div><div>${monsterData.stats.hp.average} (${monsterData.stats.hp.roll})</div>
+        //                         <div>AC:</div><div>${monsterData.stats.ac}</div>
+        //                     </div>
+        //                 `
+        //           preview.style.display = 'block'
+        //           linkBtn.disabled = false
+        //         }
+        //       } catch (error) {
+        //         errorMessage.textContent =
+        //           'Error loading monster data. Please check the URL.'
+        //         errorMessage.style.display = 'block'
+        //       } finally {
+        //         loadingIndicator.style.display = 'none'
+        //       }
+        //     }
+        //   })
+
+        //   return new Promise(resolve => {
+        //     linkBtn.addEventListener('click', async () => {
+        //       const monsterData = await this.extractMonsterData(
+        //         urlInput.value.trim()
+        //       )
+        //       marker.data.monster = monsterData
+        //       await this.saveMonsterToDatabase(monsterData)
+        //       dialog.hide()
+        //       resolve(true)
+        //     })
+
+        //     cancelBtn.addEventListener('click', () => {
+        //       dialog.hide()
+        //       resolve(false)
+        //     })
+
+        //     dialog.addEventListener('sl-after-hide', () => {
+        //       dialog.remove()
+        //     })
+        //   })
+        // }
+
+        // Update the showMonsterSelector method in MonsterManager class
+async showMonsterSelector(marker) {
+    const dialog = document.createElement('sl-dialog')
+    dialog.label = 'Link Monster'
+    dialog.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <sl-input id="monsterUrl" 
+                     label="5e.tools Monster URL"
+                     placeholder="Paste monster URL here"
+                     style="width: 100%;">
+            </sl-input>
+            <div id="monsterPreview" style="display: none; max-height: 60vh; overflow-y: auto;">
+                <!-- Basic Info Section -->
+                <div class="monster-header" style="margin-bottom: 16px;">
+                    <h3 class="monster-name" style="margin: 0; font-size: 1.5em;"></h3>
+                    <div style="color: #666; font-style: italic;">
+                        <span class="monster-size"></span>
+                        <span class="monster-type"></span>,
+                        <span class="monster-alignment"></span>
+                    </div>
+                </div>
+
+                <!-- Monster Image -->
+                <div class="monster-image" style="margin-bottom: 16px; text-align: center;">
+                    <!-- Image will be inserted here if available -->
+                </div>
+
+                <!-- Core Stats -->
+                <div class="core-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; text-align: center; background: #f5f5f5; padding: 8px; border-radius: 4px;">
+                    <div>
+                        <div style="font-weight: bold;">Armor Class</div>
+                        <div class="monster-ac"></div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">Hit Points</div>
+                        <div class="monster-hp"></div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">Speed</div>
+                        <div class="monster-speed"></div>
+                    </div>
+                </div>
+
+                <!-- Ability Scores -->
+                <div class="ability-scores" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 16px; text-align: center; background: #f5f5f5; padding: 8px; border-radius: 4px;">
+                    <div>
+                        <div style="font-weight: bold;">STR</div>
+                        <div class="monster-str"></div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">DEX</div>
+                        <div class="monster-dex"></div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">CON</div>
+                        <div class="monster-con"></div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">INT</div>
+                        <div class="monster-int"></div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">WIS</div>
+                        <div class="monster-wis"></div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">CHA</div>
+                        <div class="monster-cha"></div>
+                    </div>
+                </div>
+
+                <!-- Additional Traits -->
+                <div class="additional-traits" style="margin-bottom: 16px;">
+                    <div style="margin-bottom: 8px;">
+                        <strong>Challenge Rating:</strong> <span class="monster-cr"></span>
+                        (<span class="monster-xp"></span> XP)
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <strong>Proficiency Bonus:</strong> <span class="monster-prof"></span>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <strong>Senses:</strong> <span class="monster-senses"></span>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <strong>Languages:</strong> <span class="monster-languages"></span>
+                    </div>
+                    <div class="monster-immunities-container" style="margin-bottom: 8px; display: none;">
+                        <strong>Immunities:</strong> <span class="monster-immunities"></span>
+                    </div>
+                </div>
+            </div>
+            <div id="loadingIndicator" style="display: none; text-align: center;">
+                <sl-spinner></sl-spinner>
+                <div>Loading monster data...</div>
+            </div>
+            <div id="errorMessage" style="display: none; color: #f44336;"></div>
+        </div>
+        <div slot="footer">
+            <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+            <sl-button variant="primary" class="link-btn" disabled>Link Monster</sl-button>
+        </div>
+    `
+
+    document.body.appendChild(dialog)
+    dialog.show()
+
+    const urlInput = dialog.querySelector('#monsterUrl')
+    const linkBtn = dialog.querySelector('.link-btn')
+    const cancelBtn = dialog.querySelector('.cancel-btn')
+    const loadingIndicator = dialog.querySelector('#loadingIndicator')
+    const errorMessage = dialog.querySelector('#errorMessage')
+    const preview = dialog.querySelector('#monsterPreview')
+
+    urlInput.addEventListener('input', async () => {
+        const url = urlInput.value.trim()
+        if (url) {
+            try {
+                loadingIndicator.style.display = 'block'
+                errorMessage.style.display = 'none'
+                preview.style.display = 'none'
+                linkBtn.disabled = true
+
+                const monsterData = await this.extractMonsterData(url)
+                if (monsterData) {
+                    // Update basic info
+                    preview.querySelector('.monster-name').textContent = monsterData.basic.name
+                    preview.querySelector('.monster-size').textContent = monsterData.basic.size
+                    preview.querySelector('.monster-type').textContent = monsterData.basic.type
+                    preview.querySelector('.monster-alignment').textContent = monsterData.basic.alignment
+
+                    // Update core stats
+                    preview.querySelector('.monster-ac').textContent = monsterData.stats.ac
+                    preview.querySelector('.monster-hp').textContent = 
+                        `${monsterData.stats.hp.average} (${monsterData.stats.hp.roll})`
+                    preview.querySelector('.monster-speed').textContent = monsterData.stats.speed
+
+                    // Update ability scores
+                    Object.entries(monsterData.abilities).forEach(([ability, data]) => {
+                        const element = preview.querySelector(`.monster-${ability}`)
+                        if (element) {
+                            element.textContent = `${data.score} (${data.modifier >= 0 ? '+' : ''}${data.modifier})`
+                        }
+                    })
+
+                    // Update additional traits
+                    preview.querySelector('.monster-cr').textContent = monsterData.basic.cr
+                    preview.querySelector('.monster-xp').textContent = monsterData.basic.xp
+                    preview.querySelector('.monster-prof').textContent = 
+                        `+${monsterData.basic.proficiencyBonus}`
+                    preview.querySelector('.monster-senses').textContent = 
+                        monsterData.traits.senses.join(', ') || 'None'
+                    preview.querySelector('.monster-languages').textContent = 
+                        monsterData.traits.languages
+
+                    // Handle immunities
+                    const immunitiesContainer = preview.querySelector('.monster-immunities-container')
+                    const immunitiesSpan = preview.querySelector('.monster-immunities')
+                    if (monsterData.traits.immunities.length > 0) {
+                        immunitiesSpan.textContent = monsterData.traits.immunities.join(', ')
+                        immunitiesContainer.style.display = 'block'
+                    } else {
+                        immunitiesContainer.style.display = 'none'
+                    }
+
+                    // Try to find and display monster image
+                    const imgElement = preview.querySelector('.monster-image img')
+                    if (imgElement) {
+                        const imgSrc = monsterData.image // Assuming we add this to the parsed data
+                        if (imgSrc) {
+                            imgElement.src = imgSrc
+                            imgElement.style.display = 'block'
+                        } else {
+                            imgElement.style.display = 'none'
+                        }
+                    }
+
+                    preview.style.display = 'block'
+                    linkBtn.disabled = false
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error loading monster data. Please check the URL.'
+                errorMessage.style.display = 'block'
+            } finally {
+                loadingIndicator.style.display = 'none'
+            }
+        }
+    })
+
+    return new Promise(resolve => {
+        linkBtn.addEventListener('click', async () => {
+            const monsterData = await this.extractMonsterData(urlInput.value.trim())
+            marker.data.monster = monsterData
+            await this.saveMonsterToDatabase(monsterData)
+            dialog.hide()
+            resolve(true)
+        })
+
+        cancelBtn.addEventListener('click', () => {
+            dialog.hide()
+            resolve(false)
+        })
+
+        dialog.addEventListener('sl-after-hide', () => {
+            dialog.remove()
+        })
+    })
+}
+
+// In MonsterManager class
+async extractMonsterData(url) {
+    try {
+        // Parse the URL to get monster ID
+        const monsterId = url.split('#')[1]; // e.g., "zombie_xphb"
+        if (!monsterId) {
+            throw new Error('Invalid monster URL format');
+        }
+
+        // Since we can't fetch directly from 5e.tools, 
+        // we'll need the user to paste the monster data section
+        const dialog = document.createElement('sl-dialog');
+        dialog.label = 'Monster Data Import';
+        dialog.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="instructions">
+            <p>To import monster data from 5e.tools:</p>
+            <ol style="margin-left: 20px;">
+                <li>On 5e.tools, right-click on the monster's stat block</li>
+                <li>Select "Inspect Element" or press F12</li>
+                <li>Find the <code>&lt;div id="wrp-pagecontent"&gt;</code> element</li>
+                <li>Right-click the element and select:</li>
+                <ul style="margin-left: 20px;">
+                    <li>In Firefox: "Copy > Outer HTML"</li>
+                    <li>In Chrome: "Copy > Copy element"</li>
+                    <li>In Edge: "Copy > Outer HTML"</li>
+                </ul>
+                <li>Paste it below</li>
+            </ol>
+        </div>
+        <div class="visual-guide" style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+            <p style="margin: 0 0 10px 0;"><strong>The element should look like this:</strong></p>
+            <pre style="background: #fff; padding: 10px; border-radius: 4px; margin: 0; font-size: 0.9em; overflow-x: auto;"><code>&lt;div id="wrp-pagecontent" class="relative wrp-stats-table..."&gt;</code></pre>
+        </div>
+        <textarea id="monsterHtml" 
+                 rows="10" 
+                 style="width: 100%; font-family: monospace;"
+                 placeholder="Paste monster stat block HTML here..."></textarea>
+        <div id="errorMessage" style="display: none; color: #f44336;"></div>
+    </div>
+    <div slot="footer">
+        <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+        <sl-button variant="primary" class="import-btn">Import Monster</sl-button>
+    </div>
+`;
+
+        document.body.appendChild(dialog);
+        dialog.show();
+
+        return new Promise((resolve, reject) => {
+            const importBtn = dialog.querySelector('.import-btn');
+            const cancelBtn = dialog.querySelector('.cancel-btn');
+            const errorMsg = dialog.querySelector('#errorMessage');
+
+            importBtn.addEventListener('click', () => {
+                const html = dialog.querySelector('#monsterHtml').value;
+                try {
+                    const monsterData = this.parseMonsterHtml(html);
+                    dialog.hide();
+                    resolve(monsterData);
+                } catch (error) {
+                    errorMsg.textContent = 'Error parsing monster data. Please check the HTML.';
+                    errorMsg.style.display = 'block';
+                }
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                dialog.hide();
+                reject(new Error('Import cancelled'));
+            });
+
+            dialog.addEventListener('sl-after-hide', () => {
+                dialog.remove();
+            });
+        });
+    } catch (error) {
+        console.error('Error extracting monster data:', error);
+        throw error;
+    }
+}
+
+parseMonsterHtml(html) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    try {
+        // Required basic information
+        const name = doc.querySelector('.stats__h-name')?.textContent?.trim() || 'Unknown Monster';
+        const typeInfo = doc.querySelector('td i')?.textContent?.trim() || 'Medium Unknown, Unaligned';
+        
+        // Parse type info with defaults
+        const [sizeTypeAlign = ''] = typeInfo.split(',');
+        const [size = 'Medium', type = 'Unknown'] = sizeTypeAlign.trim().split(/\s+/);
+        const alignment = typeInfo.split(',')[1]?.trim() || 'Unaligned';
+
+        // Required stats (with safe defaults)
+        const stats = {
+            ac: parseInt(doc.querySelector('[title="Armor Class"] + span')?.textContent || '10'),
+            hp: {
+                average: parseInt(doc.querySelector('[title="Hit Points"] + span')?.textContent || '1'),
+                roll: doc.querySelector('[data-roll-name="Hit Points"]')?.textContent?.trim() || '1d4',
+                max: parseInt(doc.querySelector('[title="Maximum: "]')?.textContent || '1')
+            },
+            speed: '30 ft.' // Default walking speed
+        };
+
+        // Try to get actual speed
+        const speedNode = Array.from(doc.querySelectorAll('strong')).find(el => el.textContent === 'Speed');
+        if (speedNode && speedNode.nextSibling) {
+            stats.speed = speedNode.nextSibling.textContent.trim();
+        }
+
+        // Required ability scores (with safe defaults)
+        const abilities = {};
+const rows = Array.from(doc.querySelectorAll('tr'));
+
+// Find the rows that contain our ability scores
+rows.forEach(row => {
+    const labelDiv = row.querySelector('div.bold.small-caps.ve-text-right');
+    if (labelDiv) {
+        const abilityName = labelDiv.textContent.trim();
+        if (['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha'].includes(abilityName)) {
+            try {
+                // Get score (it's in the next cell)
+                const scoreDiv = row.querySelector('.stats__disp-as-score:not(.stats__disp-as-score--label)');
+                const score = parseInt(scoreDiv?.textContent || '10');
+
+                // Get modifier (it's in the next cell after that)
+                const modifierDiv = row.querySelector('.stats__disp-as-bonus .roller');
+                const modifier = parseInt(modifierDiv?.textContent?.match(/[+-]\d+/)?.[0] || '0');
+
+                abilities[abilityName.toLowerCase()] = { score, modifier };
+            } catch (e) {
+                console.log(`Error parsing ${abilityName}, using defaults:`, e);
+                abilities[abilityName.toLowerCase()] = { score: 10, modifier: 0 };
+            }
+        }
+    }
+});
+
+        // Optional extras (wrapped in try-catch blocks)
+        let extras = {
+            immunities: [],
+            resistances: [],
+            senses: [],
+            languages: 'None',
+            cr: '0',
+            xp: 0,
+            proficiencyBonus: 2
+        };
+
+        try {
+            // Challenge Rating & XP
+            const crNode = doc.querySelector('[title="Challenge Rating"] + span');
+            if (crNode) {
+                extras.cr = crNode.textContent.split('(')[0].trim();
+                const xpMatch = crNode.textContent.match(/XP (\d+)/);
+                if (xpMatch) extras.xp = parseInt(xpMatch[1]);
+            }
+        } catch (e) {
+            console.log('Optional: Failed to parse CR/XP');
+        }
+
+        try {
+            // Immunities
+            const immunityNode = Array.from(doc.querySelectorAll('strong')).find(el => el.textContent === 'Immunities');
+            if (immunityNode && immunityNode.nextSibling) {
+                extras.immunities = immunityNode.nextSibling.textContent
+                    .split(';')
+                    .map(i => i.trim())
+                    .filter(i => i);
+            }
+        } catch (e) {
+            console.log('Optional: Failed to parse immunities');
+        }
+
+        try {
+            // Senses
+            const sensesNode = Array.from(doc.querySelectorAll('strong')).find(el => el.textContent === 'Senses');
+            if (sensesNode && sensesNode.nextSibling) {
+                extras.senses = sensesNode.nextSibling.textContent
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(s => s);
+            }
+        } catch (e) {
+            console.log('Optional: Failed to parse senses');
+        }
+
+        try {
+            // Languages
+            const languagesNode = Array.from(doc.querySelectorAll('strong')).find(el => el.textContent === 'Languages');
+            if (languagesNode && languagesNode.nextSibling) {
+                extras.languages = languagesNode.nextSibling.textContent.trim() || 'None';
+            }
+        } catch (e) {
+            console.log('Optional: Failed to parse languages');
+        }
+
+        // Return the complete monster data
+        return {
+            basic: {
+                name,
+                size,
+                type,
+                alignment,
+                cr: extras.cr,
+                xp: extras.xp,
+                proficiencyBonus: extras.proficiencyBonus
+            },
+            stats,
+            abilities,
+            traits: {
+                immunities: extras.immunities,
+                senses: extras.senses,
+                languages: extras.languages
+            }
+        };
+
+    } catch (error) {
+        console.error('Error parsing monster HTML:', error);
+        // Return a minimal valid monster object
+        return {
+            basic: {
+                name: 'Unknown Monster',
+                size: 'Medium',
+                type: 'Unknown',
+                alignment: 'Unaligned',
+                cr: '0',
+                xp: 0,
+                proficiencyBonus: 2
+            },
+            stats: {
+                ac: 10,
+                hp: { average: 1, roll: '1d4', max: 1 },
+                speed: '30 ft.'
+            },
+            abilities: {
+                str: { score: 10, modifier: 0 },
+                dex: { score: 10, modifier: 0 },
+                con: { score: 10, modifier: 0 },
+                int: { score: 10, modifier: 0 },
+                wis: { score: 10, modifier: 0 },
+                cha: { score: 10, modifier: 0 }
+            },
+            traits: {
+                immunities: [],
+                senses: [],
+                languages: 'None'
+            }
+        };
+    }
+}
+
+        extractAbilityScores(doc) {
+          const abilities = {}
+          ;['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(ability => {
+            const scoreElement = doc.querySelector(
+              `.stats__disp-as-score--label:contains("${ability.toUpperCase()}")`
+            )
+            const score = parseInt(
+              scoreElement?.nextElementSibling?.textContent || '0'
+            )
+            const modifier = Math.floor((score - 10) / 2)
+            abilities[ability] = { score, modifier }
+          })
+          return abilities
+        }
+
+        cloneEncounter(marker) {
+          // Clone an existing encounter marker
+          const offset = 50 // Offset from original position
+          return this.mapEditor.addMarker(
+            'encounter',
+            marker.x + offset,
+            marker.y + offset,
+            { ...marker.data }
+          )
+        }
+
+        getMonsterTooltip(monster) {
+          if (!monster) return 'Unlinked Encounter'
+          return `
+            ${monster.basic.name}
+            CR ${monster.basic.cr} (${monster.basic.xp} XP)
+            HP: ${monster.stats.hp.average}
+            AC: ${monster.stats.ac}
+        `
+        }
+      }
+
       // Add this inside your empty script tag
       class Scene3DController {
         constructor() {
@@ -727,14 +1501,14 @@ sl-input::part(form-control-label) {
         }
 
         createDOMElement(editor) {
-    const roomElement = document.createElement('div');
-    roomElement.id = `room-${this.id}`;
-    roomElement.className = `room-block ${this.shape}-room`;
+          const roomElement = document.createElement('div')
+          roomElement.id = `room-${this.id}`
+          roomElement.className = `room-block ${this.shape}-room`
 
-    // Always add the standard background div for consistent highlighting
-    const backgroundDiv = document.createElement('div');
-    backgroundDiv.className = 'room-background';
-    backgroundDiv.style.cssText = `
+          // Always add the standard background div for consistent highlighting
+          const backgroundDiv = document.createElement('div')
+          backgroundDiv.className = 'room-background'
+          backgroundDiv.style.cssText = `
         position: absolute;
         top: 0;
         left: 0;
@@ -743,15 +1517,15 @@ sl-input::part(form-control-label) {
         background: rgba(128, 128, 128, 0.3);
         border: 2px solid rgba(255, 255, 255, 0.7);
         transition: all 0.2s ease;
-    `;
-    roomElement.appendChild(backgroundDiv);
+    `
+          roomElement.appendChild(backgroundDiv)
 
-    // Add vertex points for polygon
-    if (this.shape === 'polygon' && this.points) {
-        this.points.forEach((point, index) => {
-            const marker = document.createElement('div');
-            marker.className = 'polygon-vertex';
-            marker.style.cssText = `
+          // Add vertex points for polygon
+          if (this.shape === 'polygon' && this.points) {
+            this.points.forEach((point, index) => {
+              const marker = document.createElement('div')
+              marker.className = 'polygon-vertex'
+              marker.style.cssText = `
                 position: absolute;
                 width: 8px;
                 height: 8px;
@@ -763,34 +1537,34 @@ sl-input::part(form-control-label) {
                 top: ${(point.y / this.bounds.height) * 100}%;
                 pointer-events: none;
                 z-index: 2;
-            `;
-            roomElement.appendChild(marker);
-        });
-    }
+            `
+              roomElement.appendChild(marker)
+            })
+          }
 
-    // Add resize handles
-    ['nw', 'ne', 'sw', 'se'].forEach(pos => {
-        const handle = document.createElement('div');
-        handle.className = `resize-handle ${pos}`;
-        handle.addEventListener('mousedown', e => {
-            e.stopPropagation();
-            editor.startResizing(this, pos, e);
-        });
-        roomElement.appendChild(handle);
-    });
+          // Add resize handles
+          ;['nw', 'ne', 'sw', 'se'].forEach(pos => {
+            const handle = document.createElement('div')
+            handle.className = `resize-handle ${pos}`
+            handle.addEventListener('mousedown', e => {
+              e.stopPropagation()
+              editor.startResizing(this, pos, e)
+            })
+            roomElement.appendChild(handle)
+          })
 
-    // Add control buttons
-    const controls = document.createElement('div');
-    controls.className = 'room-controls';
-    controls.style.cssText = `
+          // Add control buttons
+          const controls = document.createElement('div')
+          controls.className = 'room-controls'
+          controls.style.cssText = `
         position: absolute;
         top: 5px;
         left: 5px;
         display: flex;
         gap: 5px;
         z-index: 10;
-    `;
-    controls.innerHTML = `
+    `
+          controls.innerHTML = `
         <span class="material-icons confirm-btn"
               style="padding: 4px; background: #4CAF50; color: white; border-radius: 4px; cursor: pointer;">
             check
@@ -803,33 +1577,37 @@ sl-input::part(form-control-label) {
               style="padding: 4px; background: #f44336; color: white; border-radius: 4px; cursor: pointer;">
             close
         </span>
-    `;
+    `
 
-    controls.querySelector('.confirm-btn').addEventListener('click', () => {
-        editor.finalizeRoom(this);
-    });
+          controls
+            .querySelector('.confirm-btn')
+            .addEventListener('click', () => {
+              editor.finalizeRoom(this)
+            })
 
-    controls.querySelector('.edit-btn').addEventListener('click', () => {
-        editor.layersPanel.showRenameDialog(this);
-    });
+          controls.querySelector('.edit-btn').addEventListener('click', () => {
+            editor.layersPanel.showRenameDialog(this)
+          })
 
-    controls.querySelector('.cancel-btn').addEventListener('click', () => {
-        editor.deleteRoom(this);
-    });
+          controls
+            .querySelector('.cancel-btn')
+            .addEventListener('click', () => {
+              editor.deleteRoom(this)
+            })
 
-    roomElement.appendChild(controls);
+          roomElement.appendChild(controls)
 
-    // Add dragging functionality
-    roomElement.addEventListener('mousedown', e => {
-        if (!e.target.classList.contains('resize-handle')) {
-            editor.startDragging(this, e);
+          // Add dragging functionality
+          roomElement.addEventListener('mousedown', e => {
+            if (!e.target.classList.contains('resize-handle')) {
+              editor.startDragging(this, e)
+            }
+          })
+
+          this.element = roomElement
+          this.updateElement()
+          return roomElement
         }
-    });
-
-    this.element = roomElement;
-    this.updateElement();
-    return roomElement;
-}
 
         updateElement() {
           if (!this.element) return
@@ -1150,7 +1928,10 @@ sl-input::part(form-control-label) {
           this.polygonPoints = []
           this.previewPoint = null
           this.polygonPreviewElement = null
+          this.markers = []
+          this.playerStart = null
           this.layersPanel = new LayersPanel(this)
+          this.monsterManager = new MonsterManager(this)
           this.setupEventListeners()
           this.setupCanvas()
         }
@@ -1411,6 +2192,39 @@ sl-input::part(form-control-label) {
               this.setTool(this.previousTool || 'rectangle')
             }
           })
+
+          // Handle marker placement tools
+          // Handle marker placement tools
+          // In setupEventListeners
+          // In setupEventListeners, replace all the marker tool handling with this:
+          const markerTools = {
+            playerStartTool: 'player-start',
+            encounterTool: 'encounter',
+            treasureTool: 'treasure',
+            trapTool: 'trap',
+            teleportTool: 'teleport'
+          }
+
+          Object.entries(markerTools).forEach(([toolId, markerType]) => {
+            document.getElementById(toolId)?.addEventListener('click', () => {
+              this.setTool(`marker-${markerType}`)
+            })
+          })
+
+          // Add to your canvas click handler for marker placement
+          document
+            .getElementById('canvasWrapper')
+            .addEventListener('click', e => {
+              if (this.currentTool?.startsWith('marker-')) {
+                const rect = e.target.getBoundingClientRect()
+                const x = (e.clientX - rect.left - this.offset.x) / this.scale
+                const y = (e.clientY - rect.top - this.offset.y) / this.scale
+
+                const markerType = this.currentTool.replace('marker-', '')
+                console.log('Adding marker of type:', markerType) // Debug log
+                this.addMarker(markerType, x, y)
+              }
+            })
 
           // Handle window resize
           window.addEventListener('resize', () => this.handleResize())
@@ -1948,45 +2762,260 @@ sl-input::part(form-control-label) {
           }
         }
 
-        // finalizeRoom(room) {
-        //   room.finalized = true
+        // In MapEditor class, modify the addMarker method
+        addMarker(type, x, y, data = {}) {
+          // Handle player start point (only one allowed)
+          if (type === 'player-start') {
+            if (this.playerStart) {
+              // Remove existing player start
+              this.removeMarker(this.playerStart)
+            }
+            this.playerStart = this.createMarker(type, x, y, data)
+            return this.playerStart
+          }
 
-        //   // Create thumbnail
-        //   room.createThumbnail(this.canvas)
+          // Handle teleport points
+          if (type === 'teleport') {
+            if (!data.paired) {
+              // This is the first point of a pair
+              const teleportA = this.createMarker(type, x, y, {
+                isPointA: true,
+                pairId: Date.now()
+              })
+              // Set tool to place point B
+              this.setTool('marker-teleport-b')
+              this.pendingTeleportPair = teleportA
+              return teleportA
+            } else {
+              // This is point B, pair it with pending point
+              const teleportB = this.createMarker(type, x, y, {
+                isPointA: false,
+                pairId: this.pendingTeleportPair.data.pairId
+              })
+              // Link the pairs
+              this.pendingTeleportPair.data.pairedMarker = teleportB
+              teleportB.data.pairedMarker = this.pendingTeleportPair
+              this.pendingTeleportPair = null
+              // Reset tool
+              this.setTool('marker-teleport')
+              return teleportB
+            }
+          }
 
-        //   // Update room appearance
-        //   const roomElement = document.getElementById(`room-${room.id}`)
-        //   if (roomElement) {
-        //     roomElement.style.pointerEvents = 'none'
-        //     roomElement.style.opacity = '0.7'
-        //   }
+          // Regular markers
+          const marker = this.createMarker(type, x, y, data)
+          this.markers.push(marker)
+          return marker
+        }
 
-        //   // Force layers panel update
-        //   this.layersPanel.updateLayersList()
-        // }
+        // Helper method to create marker elements
+        createMarker(type, x, y, data) {
+          const marker = {
+            id: Date.now(),
+            type,
+            x,
+            y,
+            data,
+            element: null
+          }
+
+          const markerElement = document.createElement('div')
+          markerElement.className = `map-marker marker-${type}`
+          markerElement.id = `marker-${marker.id}`
+
+          // Set marker icon based on type
+          const icon =
+            {
+              'player-start': 'person_pin_circle',
+              encounter: 'local_fire_department',
+              treasure: 'workspace_premium',
+              trap: 'warning',
+              teleport: 'swap_calls',
+              'teleport-b': 'swap_calls' // Add this line to handle teleport-b
+            }[type] || 'swap_calls' // Default to swap_calls if type isn't found
+
+          markerElement.innerHTML = `<span class="material-icons">${icon}</span>`
+
+              // Add this: Context menu handler
+    markerElement.addEventListener('contextmenu', (e) => {
+        e.preventDefault();  // Prevent default context menu
+        this.showMarkerContextMenu(marker, e);
+    });
+
+          // Add special styling for teleport points
+          if (type.startsWith('teleport')) {
+            markerElement.setAttribute(
+              'data-teleport-point',
+              type === 'teleport' ? 'a' : 'b'
+            )
+          }
+
+          // Position marker
+          markerElement.style.left = `${x * this.scale + this.offset.x}px`
+          markerElement.style.top = `${y * this.scale + this.offset.y}px`
+
+          // Add hover effects
+          markerElement.addEventListener('mouseenter', () => {
+            markerElement.classList.add('highlighted')
+            if (marker.data.pairedMarker) {
+              // Highlight paired teleport point
+              marker.data.pairedMarker.element.classList.add('highlighted')
+            }
+          })
+
+          markerElement.addEventListener('mouseleave', () => {
+            markerElement.classList.remove('highlighted')
+            if (marker.data.pairedMarker) {
+              marker.data.pairedMarker.element.classList.remove('highlighted')
+            }
+          })
+
+          document.querySelector('.canvas-container').appendChild(markerElement)
+          marker.element = markerElement
+          return marker
+        }
+
+        removeMarker(marker) {
+          if (marker.element) {
+            marker.element.remove()
+          }
+          if (marker.type === 'player-start') {
+            this.playerStart = null
+          } else {
+            const index = this.markers.indexOf(marker)
+            if (index > -1) {
+              this.markers.splice(index, 1)
+            }
+          }
+        }
+
+        getMarkerTooltip(marker) {
+          switch (marker.type) {
+            case 'player-start':
+              return 'Player Start Point'
+            case 'encounter':
+              return marker.data.monster
+                ? `Encounter: ${marker.data.monster.name} (CR ${marker.data.monster.cr})`
+                : 'Encounter Point'
+            case 'treasure':
+              return marker.data.description || 'Treasure'
+            case 'trap':
+              return marker.data.description || 'Trap'
+            default:
+              return 'Map Marker'
+          }
+        }
+
+        // In MapEditor class
+        async showMarkerContextMenu(marker, event) {
+          const dialog = document.createElement('sl-dialog')
+          dialog.label = 'Marker Options'
+
+          let content =
+            '<div style="display: flex; flex-direction: column; gap: 10px;">'
+
+          if (marker.type === 'encounter') {
+            if (marker.data.monster) {
+              content += `
+                <div style="margin-bottom: 10px;">
+                    <strong>${marker.data.monster.basic.name}</strong>
+                    <div>CR ${marker.data.monster.basic.cr} (${marker.data.monster.basic.xp} XP)</div>
+                </div>
+                <sl-button id="cloneMonster">
+                    <span class="material-icons">content_copy</span>
+                    Clone Encounter
+                </sl-button>
+            `
+            }
+            content += `
+            <sl-button id="linkMonster">
+                <span class="material-icons">link</span>
+                ${marker.data.monster ? 'Change Monster' : 'Link Monster'}
+            </sl-button>
+        `
+          } else if (['treasure', 'trap'].includes(marker.type)) {
+            content += `
+            <sl-input id="markerDescription" 
+                     label="Description"
+                     value="${marker.data.description || ''}">
+            </sl-input>
+        `
+          }
+
+          content += `
+        <sl-button variant="danger" id="removeMarker">
+            <span class="material-icons">delete</span>
+            Remove Marker
+        </sl-button>
+    </div>`
+
+          dialog.innerHTML = content
+          document.body.appendChild(dialog)
+          dialog.show()
+
+          // Handle clone
+          const cloneBtn = dialog.querySelector('#cloneMonster')
+          if (cloneBtn) {
+            cloneBtn.addEventListener('click', () => {
+              this.monsterManager.cloneEncounter(marker)
+              dialog.hide()
+            })
+          }
+
+          // Handle monster linking
+          const linkBtn = dialog.querySelector('#linkMonster')
+          if (linkBtn) {
+            linkBtn.addEventListener('click', () => {
+              this.monsterManager.showMonsterSelector(marker)
+              dialog.hide()
+            })
+          }
+
+          // Handle description updates
+          const descInput = dialog.querySelector('#markerDescription')
+          if (descInput) {
+            descInput.addEventListener('sl-change', e => {
+              marker.data.description = e.target.value
+            })
+          }
+
+          // Handle removal
+          dialog
+            .querySelector('#removeMarker')
+            .addEventListener('click', () => {
+              this.removeMarker(marker)
+              dialog.hide()
+            })
+
+          dialog.addEventListener('sl-after-hide', () => {
+            dialog.remove()
+          })
+        }
 
         finalizeRoom(room) {
-    room.finalized = true;
-    room.createThumbnail(this.canvas);
-    
-    // Update room appearance
-    const roomElement = document.getElementById(`room-${room.id}`);
-    if (roomElement) {
-        // Only disable pointer events on specific elements, not the whole room
-        roomElement.querySelectorAll('.resize-handle, .room-controls').forEach(el => {
-            el.style.pointerEvents = 'none';
-        });
-        roomElement.style.opacity = '0.7';
-        
-        // Ensure the SVG path can still receive hover events
-        const svgContainer = roomElement.querySelector('svg');
-        if (svgContainer) {
-            svgContainer.style.pointerEvents = 'auto';
+          room.finalized = true
+          room.createThumbnail(this.canvas)
+
+          // Update room appearance
+          const roomElement = document.getElementById(`room-${room.id}`)
+          if (roomElement) {
+            // Only disable pointer events on specific elements, not the whole room
+            roomElement
+              .querySelectorAll('.resize-handle, .room-controls')
+              .forEach(el => {
+                el.style.pointerEvents = 'none'
+              })
+            roomElement.style.opacity = '0.7'
+
+            // Ensure the SVG path can still receive hover events
+            const svgContainer = roomElement.querySelector('svg')
+            if (svgContainer) {
+              svgContainer.style.pointerEvents = 'auto'
+            }
+          }
+
+          this.layersPanel.updateLayersList()
         }
-    }
-    
-    this.layersPanel.updateLayersList();
-}
 
         async show3DView() {
           // Implementation from previous artifact
