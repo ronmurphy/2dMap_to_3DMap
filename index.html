@@ -76,552 +76,618 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 
     <style>
-      :root {
-        --app-height: 100vh;
-        --header-height: 48px;
-        --sidebar-width: 280px;
-        --primary-bg: #1a1a1a;
-        --secondary-bg: #2a2a2a;
-        --border-color: #3a3a3a;
-        --hover-bg: #3a3a3a;
-      }
-
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI';
-        background: var(--primary-bg);
-        color: #ffffff;
-      }
-
-      .app-container {
-        display: grid;
-        grid-template-columns: var(--sidebar-width) 1fr;
-        grid-template-rows: var(--header-height) 1fr;
-        height: var(--app-height);
-      }
-
-      .header {
-        grid-column: 1 / -1;
-        background: var(--secondary-bg);
-        border-bottom: 1px solid var(--border-color);
-        padding: 0 16px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
-
-      .header-title {
-        font-size: 1.1rem;
-        font-weight: 500;
-        margin-right: auto;
-      }
-
-      .sidebar {
-        background: var(--secondary-bg);
-        border-right: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-
-      .sidebar-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 16px;
-      }
-
-      .tool-section {
-        margin-bottom: 24px;
-      }
-
-      .tool-section-title {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        color: #888;
-        margin-bottom: 8px;
-        padding: 0 8px;
-      }
-
-      .tool-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-        padding: 0 8px;
-      }
-
-      .tool-button {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: var(--primary-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 12px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .tool-button:hover {
-        background: var(--hover-bg);
-      }
-
-      .tool-button.active {
-        background: var(--sl-color-primary-600);
-        border-color: var(--sl-color-primary-400);
-      }
-
-      .tool-button sl-icon {
-        font-size: 24px;
-        margin-bottom: 4px;
-      }
-
-      .tool-button-label {
-        font-size: 0.8rem;
-        text-align: center;
-      }
-
-      .layers-header {
-        padding: 16px;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .layers-panel {
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        overflow-y: auto;
-        border-right: 1px solid #444;
-      }
-
-      .layer-item {
-        background: #3d3d3d;
-        border-radius: 4px;
-        padding: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-
-      .layer-item:hover {
-        background: #4d4d4d;
-      }
-
-      .layer-item.selected {
-        background: #505050;
-        border: 1px solid #666;
-      }
-
-      .layer-item.editing {
-        background: #2c5a2c;
-      }
-
-      .layer-content {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .layer-thumbnail {
-        width: 40px;
-        height: 40px;
-        background: #555;
-        border-radius: 2px;
-        overflow: hidden;
-      }
-
-      .layer-thumbnail img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      .layer-info {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .layer-name {
-        font-weight: 500;
-        margin-bottom: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .layer-dimensions {
-        font-size: 0.8em;
-        color: #aaa;
-      }
-
-      .layer-controls {
-        display: flex;
-        gap: 4px;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-      }
-
-      .layer-item:hover .layer-controls {
-        opacity: 1;
-      }
-
-      .canvas-container {
-        position: relative;
-        overflow: hidden;
-        background: var(--primary-bg);
-      }
-
-      #mainCanvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
-
-      .room-block {
-        position: absolute;
-        background: rgba(128, 128, 128, 0.3);
-        border: 2px solid rgba(255, 255, 255, 0.7);
-        transition: all 0.2s ease;
-      }
-
-      .room-block.highlighted {
-        background: rgba(128, 128, 255, 0.4);
-        border-color: rgba(255, 255, 255, 0.9);
-      }
-
-      .room-block.editing {
-        background: rgba(0, 255, 0, 0.2);
-        border-color: #4caf50;
-      }
-
-      .room-block .resize-handle {
-        position: absolute;
-        width: 12px;
-        height: 12px;
-        background: white;
-        border: 1px solid #333;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        cursor: pointer;
-      }
-
-      .tool-button .material-icons {
-        font-size: 24px;
-        margin-bottom: 4px;
-        color: #fff;
-      }
-
-      .tool-button:hover .material-icons {
-        color: var(--sl-color-primary-400);
-      }
-
-      .tool-button.active .material-icons {
-        color: var(--sl-color-primary-500);
-      }
-
-      .tool-button.active .tool-button-label {
-        color: white;
-      }
-
-      .room-block.circle-room {
-        border-radius: 50%;
-      }
-
-      .room-block .resize-handle.nw {
-        top: 0;
-        left: 0;
-        cursor: nw-resize;
-      }
-
-      .room-block .resize-handle.ne {
-        top: 0;
-        left: 100%;
-        cursor: ne-resize;
-      }
-
-      .room-block .resize-handle.sw {
-        top: 100%;
-        left: 0;
-        cursor: sw-resize;
-      }
-
-      .room-block .resize-handle.se {
-        top: 100%;
-        left: 100%;
-        cursor: se-resize;
-      }
-
-      .room-controls {
-        opacity: 0.8;
-        transition: opacity 0.2s ease;
-      }
-
-      .room-block:hover .room-controls {
-        opacity: 1;
-      }
-
-      .room-controls .material-icons {
-        user-select: none;
-        transition: transform 0.2s ease;
-      }
-
-      .room-controls .material-icons:hover {
-        transform: scale(1.1);
-      }
-
-      sl-dialog::part(base) {
-        --sl-panel-background-color: white;
-        color: black;
-      }
-
-      sl-input::part(form-control-label) {
-        color: black;
-      }
-
-      .polygon-preview {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 1000;
-      }
-
-      .polygon-point {
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        background: white;
-        border: 1px solid #333;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        pointer-events: none;
-      }
-
-      .polygon-point:first-child {
-        background: #4caf50;
-        width: 10px;
-        height: 10px;
-      }
-
-      .room-block.polygon-room {
-        background: none !important;
-        border: none !important;
-      }
-
-      .room-block.polygon-room svg path {
-        transition: all 0.2s ease;
-      }
-
-      .room-block.polygon-room:hover svg path {
-        fill: rgba(128, 128, 255, 0.4);
-        stroke: rgba(255, 255, 255, 0.9);
-      }
-
-      .room-block.polygon-room .polygon-fill {
-        transition: all 0.2s ease;
-      }
-
-      .room-block.polygon-room .polygon-hover {
-        transition: opacity 0.2s ease;
-      }
-
-      .room-block.polygon-room.highlighted .polygon-hover {
-        opacity: 1 !important;
-      }
-
-      .room-block.polygon-room.editing .polygon-fill {
-        fill: rgba(0, 255, 0, 0.2);
-        stroke: #4caf50;
-      }
-
-      .polygon-vertex {
-        opacity: 0.7;
-        transition: opacity 0.2s ease;
-        pointer-events: none !important;
-      }
-
-      .room-block.polygon-room.highlighted .polygon-vertex {
-        opacity: 1;
-      }
-
-      .room-block.polygon-room .polygon-base {
-        transition: all 0.2s ease;
-      }
-
-      .room-block.polygon-room .polygon-highlight {
-        transition: opacity 0.2s ease;
-      }
-
-      .room-block.polygon-room.highlighted .polygon-highlight {
-        opacity: 1 !important;
-      }
-
-      .room-block.polygon-room.editing .polygon-base {
-        fill: rgba(0, 255, 0, 0.2) !important;
-        stroke: #4caf50 !important;
-      }
-
-      .room-block.polygon-room .polygon-vertex {
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        background: white;
-        border: 1px solid #333;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        opacity: 0.7;
-        transition: opacity 0.2s ease;
-        pointer-events: none;
-      }
-
-      .room-block.polygon-room:hover .polygon-base {
-        fill: rgba(128, 128, 255, 0.4) !important;
-        stroke: rgba(255, 255, 255, 0.9) !important;
-      }
-
-      .room-block.polygon-room.highlighted .polygon-base {
-        fill: rgba(128, 128, 255, 0.4) !important;
-        stroke: rgba(255, 255, 255, 0.9) !important;
-      }
-
-      .room-block .room-background {
-        transition: all 0.2s ease;
-      }
-
-      .room-block.highlighted .room-background {
-        background: rgba(128, 128, 255, 0.4) !important;
-        border-color: rgba(255, 255, 255, 0.9) !important;
-      }
-
-      .room-block.circle-room .room-background {
-        border-radius: 50%;
-      }
-
-      .room-block.editing .room-background {
-        background: rgba(0, 255, 0, 0.2) !important;
-        border-color: #4caf50 !important;
-      }
-
-      .map-marker {
-        position: absolute;
-        width: 32px;
-        height: 32px;
-        transform: translate(-50%, -50%);
-        cursor: pointer;
-        z-index: 100;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-      }
-
-      .map-marker .material-icons {
-        font-size: 32px;
-        filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
-      }
-
-      .map-marker:hover {
-        transform: translate(-50%, -50%) scale(1.1);
-      }
-
-      .marker-player-start .material-icons {
-        color: #4caf50;
-      }
-
-      .marker-encounter .material-icons {
-        color: #f44336;
-      }
-
-      .marker-treasure .material-icons {
-        color: #ffd700;
-      }
-
-      .marker-trap .material-icons {
-        color: #ff5722;
-      }
-
-      .marker-tooltip {
-        position: absolute;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        pointer-events: none;
-        z-index: 1000;
-        white-space: nowrap;
-      }
-
-      /* Add to your existing styles */
-      .map-marker.marker-teleport .material-icons {
-        color: #9c27b0; /* Purple for teleport points */
-      }
-
-      .map-marker.highlighted {
-        transform: translate(-50%, -50%) scale(1.2);
-        filter: brightness(1.3);
-      }
-
-      .map-marker[data-teleport-point='a'] .material-icons {
-        color: #2196f3; /* Blue for point A */
-      }
-
-      .map-marker[data-teleport-point='b'] .material-icons {
-        color: #ff9800; /* Orange for point B */
-      }
-
-      /* layour for tools ver 2 */
-
-      .tool-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr); /* Keep 2 columns */
-        gap: 4px; /* Reduce gap between buttons */
-        padding: 0 8px;
-      }
-
-      .tool-button {
-        display: flex;
-        flex-direction: row; /* Change from column to row */
-        align-items: center;
-        background: var(--primary-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        padding: 6px 8px; /* Reduce padding */
-        cursor: pointer;
-        transition: all 0.2s ease;
-        height: 32px; /* Fixed height for consistency */
-      }
-
-      .tool-button .material-icons {
-        font-size: 20px; /* Slightly smaller icons */
-        margin-right: 8px; /* Space between icon and text */
-        margin-bottom: 0; /* Remove bottom margin since we're horizontal now */
-      }
-
-      .tool-button-label {
-        font-size: 0.8rem;
-        white-space: nowrap; /* Prevent text wrapping */
-        overflow: hidden;
-        text-overflow: ellipsis; /* Add ellipsis for long text */
-      }
-
-      /* Optional: make the tool sections more compact too */
-      .tool-section {
-        margin-bottom: 16px; /* Reduce margin between sections */
-      }
-
-      .tool-section-title {
-        font-size: 0.8rem;
-        margin-bottom: 4px;
-        padding: 0 8px;
-      }
+:root {
+    --app-height: 100vh;
+    --header-height: 48px;
+    --sidebar-width: 280px;
+    --primary-bg: #1a1a1a;
+    --secondary-bg: #2a2a2a;
+    --border-color: #3a3a3a;
+    --hover-bg: #3a3a3a;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI';
+    background: var(--primary-bg);
+    color: #ffffff;
+}
+
+.app-container {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: var(--header-height) 1fr;
+    height: var(--app-height);
+}
+
+.header {
+    grid-column: 1 / -1;
+    background: var(--secondary-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.header-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-right: auto;
+}
+
+.sidebar {
+    background: var(--secondary-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.tool-section {
+    margin-bottom: 16px;
+}
+
+.tool-section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 4px;
+    padding: 0 8px;
+}
+
+.tool-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    padding: 0 8px;
+}
+
+.tool-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 32px;
+}
+
+.tool-button:hover {
+    background: var(--hover-bg);
+}
+
+.tool-button.active {
+    background: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-400);
+}
+
+.tool-button sl-icon {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.tool-button-label {
+    font-size: 0.8rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.layers-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.layers-panel {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    border-right: 1px solid #444;
+}
+
+.layer-item {
+    background: #3d3d3d;
+    border-radius: 4px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.layer-item:hover {
+    background: #4d4d4d;
+}
+
+.layer-item.selected {
+    background: #505050;
+    border: 1px solid #666;
+}
+
+.layer-item.editing {
+    background: #2c5a2c;
+}
+
+.layer-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.layer-thumbnail {
+    width: 40px;
+    height: 40px;
+    background: #555;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.layer-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.layer-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.layer-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.layer-dimensions {
+    font-size: 0.8em;
+    color: #aaa;
+}
+
+.layer-controls {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.layer-item:hover .layer-controls {
+    opacity: 1;
+}
+
+.canvas-container {
+    position: relative;
+    overflow: hidden;
+    background: var(--primary-bg);
+}
+
+#mainCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.room-block {
+    position: absolute;
+    background: rgba(128, 128, 128, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    transition: all 0.2s ease;
+}
+
+.room-block.highlighted {
+    background: rgba(128, 128, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.room-block.editing {
+    background: rgba(0, 255, 0, 0.2);
+    border-color: #4caf50;
+}
+
+.room-block .resize-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border: 1px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+}
+
+.tool-button .material-icons {
+    font-size: 20px;
+    margin-bottom: 0;
+    color: #fff;
+    margin-right: 8px;
+}
+
+.tool-button:hover .material-icons {
+    color: var(--sl-color-primary-400);
+}
+
+.tool-button.active .material-icons {
+    color: var(--sl-color-primary-500);
+}
+
+.tool-button.active .tool-button-label {
+    color: white;
+}
+
+.room-block.circle-room {
+    border-radius: 50%;
+}
+
+.room-block .resize-handle.nw {
+    top: 0;
+    left: 0;
+    cursor: nw-resize;
+}
+
+.room-block .resize-handle.ne {
+    top: 0;
+    left: 100%;
+    cursor: ne-resize;
+}
+
+.room-block .resize-handle.sw {
+    top: 100%;
+    left: 0;
+    cursor: sw-resize;
+}
+
+.room-block .resize-handle.se {
+    top: 100%;
+    left: 100%;
+    cursor: se-resize;
+}
+
+.room-controls {
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.room-block:hover .room-controls {
+    opacity: 1;
+}
+
+.room-controls .material-icons {
+    user-select: none;
+    transition: transform 0.2s ease;
+}
+
+.room-controls .material-icons:hover {
+    transform: scale(1.1);
+}
+
+sl-dialog::part(base) {
+    --sl-panel-background-color: white;
+    color: black;
+}
+
+sl-input::part(form-control-label) {
+    color: black;
+}
+
+.polygon-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.polygon-point {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border: 1px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.polygon-point:first-child {
+    background: #4caf50;
+    width: 10px;
+    height: 10px;
+}
+
+.room-block.polygon-room {
+    background: none !important;
+    border: none !important;
+    position: absolute;
+    overflow: visible !important;
+}
+
+.room-block.polygon-room svg path {
+    transition: all 0.2s ease;
+}
+
+.room-block.polygon-room:hover svg path {
+    fill: rgba(128, 128, 255, 0.4);
+    stroke: rgba(255, 255, 255, 0.9);
+}
+
+.room-block.polygon-room .polygon-fill {
+    transition: all 0.2s ease;
+}
+
+.room-block.polygon-room .polygon-hover {
+    transition: opacity 0.2s ease;
+}
+
+.room-block.polygon-room.highlighted .polygon-hover {
+    opacity: 1 !important;
+}
+
+.room-block.polygon-room.editing .polygon-fill {
+    fill: rgba(0, 255, 0, 0.2);
+    stroke: #4caf50;
+}
+
+.polygon-vertex {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border: 1px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+.room-block.polygon-room.highlighted .polygon-vertex {
+    opacity: 1;
+}
+
+.room-block.polygon-room .polygon-base {
+    transition: all 0.2s ease;
+    vector-effect: non-scaling-stroke;
+}
+
+.room-block.polygon-room .polygon-highlight {
+    transition: opacity 0.2s ease;
+}
+
+.room-block.polygon-room.highlighted .polygon-highlight {
+    opacity: 1 !important;
+}
+
+.room-block.polygon-room.editing .polygon-base {
+    fill: rgba(0, 255, 0, 0.2);
+    stroke: #4CAF50;
+}
+
+.room-block.polygon-room .polygon-vertex {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border: 1px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.room-block.polygon-room:hover .polygon-base {
+    fill: rgba(128, 128, 255, 0.4);
+    stroke: rgba(255, 255, 255, 0.9);
+}
+
+.room-block.polygon-room.highlighted .polygon-base {
+    fill: rgba(128, 128, 255, 0.4);
+    stroke: rgba(255, 255, 255, 0.9);
+}
+
+.room-block .room-background {
+    transition: all 0.2s ease;
+}
+
+.room-block.highlighted .room-background {
+    background: rgba(128, 128, 255, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.room-block.circle-room .room-background {
+    border-radius: 50%;
+}
+
+.room-block.editing .room-background {
+    background: rgba(0, 255, 0, 0.2) !important;
+    border-color: #4caf50 !important;
+}
+
+.map-marker {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.map-marker .material-icons {
+    font-size: 32px;
+    filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.map-marker:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.marker-player-start .material-icons {
+    color: #4caf50;
+}
+
+.marker-encounter .material-icons {
+    color: #f44336;
+}
+
+.marker-treasure .material-icons {
+    color: #ffd700;
+}
+
+.marker-trap .material-icons {
+    color: #ff5722;
+}
+
+.marker-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+}
+
+.map-marker.marker-teleport .material-icons {
+    color: #9c27b0;
+}
+
+.map-marker.highlighted {
+    transform: translate(-50%, -50%) scale(1.2);
+    filter: brightness(1.3);
+}
+
+.map-marker[data-teleport-point='a'] .material-icons {
+    color: #2196f3;
+}
+
+.map-marker[data-teleport-point='b'] .material-icons {
+    color: #ff9800;
+}
+
+.map-marker.editing {
+    outline: 2px solid #4CAF50;
+    outline-offset: 2px;
+    z-index: 1000;
+}
+
+.map-marker.editing .material-icons {
+    color: #4CAF50;
+}
+
+#editMarkerTool.active {
+    background: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-400);
+}
+
+#editMarkerTool.active .tool-button-label {
+    color: white;
+}
+
+.teleport-connection {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(to right, #2196f3, #ff9800);
+    transform-origin: left center;
+    pointer-events: none;
+    opacity: 0.6;
+    z-index: 90;
+}
+
+.teleport-connection::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    right: -3px;
+    top: -2px;
+    background: #ff9800;
+}
+
+.teleport-connection::before {
+    left: -3px;
+    top: -2px;
+    background: #2196f3;
+}
+
+.map-marker[data-teleport-point='a']:hover .material-icons {
+    color: #64b5f6;
+}
+
+.map-marker[data-teleport-point='b']:hover .material-icons {
+    color: #ffb74d;
+}
+
+.map-marker[data-teleport-point].highlighted .material-icons {
+    filter: brightness(1.2);
+}
+
+.room-block.polygon-room svg {
+    pointer-events: none;
+    overflow: visible;
+}
+
+.map-marker .monster-token {
+    transition: all 0.2s ease;
+}
+
+.map-marker:hover .monster-token {
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+    border-color: #ff9800;
+    transition: all 0.2s ease;
+}
+
+.map-marker[title] {
+    position: relative;
+    display: inline-block;
+}
+
+.map-marker[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: pre;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+
     </style>
   </head>
 
@@ -676,9 +742,9 @@
                 <span class="material-icons">pentagon</span>
                 <span class="tool-button-label">Polygon</span>
               </div>
-              <div class="tool-button" id="panTool" data-tooltip="Pan [Space]">
+              <div class="tool-button" id="panTool" data-tooltip="Drag [Space]">
                 <span class="material-icons">pan_tool</span>
-                <span class="tool-button-label">Pan</span>
+                <span class="tool-button-label">Drag</span>
               </div>
             </div>
           </div>
@@ -793,7 +859,26 @@
         constructor(mapEditor) {
           this.mapEditor = mapEditor
           this.monsterDatabase = this.loadDatabase()
+          this.baseTokenUrl = 'https://5e.tools/img/bestiary/tokens/';
         }
+
+        async storeMonsterImage(imgElement) {
+    try {
+        // Create a canvas to convert the image
+        const canvas = document.createElement('canvas');
+        canvas.width = imgElement.naturalWidth;
+        canvas.height = imgElement.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imgElement, 0, 0);
+
+        // Convert to base64
+        const base64Image = canvas.toDataURL('image/webp');
+        return base64Image;
+    } catch (error) {
+        console.error('Error converting monster image:', error);
+        return null;
+    }
+}
 
         loadDatabase() {
           try {
@@ -814,108 +899,66 @@
           )
         }
 
-        // async showMonsterSelector(marker) {
-        //   const dialog = document.createElement('sl-dialog')
-        //   dialog.label = 'Link Monster'
-        //   dialog.innerHTML = `
-        //     <div style="display: flex; flex-direction: column; gap: 16px;">
-        //         <sl-input id="monsterUrl" 
-        //                  label="5e.tools Monster URL"
-        //                  placeholder="Paste monster URL here"
-        //                  style="width: 100%;">
-        //         </sl-input>
-        //         <div id="monsterPreview" style="display: none;">
-        //             <h3 class="monster-name" style="margin: 0;"></h3>
-        //             <div class="monster-stats"></div>
-        //         </div>
-        //         <div id="loadingIndicator" style="display: none; text-align: center;">
-        //             <sl-spinner></sl-spinner>
-        //             <div>Loading monster data...</div>
-        //         </div>
-        //         <div id="errorMessage" style="display: none; color: #f44336;"></div>
-        //     </div>
-        //     <div slot="footer">
-        //         <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
-        //         <sl-button variant="primary" class="link-btn" disabled>Link Monster</sl-button>
-        //     </div>
-        // `
+        getTokenUrl(tokenPath) {
+        // Clean up any double slashes and ensure proper path construction
+        return this.baseTokenUrl + tokenPath.replace(/^\//, '');
+    }
 
-        //   document.body.appendChild(dialog)
-        //   dialog.show()
+    tryStoreToken(tokenUrl) {
+    return fetch(tokenUrl, {
+        mode: 'cors',
+        headers: {
+            'Accept': 'image/webp,*/*'
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to fetch token');
+        return response.blob();
+    })
+    .then(blob => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                console.log('Token data ready to return:', reader.result.substring(0, 50) + '...'); // Log first 50 chars
+                resolve(reader.result);
+            };
+            reader.readAsDataURL(blob);
+        });
+    })
+    .catch(error => {
+        console.log('Failed to fetch token directly:', error);
+        return tokenUrl; // Return URL as fallback
+    });
+}
 
-        //   const urlInput = dialog.querySelector('#monsterUrl')
-        //   const linkBtn = dialog.querySelector('.link-btn')
-        //   const cancelBtn = dialog.querySelector('.cancel-btn')
-        //   const loadingIndicator = dialog.querySelector('#loadingIndicator')
-        //   const errorMessage = dialog.querySelector('#errorMessage')
-        //   const preview = dialog.querySelector('#monsterPreview')
 
-        //   urlInput.addEventListener('input', async () => {
-        //     const url = urlInput.value.trim()
-        //     if (url) {
-        //       try {
-        //         loadingIndicator.style.display = 'block'
-        //         errorMessage.style.display = 'none'
-        //         preview.style.display = 'none'
-        //         linkBtn.disabled = true
-
-        //         const monsterData = await this.extractMonsterData(url)
-        //         if (monsterData) {
-        //           preview.querySelector('.monster-name').textContent =
-        //             monsterData.basic.name
-        //           preview.querySelector('.monster-stats').innerHTML = `
-        //                     <div style="display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-top: 8px;">
-        //                         <div>CR:</div><div>${monsterData.basic.cr} (${monsterData.basic.xp} XP)</div>
-        //                         <div>HP:</div><div>${monsterData.stats.hp.average} (${monsterData.stats.hp.roll})</div>
-        //                         <div>AC:</div><div>${monsterData.stats.ac}</div>
-        //                     </div>
-        //                 `
-        //           preview.style.display = 'block'
-        //           linkBtn.disabled = false
-        //         }
-        //       } catch (error) {
-        //         errorMessage.textContent =
-        //           'Error loading monster data. Please check the URL.'
-        //         errorMessage.style.display = 'block'
-        //       } finally {
-        //         loadingIndicator.style.display = 'none'
-        //       }
-        //     }
-        //   })
-
-        //   return new Promise(resolve => {
-        //     linkBtn.addEventListener('click', async () => {
-        //       const monsterData = await this.extractMonsterData(
-        //         urlInput.value.trim()
-        //       )
-        //       marker.data.monster = monsterData
-        //       await this.saveMonsterToDatabase(monsterData)
-        //       dialog.hide()
-        //       resolve(true)
-        //     })
-
-        //     cancelBtn.addEventListener('click', () => {
-        //       dialog.hide()
-        //       resolve(false)
-        //     })
-
-        //     dialog.addEventListener('sl-after-hide', () => {
-        //       dialog.remove()
-        //     })
-        //   })
-        // }
-
-        // Update the showMonsterSelector method in MonsterManager class
+    // Complete showMonsterSelector method for MonsterManager class
 async showMonsterSelector(marker) {
-    const dialog = document.createElement('sl-dialog')
-    dialog.label = 'Link Monster'
+    const dialog = document.createElement('sl-dialog');
+    dialog.label = 'Import Monster';
     dialog.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 16px;">
-            <sl-input id="monsterUrl" 
-                     label="5e.tools Monster URL"
-                     placeholder="Paste monster URL here"
-                     style="width: 100%;">
-            </sl-input>
+            <div class="instructions" style="background: #f5f5f5; padding: 12px; border-radius: 4px;">
+                <p style="margin-top: 0;">To import monster data from 5e.tools:</p>
+                <ol style="margin-left: 20px; margin-bottom: 0;">
+                    <li>On 5e.tools, right-click on the monster's stat block</li>
+                    <li>Select "Inspect Element" or press F12</li>
+                    <li>Find the <code>&lt;div id="wrp-pagecontent"&gt;</code> element</li>
+                    <li>Right-click the element and select:
+                        <ul style="margin-left: 20px;">
+                            <li>In Chrome/Edge: "Copy > Copy element"</li>
+                            <li>In Firefox: "Copy > Outer HTML"</li>
+                        </ul>
+                    </li>
+                    <li>Paste below</li>
+                </ol>
+            </div>
+            
+            <textarea id="monsterHtml" 
+                rows="10" 
+                style="width: 100%; font-family: monospace; padding: 8px;"
+                placeholder="Paste monster stat block HTML here..."></textarea>
+
             <div id="monsterPreview" style="display: none; max-height: 60vh; overflow-y: auto;">
                 <!-- Basic Info Section -->
                 <div class="monster-header" style="margin-bottom: 16px;">
@@ -929,7 +972,7 @@ async showMonsterSelector(marker) {
 
                 <!-- Monster Image -->
                 <div class="monster-image" style="margin-bottom: 16px; text-align: center;">
-                    <!-- Image will be inserted here if available -->
+                    <img style="max-width: 200px; display: none;" />
                 </div>
 
                 <!-- Core Stats -->
@@ -996,137 +1039,144 @@ async showMonsterSelector(marker) {
                     </div>
                 </div>
             </div>
+
             <div id="loadingIndicator" style="display: none; text-align: center;">
                 <sl-spinner></sl-spinner>
-                <div>Loading monster data...</div>
+                <div>Processing monster data...</div>
             </div>
+
             <div id="errorMessage" style="display: none; color: #f44336;"></div>
         </div>
         <div slot="footer">
             <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
-            <sl-button variant="primary" class="link-btn" disabled>Link Monster</sl-button>
+            <sl-button variant="primary" class="save-btn" disabled>Save Monster</sl-button>
         </div>
-    `
+    `;
 
-    document.body.appendChild(dialog)
-    dialog.show()
+    document.body.appendChild(dialog);
+    dialog.show();
 
-    const urlInput = dialog.querySelector('#monsterUrl')
-    const linkBtn = dialog.querySelector('.link-btn')
-    const cancelBtn = dialog.querySelector('.cancel-btn')
-    const loadingIndicator = dialog.querySelector('#loadingIndicator')
-    const errorMessage = dialog.querySelector('#errorMessage')
-    const preview = dialog.querySelector('#monsterPreview')
+    const htmlInput = dialog.querySelector('#monsterHtml');
+    const saveBtn = dialog.querySelector('.save-btn');
+    const cancelBtn = dialog.querySelector('.cancel-btn');
+    const loadingIndicator = dialog.querySelector('#loadingIndicator');
+    const errorMessage = dialog.querySelector('#errorMessage');
+    const preview = dialog.querySelector('#monsterPreview');
 
-    urlInput.addEventListener('input', async () => {
-        const url = urlInput.value.trim()
-        if (url) {
-            try {
-                loadingIndicator.style.display = 'block'
-                errorMessage.style.display = 'none'
-                preview.style.display = 'none'
-                linkBtn.disabled = true
+    let currentMonsterData = null;
 
-                const monsterData = await this.extractMonsterData(url)
-                if (monsterData) {
-                    // Update basic info
-                    preview.querySelector('.monster-name').textContent = monsterData.basic.name
-                    preview.querySelector('.monster-size').textContent = monsterData.basic.size
-                    preview.querySelector('.monster-type').textContent = monsterData.basic.type
-                    preview.querySelector('.monster-alignment').textContent = monsterData.basic.alignment
+    // Handle HTML paste
+    htmlInput.addEventListener('input', async () => {
+    const html = htmlInput.value.trim();
+    if (html) {
+        try {
+            loadingIndicator.style.display = 'block';
+            errorMessage.style.display = 'none';
+            preview.style.display = 'none';
+            saveBtn.disabled = true;
+
+            // Add await here since parseMonsterHtml returns a Promise now
+            currentMonsterData = await this.parseMonsterHtml(html);
+            console.log('Parsed monster data:', currentMonsterData); // Debug log
+
+            if (currentMonsterData) {
+                // Update basic info
+                preview.querySelector('.monster-name').textContent = currentMonsterData.basic.name;
+                preview.querySelector('.monster-size').textContent = currentMonsterData.basic.size;
+                preview.querySelector('.monster-type').textContent = currentMonsterData.basic.type;
+                preview.querySelector('.monster-alignment').textContent = currentMonsterData.basic.alignment;
 
                     // Update core stats
-                    preview.querySelector('.monster-ac').textContent = monsterData.stats.ac
+                    preview.querySelector('.monster-ac').textContent = currentMonsterData.stats.ac;
                     preview.querySelector('.monster-hp').textContent = 
-                        `${monsterData.stats.hp.average} (${monsterData.stats.hp.roll})`
-                    preview.querySelector('.monster-speed').textContent = monsterData.stats.speed
+                        `${currentMonsterData.stats.hp.average} (${currentMonsterData.stats.hp.roll})`;
+                    preview.querySelector('.monster-speed').textContent = currentMonsterData.stats.speed;
 
                     // Update ability scores
-                    Object.entries(monsterData.abilities).forEach(([ability, data]) => {
-                        const element = preview.querySelector(`.monster-${ability}`)
+                    Object.entries(currentMonsterData.abilities).forEach(([ability, data]) => {
+                        const element = preview.querySelector(`.monster-${ability}`);
                         if (element) {
-                            element.textContent = `${data.score} (${data.modifier >= 0 ? '+' : ''}${data.modifier})`
+                            element.textContent = `${data.score} (${data.modifier >= 0 ? '+' : ''}${data.modifier})`;
                         }
-                    })
+                    });
 
                     // Update additional traits
-                    preview.querySelector('.monster-cr').textContent = monsterData.basic.cr
-                    preview.querySelector('.monster-xp').textContent = monsterData.basic.xp
-                    preview.querySelector('.monster-prof').textContent = 
-                        `+${monsterData.basic.proficiencyBonus}`
-                    preview.querySelector('.monster-senses').textContent = 
-                        monsterData.traits.senses.join(', ') || 'None'
-                    preview.querySelector('.monster-languages').textContent = 
-                        monsterData.traits.languages
+                    preview.querySelector('.monster-cr').textContent = currentMonsterData.basic.cr;
+                    preview.querySelector('.monster-xp').textContent = currentMonsterData.basic.xp;
+                    preview.querySelector('.monster-prof').textContent = `+${currentMonsterData.basic.proficiencyBonus}`;
+                    preview.querySelector('.monster-senses').textContent = currentMonsterData.traits.senses.join(', ') || 'None';
+                    preview.querySelector('.monster-languages').textContent = currentMonsterData.traits.languages;
 
                     // Handle immunities
-                    const immunitiesContainer = preview.querySelector('.monster-immunities-container')
-                    const immunitiesSpan = preview.querySelector('.monster-immunities')
-                    if (monsterData.traits.immunities.length > 0) {
-                        immunitiesSpan.textContent = monsterData.traits.immunities.join(', ')
-                        immunitiesContainer.style.display = 'block'
+                    const immunitiesContainer = preview.querySelector('.monster-immunities-container');
+                    const immunitiesSpan = preview.querySelector('.monster-immunities');
+                    if (currentMonsterData.traits.immunities.length > 0) {
+                        immunitiesSpan.textContent = currentMonsterData.traits.immunities.join(', ');
+                        immunitiesContainer.style.display = 'block';
                     } else {
-                        immunitiesContainer.style.display = 'none'
+                        immunitiesContainer.style.display = 'none';
                     }
 
-                    // Try to find and display monster image
-                    const imgElement = preview.querySelector('.monster-image img')
-                    if (imgElement) {
-                        const imgSrc = monsterData.image // Assuming we add this to the parsed data
-                        if (imgSrc) {
-                            imgElement.src = imgSrc
-                            imgElement.style.display = 'block'
-                        } else {
-                            imgElement.style.display = 'none'
-                        }
-                    }
-
-                    preview.style.display = 'block'
-                    linkBtn.disabled = false
+                    const imgElement = preview.querySelector('.monster-image img');
+                if (currentMonsterData.token && (currentMonsterData.token.data || currentMonsterData.token.url)) {
+                    imgElement.src = currentMonsterData.token.data || currentMonsterData.token.url;
+                    imgElement.style.display = 'block';
+                } else {
+                    imgElement.style.display = 'none';
                 }
-            } catch (error) {
-                errorMessage.textContent = 'Error loading monster data. Please check the URL.'
-                errorMessage.style.display = 'block'
-            } finally {
-                loadingIndicator.style.display = 'none'
-            }
+
+                preview.style.display = 'block';
+                saveBtn.disabled = false;
+
+                }
+        } catch (error) {
+            console.error('Error in monster data processing:', error); // More detailed error log
+            errorMessage.textContent = 'Error parsing monster data. Please check the HTML.';
+            errorMessage.style.display = 'block';
+            saveBtn.disabled = true;
+        } finally {
+            loadingIndicator.style.display = 'none';
         }
-    })
+        }
+    });
 
     return new Promise(resolve => {
-        linkBtn.addEventListener('click', async () => {
-            const monsterData = await this.extractMonsterData(urlInput.value.trim())
-            marker.data.monster = monsterData
-            await this.saveMonsterToDatabase(monsterData)
-            dialog.hide()
-            resolve(true)
-        })
+        saveBtn.addEventListener('click', async () => {
+            if (currentMonsterData) {
+                marker.data.monster = currentMonsterData;
+                await this.saveMonsterToDatabase(currentMonsterData);
+                this.mapEditor.updateMarkerAppearance(marker);
+                dialog.hide();
+                resolve(true);
+            }
+        });
 
         cancelBtn.addEventListener('click', () => {
-            dialog.hide()
-            resolve(false)
-        })
+            dialog.hide();
+            resolve(false);
+        });
 
         dialog.addEventListener('sl-after-hide', () => {
-            dialog.remove()
-        })
-    })
+            dialog.remove();
+        });
+    });
 }
 
-// In MonsterManager class
-async extractMonsterData(url) {
-    try {
-        // Parse the URL to get monster ID
-        const monsterId = url.split('#')[1]; // e.g., "zombie_xphb"
-        if (!monsterId) {
-            throw new Error('Invalid monster URL format');
-        }
 
-        // Since we can't fetch directly from 5e.tools, 
-        // we'll need the user to paste the monster data section
-        const dialog = document.createElement('sl-dialog');
-        dialog.label = 'Monster Data Import';
-        dialog.innerHTML = `
+        // In MonsterManager class
+        async extractMonsterData(url) {
+          try {
+            // Parse the URL to get monster ID
+            const monsterId = url.split('#')[1] // e.g., "zombie_xphb"
+            if (!monsterId) {
+              throw new Error('Invalid monster URL format')
+            }
+
+            // Since we can't fetch directly from 5e.tools,
+            // we'll need the user to paste the monster data section
+            const dialog = document.createElement('sl-dialog')
+            dialog.label = 'Monster Data Import'
+            dialog.innerHTML = `
     <div style="display: flex; flex-direction: column; gap: 16px;">
         <div class="instructions">
             <p>To import monster data from 5e.tools:</p>
@@ -1157,52 +1207,58 @@ async extractMonsterData(url) {
         <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
         <sl-button variant="primary" class="import-btn">Import Monster</sl-button>
     </div>
-`;
+`
 
-        document.body.appendChild(dialog);
-        dialog.show();
+            document.body.appendChild(dialog)
+            dialog.show()
 
-        return new Promise((resolve, reject) => {
-            const importBtn = dialog.querySelector('.import-btn');
-            const cancelBtn = dialog.querySelector('.cancel-btn');
-            const errorMsg = dialog.querySelector('#errorMessage');
+            return new Promise((resolve, reject) => {
+              const importBtn = dialog.querySelector('.import-btn')
+              const cancelBtn = dialog.querySelector('.cancel-btn')
+              const errorMsg = dialog.querySelector('#errorMessage')
 
-            importBtn.addEventListener('click', () => {
-                const html = dialog.querySelector('#monsterHtml').value;
+              importBtn.addEventListener('click', () => {
+                const html = dialog.querySelector('#monsterHtml').value
                 try {
-                    const monsterData = this.parseMonsterHtml(html);
-                    dialog.hide();
-                    resolve(monsterData);
+                  const monsterData = this.parseMonsterHtml(html)
+                  dialog.hide()
+                  resolve(monsterData)
                 } catch (error) {
-                    errorMsg.textContent = 'Error parsing monster data. Please check the HTML.';
-                    errorMsg.style.display = 'block';
+                  errorMsg.textContent =
+                    'Error parsing monster data. Please check the HTML.'
+                  errorMsg.style.display = 'block'
                 }
-            });
+              })
 
-            cancelBtn.addEventListener('click', () => {
-                dialog.hide();
-                reject(new Error('Import cancelled'));
-            });
+              cancelBtn.addEventListener('click', () => {
+                dialog.hide()
+                reject(new Error('Import cancelled'))
+              })
 
-            dialog.addEventListener('sl-after-hide', () => {
-                dialog.remove();
-            });
-        });
-    } catch (error) {
-        console.error('Error extracting monster data:', error);
-        throw error;
-    }
-}
+              dialog.addEventListener('sl-after-hide', () => {
+                dialog.remove()
+              })
+            })
+          } catch (error) {
+            console.error('Error extracting monster data:', error)
+            throw error
+          }
+        }
 
 parseMonsterHtml(html) {
+    console.log('Starting to parse monster HTML'); // Debug 1
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
+    console.log('HTML parsed into document'); // Debug 2
 
     try {
         // Required basic information
         const name = doc.querySelector('.stats__h-name')?.textContent?.trim() || 'Unknown Monster';
+        console.log('Found name:', name); // Debug 3
+
         const typeInfo = doc.querySelector('td i')?.textContent?.trim() || 'Medium Unknown, Unaligned';
-        
+        console.log('Found typeInfo:', typeInfo); // Debug 4
+
         // Parse type info with defaults
         const [sizeTypeAlign = ''] = typeInfo.split(',');
         const [size = 'Medium', type = 'Unknown'] = sizeTypeAlign.trim().split(/\s+/);
@@ -1216,7 +1272,7 @@ parseMonsterHtml(html) {
                 roll: doc.querySelector('[data-roll-name="Hit Points"]')?.textContent?.trim() || '1d4',
                 max: parseInt(doc.querySelector('[title="Maximum: "]')?.textContent || '1')
             },
-            speed: '30 ft.' // Default walking speed
+            speed: '30 ft.'
         };
 
         // Try to get actual speed
@@ -1225,35 +1281,39 @@ parseMonsterHtml(html) {
             stats.speed = speedNode.nextSibling.textContent.trim();
         }
 
-        // Required ability scores (with safe defaults)
-        const abilities = {};
-const rows = Array.from(doc.querySelectorAll('tr'));
+        // Parse ability scores - Updated version
+        console.log('About to parse ability scores');
+// Parse ability scores
+const abilities = {};
+const abilityRows = Array.from(doc.querySelectorAll('.stats-tbl-ability-scores__lbl-abv'));
 
-// Find the rows that contain our ability scores
-rows.forEach(row => {
-    const labelDiv = row.querySelector('div.bold.small-caps.ve-text-right');
-    if (labelDiv) {
-        const abilityName = labelDiv.textContent.trim();
-        if (['Str', 'Dex', 'Con', 'Int', 'Wis', 'Cha'].includes(abilityName)) {
+abilityRows.forEach(labelCell => {
+    const abilityDiv = labelCell.querySelector('.bold.small-caps');
+    if (abilityDiv) {
+        const abilityName = abilityDiv.textContent.trim().toLowerCase();
+        if (['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(abilityName)) {
             try {
-                // Get score (it's in the next cell)
-                const scoreDiv = row.querySelector('.stats__disp-as-score:not(.stats__disp-as-score--label)');
+                // Get score from the next cell's div directly
+                const scoreDiv = labelCell.nextElementSibling.querySelector('.ve-text-center');
                 const score = parseInt(scoreDiv?.textContent || '10');
 
-                // Get modifier (it's in the next cell after that)
-                const modifierDiv = row.querySelector('.stats__disp-as-bonus .roller');
-                const modifier = parseInt(modifierDiv?.textContent?.match(/[+-]\d+/)?.[0] || '0');
+                // Get modifier from the next cell's roller span
+                const modifierCell = scoreDiv?.parentElement.nextElementSibling;
+                const modifierText = modifierCell?.querySelector('.roller')?.textContent || '0';
+                const modifier = parseInt(modifierText.match(/[+-]\d+/)?.[0] || '0');
 
-                abilities[abilityName.toLowerCase()] = { score, modifier };
+                abilities[abilityName] = { score, modifier };
+                console.log(`Parsed ${abilityName}:`, { score, modifier });
             } catch (e) {
-                console.log(`Error parsing ${abilityName}, using defaults:`, e);
-                abilities[abilityName.toLowerCase()] = { score: 10, modifier: 0 };
+                console.error(`Error parsing ${abilityName}:`, e);
+                abilities[abilityName] = { score: 10, modifier: 0 };
             }
         }
     }
 });
+console.log('Abilities parsed successfully:', abilities);
 
-        // Optional extras (wrapped in try-catch blocks)
+        // Optional extras
         let extras = {
             immunities: [],
             resistances: [],
@@ -1265,54 +1325,126 @@ rows.forEach(row => {
         };
 
         try {
-            // Challenge Rating & XP
             const crNode = doc.querySelector('[title="Challenge Rating"] + span');
             if (crNode) {
                 extras.cr = crNode.textContent.split('(')[0].trim();
                 const xpMatch = crNode.textContent.match(/XP (\d+)/);
                 if (xpMatch) extras.xp = parseInt(xpMatch[1]);
+                console.log('Parsed CR/XP:', extras.cr, extras.xp);
             }
         } catch (e) {
             console.log('Optional: Failed to parse CR/XP');
         }
 
         try {
-            // Immunities
             const immunityNode = Array.from(doc.querySelectorAll('strong')).find(el => el.textContent === 'Immunities');
             if (immunityNode && immunityNode.nextSibling) {
-                extras.immunities = immunityNode.nextSibling.textContent
-                    .split(';')
-                    .map(i => i.trim())
-                    .filter(i => i);
+                extras.immunities = immunityNode.nextSibling.textContent.split(';').map(i => i.trim()).filter(i => i);
+            console.log('Parsed immunities:', extras.immunities);
             }
         } catch (e) {
             console.log('Optional: Failed to parse immunities');
         }
 
         try {
-            // Senses
             const sensesNode = Array.from(doc.querySelectorAll('strong')).find(el => el.textContent === 'Senses');
             if (sensesNode && sensesNode.nextSibling) {
-                extras.senses = sensesNode.nextSibling.textContent
-                    .split(',')
-                    .map(s => s.trim())
-                    .filter(s => s);
+                extras.senses = sensesNode.nextSibling.textContent.split(',').map(s => s.trim()).filter(s => s);
+            console.log('Parsed senses:', extras.senses);
             }
         } catch (e) {
             console.log('Optional: Failed to parse senses');
         }
 
         try {
-            // Languages
             const languagesNode = Array.from(doc.querySelectorAll('strong')).find(el => el.textContent === 'Languages');
             if (languagesNode && languagesNode.nextSibling) {
                 extras.languages = languagesNode.nextSibling.textContent.trim() || 'None';
+            console.log('Parsed languages:', extras.languages);
             }
         } catch (e) {
             console.log('Optional: Failed to parse languages');
         }
 
-        // Return the complete monster data
+        console.log('Starting token handling');
+        // Token handling with proper error handling
+        let tokenUrl = null;
+        const tokenDiv = doc.querySelector('#float-token');
+        if (tokenDiv) {
+            const imgElement = tokenDiv.querySelector('img.stats__token');
+            if (imgElement && imgElement.src) {
+                const path = imgElement.src.replace(/.*\/bestiary\/tokens\//, '');
+                tokenUrl = this.getTokenUrl(path);
+                console.log('TokenDiv-Token URL:', tokenUrl); // Debug log
+            } else {
+                const linkElement = tokenDiv.querySelector('a.stats__wrp-token');
+                if (linkElement && linkElement.href) {
+                    const path = linkElement.href.replace(/.*\/bestiary\/tokens\//, '');
+                    tokenUrl = this.getTokenUrl(path);
+                    console.log('Fallback-Token URL:', tokenUrl); // Debug log
+                }
+            }
+
+            // If we found a token URL, try to store it
+            if (tokenUrl) {
+    console.log('Attempting to store token...');
+    return this.tryStoreToken(tokenUrl)
+        .then(tokenData => {
+            console.log('Token stored successfully:', tokenData ? 'data present' : 'no data');
+            return {
+                basic: {
+                    name,
+                    size,
+                    type,
+                    alignment,
+                    cr: extras.cr,
+                    xp: extras.xp,
+                    proficiencyBonus: extras.proficiencyBonus
+                },
+                stats,
+                abilities,
+                traits: {
+                    immunities: extras.immunities,
+                    senses: extras.senses,
+                    languages: extras.languages
+                },
+                token: {
+                    url: tokenUrl,
+                    data: tokenData
+                }
+            };
+        })
+        .catch(error => {
+                        console.error('Error storing token:', error);
+                        // Return data with null token data in case of error
+                        return {
+                            basic: {
+                                name,
+                                size,
+                                type,
+                                alignment,
+                                cr: extras.cr,
+                                xp: extras.xp,
+                                proficiencyBonus: extras.proficiencyBonus
+                            },
+                            stats,
+                            abilities,
+                            traits: {
+                                immunities: extras.immunities,
+                                senses: extras.senses,
+                                languages: extras.languages
+                            },
+                            token: {
+                                url: tokenUrl,
+                                data: null
+                            }
+                        };
+                    });
+            }
+        }
+console.log('Token handling complete');
+console.log('Returning monster data...');
+        // Return data without token if no token URL was found
         return {
             basic: {
                 name,
@@ -1329,6 +1461,10 @@ rows.forEach(row => {
                 immunities: extras.immunities,
                 senses: extras.senses,
                 languages: extras.languages
+            },
+            token: {
+                url: tokenUrl,
+                data: null
             }
         };
 
@@ -1365,22 +1501,18 @@ rows.forEach(row => {
             }
         };
     }
+    console.log('Monster HTML parsing complete');
 }
 
-        extractAbilityScores(doc) {
-          const abilities = {}
-          ;['str', 'dex', 'con', 'int', 'wis', 'cha'].forEach(ability => {
-            const scoreElement = doc.querySelector(
-              `.stats__disp-as-score--label:contains("${ability.toUpperCase()}")`
-            )
-            const score = parseInt(
-              scoreElement?.nextElementSibling?.textContent || '0'
-            )
-            const modifier = Math.floor((score - 10) / 2)
-            abilities[ability] = { score, modifier }
-          })
-          return abilities
+        getStoredToken(monsterId) {
+        try {
+            const key = `monster_token_${monsterId}`;
+            return localStorage.getItem(key);
+        } catch (e) {
+            console.error('Error retrieving stored token:', e);
+            return null;
         }
+    }
 
         cloneEncounter(marker) {
           // Clone an existing encounter marker
@@ -1498,72 +1630,75 @@ rows.forEach(row => {
           this.thumbnail = null
           this.element = null
           this.points = bounds.points || null
+          this.isEditing = false;
         }
 
-        createDOMElement(editor) {
-          const roomElement = document.createElement('div')
-          roomElement.id = `room-${this.id}`
-          roomElement.className = `room-block ${this.shape}-room`
+    createDOMElement(editor) {
+    const roomElement = document.createElement('div');
+    roomElement.id = `room-${this.id}`;
+    roomElement.className = `room-block ${this.shape}-room`;
+    roomElement.style.pointerEvents = 'auto';
 
-          // Always add the standard background div for consistent highlighting
-          const backgroundDiv = document.createElement('div')
-          backgroundDiv.className = 'room-background'
-          backgroundDiv.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(128, 128, 128, 0.3);
-        border: 2px solid rgba(255, 255, 255, 0.7);
-        transition: all 0.2s ease;
-    `
-          roomElement.appendChild(backgroundDiv)
+    if (this.shape === 'polygon' && this.points) {
+        // Create SVG element with proper viewBox
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', `0 0 ${this.bounds.width} ${this.bounds.height}`);
+        svg.style.position = 'absolute';
+        svg.style.top = '0';
+        svg.style.left = '0';
 
-          // Add vertex points for polygon
-          if (this.shape === 'polygon' && this.points) {
-            this.points.forEach((point, index) => {
-              const marker = document.createElement('div')
-              marker.className = 'polygon-vertex'
-              marker.style.cssText = `
+        // Create polygon path using absolute coordinates
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const pathData = this.points.map((point, index) => {
+            return `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`;
+        }).join(' ') + ' Z';
+
+        path.setAttribute('d', pathData);
+        path.setAttribute('class', 'polygon-base');
+        path.setAttribute('fill', 'rgba(128, 128, 128, 0.3)');
+        path.setAttribute('stroke', 'rgba(255, 255, 255, 0.7)');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('vector-effect', 'non-scaling-stroke');  // Maintain stroke width when scaling
+
+        svg.appendChild(path);
+        roomElement.appendChild(svg);
+
+        // Add vertex points using absolute positioning
+        this.points.forEach((point, index) => {
+            const vertexMarker = document.createElement('div');
+            vertexMarker.className = 'polygon-vertex';
+            vertexMarker.style.cssText = `
                 position: absolute;
-                width: 8px;
-                height: 8px;
-                background: white;
-                border: 1px solid #333;
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
                 left: ${(point.x / this.bounds.width) * 100}%;
                 top: ${(point.y / this.bounds.height) * 100}%;
-                pointer-events: none;
-                z-index: 2;
-            `
-              roomElement.appendChild(marker)
-            })
-          }
+            `;
+            roomElement.appendChild(vertexMarker);
+        });
+    } else {
+        // Rest of the code for rectangle/circle rooms...
+        const backgroundDiv = document.createElement('div');
+        backgroundDiv.className = 'room-background';
+        roomElement.appendChild(backgroundDiv);
+    }
 
-          // Add resize handles
-          ;['nw', 'ne', 'sw', 'se'].forEach(pos => {
-            const handle = document.createElement('div')
-            handle.className = `resize-handle ${pos}`
+    // Add resize handles (not for polygon)
+    if (this.shape !== 'polygon') {
+        ['nw', 'ne', 'sw', 'se'].forEach(pos => {
+            const handle = document.createElement('div');
+            handle.className = `resize-handle ${pos}`;
             handle.addEventListener('mousedown', e => {
-              e.stopPropagation()
-              editor.startResizing(this, pos, e)
-            })
-            roomElement.appendChild(handle)
-          })
+                e.stopPropagation();
+                editor.startResizing(this, pos, e);
+            });
+            roomElement.appendChild(handle);
+        });
+    }
 
-          // Add control buttons
-          const controls = document.createElement('div')
-          controls.className = 'room-controls'
-          controls.style.cssText = `
-        position: absolute;
-        top: 5px;
-        left: 5px;
-        display: flex;
-        gap: 5px;
-        z-index: 10;
-    `
+    // Add control buttons
+    const controls = document.createElement('div');
+    controls.className = 'room-controls';
           controls.innerHTML = `
         <span class="material-icons confirm-btn"
               style="padding: 4px; background: #4CAF50; color: white; border-radius: 4px; cursor: pointer;">
@@ -1577,56 +1712,80 @@ rows.forEach(row => {
               style="padding: 4px; background: #f44336; color: white; border-radius: 4px; cursor: pointer;">
             close
         </span>
-    `
+    `;
 
-          controls
-            .querySelector('.confirm-btn')
-            .addEventListener('click', () => {
-              editor.finalizeRoom(this)
-            })
+    controls.querySelector('.confirm-btn').addEventListener('click', () => {
+        editor.finalizeRoom(this);
+    });
 
-          controls.querySelector('.edit-btn').addEventListener('click', () => {
-            editor.layersPanel.showRenameDialog(this)
-          })
+    controls.querySelector('.edit-btn').addEventListener('click', () => {
+        editor.layersPanel.showRenameDialog(this);
+    });
 
-          controls
-            .querySelector('.cancel-btn')
-            .addEventListener('click', () => {
-              editor.deleteRoom(this)
-            })
+    controls.querySelector('.cancel-btn').addEventListener('click', () => {
+        editor.deleteRoom(this);
+    });
 
-          roomElement.appendChild(controls)
+    roomElement.appendChild(controls);
 
-          // Add dragging functionality
-          roomElement.addEventListener('mousedown', e => {
-            if (!e.target.classList.contains('resize-handle')) {
-              editor.startDragging(this, e)
+    // Add dragging functionality (only for non-polygon or finalized polygon)
+    if (this.shape !== 'polygon' || this.finalized) {
+        roomElement.addEventListener('mousedown', e => {
+            if (!e.target.classList.contains('resize-handle') && 
+                !e.target.classList.contains('material-icons')) {
+                editor.startDragging(this, e);
             }
-          })
+        });
+    }
 
-          this.element = roomElement
-          this.updateElement()
-          return roomElement
+    this.element = roomElement;
+    this.updateElement();
+    return roomElement;
+}
+
+            // Update element pointer-events based on edit state
+            updateEditState(isEditing) {
+        this.isEditing = isEditing;
+        if (this.element) {
+            if (isEditing) {
+                this.element.classList.add('editing');
+                this.element.style.pointerEvents = 'auto';
+            } else {
+                this.element.classList.remove('editing');
+                this.element.style.pointerEvents = 'none';
+            }
         }
+    }
 
-        updateElement() {
-          if (!this.element) return
 
-          const editor = window.mapEditor
-          if (!editor) return
+    updateElement() {
+    if (!this.element) return;
 
-          // Calculate position based on scale and offset
-          const left = this.bounds.x * editor.scale + editor.offset.x
-          const top = this.bounds.y * editor.scale + editor.offset.y
-          const width = this.bounds.width * editor.scale
-          const height = this.bounds.height * editor.scale
+    const editor = window.mapEditor;
+    if (!editor) return;
 
-          // Update element style
-          this.element.style.left = `${left}px`
-          this.element.style.top = `${top}px`
-          this.element.style.width = `${width}px`
-          this.element.style.height = `${height}px`
-        }
+    // Calculate position based on scale and offset
+    const left = this.bounds.x * editor.scale + editor.offset.x;
+    const top = this.bounds.y * editor.scale + editor.offset.y;
+    const width = this.bounds.width * editor.scale;
+    const height = this.bounds.height * editor.scale;
+
+    // Update element style
+    this.element.style.left = `${left}px`;
+    this.element.style.top = `${top}px`;
+    this.element.style.width = `${width}px`;
+    this.element.style.height = `${height}px`;
+
+    // If this is a polygon room, update vertex positions
+    if (this.shape === 'polygon' && this.points) {
+        const vertices = this.element.querySelectorAll('.polygon-vertex');
+        vertices.forEach((vertex, index) => {
+            const point = this.points[index];
+            vertex.style.left = `${(point.x / this.bounds.width) * 100}%`;
+            vertex.style.top = `${(point.y / this.bounds.height) * 100}%`;
+        });
+    }
+}
 
         createThumbnail(canvas) {
           const thumbnailCanvas = document.createElement('canvas')
@@ -1922,7 +2081,8 @@ rows.forEach(row => {
           this.isDragging = false
           this.isResizing = false
           this.selectedRoomId = null
-          this.currentTool = 'rectangle'
+          this.currentTool = 'rectangle';
+          this.isDraggingMarker = false;
           this.previousTool = null
           this.isDrawingPolygon = false
           this.polygonPoints = []
@@ -1930,6 +2090,7 @@ rows.forEach(row => {
           this.polygonPreviewElement = null
           this.markers = []
           this.playerStart = null
+          this.isMarkerEditMode = false;
           this.layersPanel = new LayersPanel(this)
           this.monsterManager = new MonsterManager(this)
           this.setupEventListeners()
@@ -2193,9 +2354,29 @@ rows.forEach(row => {
             }
           })
 
-          // Handle marker placement tools
-          // Handle marker placement tools
-          // In setupEventListeners
+          const markerToolsGrid = document.querySelector('.tool-section:nth-child(2) .tool-grid');
+        const editMarkerBtn = document.createElement('div');
+        editMarkerBtn.className = 'tool-button';
+        editMarkerBtn.id = 'editMarkerTool';
+        editMarkerBtn.setAttribute('data-tooltip', 'Edit Markers [M]');
+        editMarkerBtn.innerHTML = `
+            <span class="material-icons">edit_location</span>
+            <span class="tool-button-label">Edit Markers</span>
+        `;
+        markerToolsGrid.appendChild(editMarkerBtn);
+
+        // Add edit marker button click handler
+        editMarkerBtn.addEventListener('click', () => {
+            this.toggleMarkerEditMode();
+        });
+
+        // Add keyboard shortcut for marker edit mode
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'm' && !e.repeat && e.target.tagName !== 'INPUT') {
+                this.toggleMarkerEditMode();
+            }
+        });
+    
           // In setupEventListeners, replace all the marker tool handling with this:
           const markerTools = {
             playerStartTool: 'player-start',
@@ -2212,19 +2393,17 @@ rows.forEach(row => {
           })
 
           // Add to your canvas click handler for marker placement
-          document
-            .getElementById('canvasWrapper')
-            .addEventListener('click', e => {
-              if (this.currentTool?.startsWith('marker-')) {
-                const rect = e.target.getBoundingClientRect()
-                const x = (e.clientX - rect.left - this.offset.x) / this.scale
-                const y = (e.clientY - rect.top - this.offset.y) / this.scale
-
-                const markerType = this.currentTool.replace('marker-', '')
-                console.log('Adding marker of type:', markerType) // Debug log
-                this.addMarker(markerType, x, y)
-              }
-            })
+          document.getElementById('canvasWrapper').addEventListener('click', (e) => {
+            if (this.currentTool?.startsWith('marker-')) {
+                const rect = this.canvas.getBoundingClientRect();
+                // Calculate position relative to the map, accounting for scale and offset
+                const x = (e.clientX - rect.left - this.offset.x) / this.scale;
+                const y = (e.clientY - rect.top - this.offset.y) / this.scale;
+                
+                const markerType = this.currentTool.replace('marker-', '');
+                this.addMarker(markerType, x, y);
+            }
+        });
 
           // Handle window resize
           window.addEventListener('resize', () => this.handleResize())
@@ -2249,6 +2428,17 @@ rows.forEach(row => {
               button.classList.add('active')
             }
           })
+
+          const rooms = document.querySelectorAll('.room-block');
+        rooms.forEach(room => {
+            // Allow click-through only when using marker tools
+            room.style.pointerEvents = tool.startsWith('marker-') ? 'none' : 'auto';
+            
+            // Make sure controls and handles always work
+            room.querySelectorAll('.room-controls, .resize-handle').forEach(element => {
+                element.style.pointerEvents = 'auto';
+            });
+        });
 
           // Update cursor
           const wrapper = document.getElementById('canvasWrapper')
@@ -2319,13 +2509,22 @@ rows.forEach(row => {
         }
 
         startRoomCreation() {
-          if (!this.baseImage) {
-            alert('Please load a map first')
-            return
-          }
+    if (!this.baseImage) {
+        alert('Please load a map first');
+        return;
+    }
 
-          // If polygon tool is selected, set up click handling for points
-          if (this.currentTool === 'polygon') {
+    let roomSize;
+    if (this.cellSize) {
+        // Use one grid cell as the initial size
+        roomSize = this.cellSize;
+    } else {
+        // Fallback to default size
+        roomSize = 100;
+    }
+
+              // If polygon tool is selected, set up click handling for points
+              if (this.currentTool === 'polygon') {
             // Start listening for clicks on the canvas wrapper
             const wrapper = document.getElementById('canvasWrapper')
             const clickHandler = e => {
@@ -2341,31 +2540,38 @@ rows.forEach(row => {
             return
           }
 
-          // For other tools (rectangle, circle), use the normal room creation
-          let roomSize
-          if (this.cellSize) {
-            roomSize = this.cellSize
-          } else {
-            roomSize = 100
-          }
+    const room = new Room(
+        Date.now(),
+        {
+            x: this.canvas.width / 2 - roomSize / 2,
+            y: this.canvas.height / 2 - roomSize / 2,
+            width: roomSize,
+            height: roomSize
+        },
+        '',
+        this.currentTool
+    );
 
-          const room = new Room(
-            Date.now(),
-            {
-              x: this.canvas.width / 2 - roomSize / 2,
-              y: this.canvas.height / 2 - roomSize / 2,
-              width: roomSize,
-              height: roomSize
-            },
-            '',
-            this.currentTool
-          )
+    // Add room to collection
+    this.rooms.push(room);
+    
+    // Create and add the room element
+    const roomElement = room.createDOMElement(this);
+    document.querySelector('.canvas-container').appendChild(roomElement);
+    
+    // Immediately set room as editable
+    room.updateEditState(true);
+    
+    // Update layers panel
+    this.layersPanel.updateLayersList();
 
-          this.rooms.push(room)
-          const roomElement = room.createDOMElement(this)
-          document.querySelector('.canvas-container').appendChild(roomElement)
-          this.layersPanel.updateLayersList()
-        }
+    // Set this as the selected room
+    this.selectedRoomId = room.id;
+}
+
+
+
+
 
         handlePolygonClick(e) {
           const wrapper = document.getElementById('canvasWrapper')
@@ -2648,35 +2854,38 @@ rows.forEach(row => {
         }
 
         handleMouseMove(e) {
-          if (this.isDragging && this.currentTool === 'pan') {
-            const dx = e.clientX - this.dragStart.x
-            const dy = e.clientY - this.dragStart.y
+    if (this.isDragging && this.currentTool === 'pan') {
+        const dx = e.clientX - this.dragStart.x;
+        const dy = e.clientY - this.dragStart.y;
 
-            // Move both map and rooms in the same direction
-            this.offset.x += dx
-            this.offset.y += dy
+        // Move both map and rooms
+        this.offset.x += dx;
+        this.offset.y += dy;
 
-            // Update drag start position
-            this.dragStart = { x: e.clientX, y: e.clientY }
+        // Update drag start position
+        this.dragStart = { x: e.clientX, y: e.clientY };
 
-            // Update room positions
-            this.rooms.forEach(room => {
-              room.updateElement(this.scale, this.offset)
-            })
+        // Update room positions
+        this.rooms.forEach(room => {
+            room.updateElement(this.scale, this.offset);
+        });
 
-            if (this.isDrawingPolygon) {
-              const rect = e.target.getBoundingClientRect()
-              this.previewPoint = {
+        // Update marker positions
+        this.updateMarkerPositions();
+
+        // Handle polygon preview if active
+        if (this.isDrawingPolygon) {
+            const rect = e.target.getBoundingClientRect();
+            this.previewPoint = {
                 x: (e.clientX - rect.left - this.offset.x) / this.scale,
                 y: (e.clientY - rect.top - this.offset.y) / this.scale
-              }
-              this.updatePolygonPreview()
-            }
-
-            // Render the updated view
-            this.render()
-          }
+            };
+            this.updatePolygonPreview();
         }
+
+        this.render();
+    }
+}
 
         handleMouseUp() {
           this.isDragging = false
@@ -2741,7 +2950,15 @@ rows.forEach(row => {
         }
 
         editRoom(room) {
-          room.finalized = false
+            this.rooms.forEach(r => {
+        if (r !== room) {
+            r.updateEditState(false);
+        }
+    });
+
+    // Enable editing for the selected room
+    room.updateEditState(true);
+    room.finalized = false;
           const roomElement = document.getElementById(`room-${room.id}`)
           if (roomElement) {
             roomElement.style.pointerEvents = 'auto'
@@ -2762,118 +2979,407 @@ rows.forEach(row => {
           }
         }
 
+        updateMarkerPositions() {
+    this.markers.forEach(marker => {
+        if (marker.element) {
+            // Update position
+            marker.element.style.left = `${marker.x * this.scale + this.offset.x}px`;
+            marker.element.style.top = `${marker.y * this.scale + this.offset.y}px`;
+            
+            // Update zoom scale
+            this.updateMarkerZoom(marker);
+            
+            // Handle teleport connections if present
+            if (marker.type === 'teleport' && 
+                marker.data.isPointA && 
+                marker.data.pairedMarker && 
+                marker.connection) {
+                this.updateTeleportConnection(marker, marker.data.pairedMarker);
+            }
+        }
+    });
+
+    if (this.playerStart && this.playerStart.element) {
+        this.playerStart.element.style.left = `${this.playerStart.x * this.scale + this.offset.x}px`;
+        this.playerStart.element.style.top = `${this.playerStart.y * this.scale + this.offset.y}px`;
+        this.updateMarkerZoom(this.playerStart);
+    }
+}
+
+createTeleportConnection(pointA, pointB) {
+    const connection = document.createElement('div');
+    connection.className = 'teleport-connection';
+    connection.id = `teleport-connection-${pointA.id}`;
+    document.querySelector('.canvas-container').appendChild(connection);
+    return connection;
+}
+
+// Add method to update the visual connection
+updateTeleportConnection(pointA, pointB) {
+    if (!pointA || !pointB || !pointA.connection) return;
+    
+    const connection = pointA.connection;
+    const containerRect = document.querySelector('.canvas-container').getBoundingClientRect();
+    
+    const x1 = pointA.x * this.scale + this.offset.x;
+    const y1 = pointA.y * this.scale + this.offset.y;
+    const x2 = pointB.x * this.scale + this.offset.x;
+    const y2 = pointB.y * this.scale + this.offset.y;
+    
+    const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    
+    connection.style.width = `${length}px`;
+    connection.style.left = `${x1}px`;
+    connection.style.top = `${y1}px`;
+    connection.style.transform = `rotate(${angle}deg)`;
+}
+
+
         // In MapEditor class, modify the addMarker method
         addMarker(type, x, y, data = {}) {
-          // Handle player start point (only one allowed)
-          if (type === 'player-start') {
-            if (this.playerStart) {
-              // Remove existing player start
-              this.removeMarker(this.playerStart)
-            }
-            this.playerStart = this.createMarker(type, x, y, data)
-            return this.playerStart
-          }
+    // Check if map is loaded
+    if (!this.baseImage) {
+        alert('Please load a map before placing markers');
+        return null;
+    }
 
-          // Handle teleport points
-          if (type === 'teleport') {
-            if (!data.paired) {
-              // This is the first point of a pair
-              const teleportA = this.createMarker(type, x, y, {
+    // Handle player start point (only one allowed)
+    if (type === 'player-start') {
+        if (this.playerStart) {
+            this.removeMarker(this.playerStart);
+        }
+        this.playerStart = this.createMarker(type, x, y, data);
+        return this.playerStart;
+    }
+
+    // Handle teleport points
+    if (type === 'teleport') {
+        // Place Point A
+        if (!this.pendingTeleportPair) {
+            const teleportA = this.createMarker(type, x, y, {
                 isPointA: true,
                 pairId: Date.now()
-              })
-              // Set tool to place point B
-              this.setTool('marker-teleport-b')
-              this.pendingTeleportPair = teleportA
-              return teleportA
-            } else {
-              // This is point B, pair it with pending point
-              const teleportB = this.createMarker(type, x, y, {
+            });
+            this.pendingTeleportPair = teleportA;
+            this.markers.push(teleportA);
+            return teleportA;
+        } 
+        // Place Point B
+        else if (this.pendingTeleportPair && !this.pendingTeleportPair.data.hasPair) {
+            const teleportB = this.createMarker(type, x, y, {
                 isPointA: false,
                 pairId: this.pendingTeleportPair.data.pairId
-              })
-              // Link the pairs
-              this.pendingTeleportPair.data.pairedMarker = teleportB
-              teleportB.data.pairedMarker = this.pendingTeleportPair
-              this.pendingTeleportPair = null
-              // Reset tool
-              this.setTool('marker-teleport')
-              return teleportB
-            }
-          }
-
-          // Regular markers
-          const marker = this.createMarker(type, x, y, data)
-          this.markers.push(marker)
-          return marker
+            });
+            
+            // Create and store the connection line
+            const connection = document.createElement('div');
+            connection.className = 'teleport-connection';
+            connection.id = `teleport-connection-${this.pendingTeleportPair.data.pairId}`;
+            document.querySelector('.canvas-container').appendChild(connection);
+            
+            // Link the pairs and store the connection
+            this.pendingTeleportPair.data.pairedMarker = teleportB;
+            this.pendingTeleportPair.data.hasPair = true;
+            this.pendingTeleportPair.connection = connection;
+            teleportB.data.pairedMarker = this.pendingTeleportPair;
+            
+            // Update the connection line position
+            this.updateTeleportConnection(this.pendingTeleportPair, teleportB);
+            
+            this.markers.push(teleportB);
+            
+            // Reset state for next pair
+            this.pendingTeleportPair = null;
+            
+            // Reset tool to default teleport state
+            this.setTool('marker-teleport');
+            
+            return teleportB;
         }
+        return null;
+    }
+
+    if (type === 'encounter' && data.monster?.image) {
+        const marker = this.createTokenMarker(type, x, y, data);
+        this.markers.push(marker);
+        return marker;
+    }
+
+    // Regular markers
+    const marker = this.createMarker(type, x, y, data);
+    this.markers.push(marker);
+    return marker;
+}
+
+toggleMarkerEditMode() {
+        this.isMarkerEditMode = !this.isMarkerEditMode;
+        
+        // Update the button state
+        const editMarkerBtn = document.getElementById('editMarkerTool');
+        if (editMarkerBtn) {
+            editMarkerBtn.classList.toggle('active', this.isMarkerEditMode);
+        }
+
+        // Update all markers
+        this.markers.forEach(marker => {
+            if (marker.element) {
+                marker.element.classList.toggle('editing', this.isMarkerEditMode);
+                // Only allow dragging in edit mode
+                marker.element.style.cursor = this.isMarkerEditMode ? 'move' : 'pointer';
+            }
+        });
+
+        // Update player start marker if it exists
+        if (this.playerStart && this.playerStart.element) {
+            this.playerStart.element.classList.toggle('editing', this.isMarkerEditMode);
+            this.playerStart.element.style.cursor = this.isMarkerEditMode ? 'move' : 'pointer';
+        }
+    }
+
+    getMonsterSizeInSquares(size) {
+    const sizeMap = {
+        'tiny': 0.5,      // 2.5ft
+        'small': 1,       // 5ft
+        'medium': 1,      // 5ft
+        'large': 2,       // 10ft (2x2)
+        'huge': 3,        // 15ft (3x3)
+        'gargantuan': 4   // 20ft (4x4)
+    };
+    return sizeMap[size.toLowerCase()] || 1;
+}
+
+
+updateMarkerAppearance(marker) {
+    if (marker.data.monster?.token) {
+        const tokenSource = marker.data.monster.token.data || marker.data.monster.token.url;
+        const monsterSize = this.getMonsterSizeInSquares(marker.data.monster.basic.size);
+        
+        // Use the existing cellSize property
+        const cellSize = this.cellSize || 32; // Fallback to 32 if cellSize not calculated yet
+        const totalSize = cellSize * monsterSize; // This will be both width and height
+
+        // const tooltipContent = `
+        //     ${marker.data.monster.basic.name}
+        //     Size: ${marker.data.monster.basic.size} (${monsterSize}x${monsterSize} squares)
+        //     AC: ${marker.data.monster.stats.ac}
+        //     HP: ${marker.data.monster.stats.hp.average}
+        // `;
+
+        // marker.element.setAttribute('title', tooltipContent);
+
+        // Make the token square and centered
+        marker.element.innerHTML = `
+            <div class="monster-token" style="
+                width: ${totalSize}px; 
+                height: ${totalSize}px; 
+                border-radius: 10%; 
+                border: 2px solid #f44336; 
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: absolute;
+                left: -${totalSize/2}px;
+                top: -${totalSize/2}px;
+                transform-origin: center;
+                transform: scale(${this.scale}); /* Add map scaling */
+            ">
+                <img src="${tokenSource}" 
+                     style="width: 100%; height: 100%; object-fit: cover;"
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-icons\' style=\'font-size: ${totalSize * 0.75}px;\'>local_fire_department</span>';" />
+            </div>
+        `;
+
+        // Update position with current scale and offset
+        this.updateMarkerPosition(marker);
+    }
+}
+
+// Add new method to handle zoom scaling
+updateMarkerZoom(marker) {
+    if (!marker.element) return;
+    
+    const token = marker.element.querySelector('.monster-token');
+    if (token) {
+        token.style.transform = `scale(${this.scale})`;
+        token.style.transformOrigin = 'center';
+    }
+}
 
         // Helper method to create marker elements
         createMarker(type, x, y, data) {
-          const marker = {
-            id: Date.now(),
-            type,
-            x,
-            y,
-            data,
-            element: null
-          }
+    const marker = {
+        id: Date.now(),
+        type,
+        x,
+        y,
+        data,
+        element: null
+    };
 
-          const markerElement = document.createElement('div')
-          markerElement.className = `map-marker marker-${type}`
-          markerElement.id = `marker-${marker.id}`
+    const markerElement = document.createElement('div');
+    markerElement.className = `map-marker marker-${type}`;
+    markerElement.id = `marker-${marker.id}`;
 
-          // Set marker icon based on type
-          const icon =
-            {
-              'player-start': 'person_pin_circle',
-              encounter: 'local_fire_department',
-              treasure: 'workspace_premium',
-              trap: 'warning',
-              teleport: 'swap_calls',
-              'teleport-b': 'swap_calls' // Add this line to handle teleport-b
-            }[type] || 'swap_calls' // Default to swap_calls if type isn't found
+    // Set up drag handling with edit mode check
+    markerElement.addEventListener('mousedown', (e) => {
+        if (!this.isMarkerEditMode) return; // Only allow dragging in edit mode
+        if (e.button !== 0) return; // Only handle left click
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startMarkerX = marker.x;
+        const startMarkerY = marker.y;
+        
+        const moveHandler = (moveEvent) => {
+            const dx = (moveEvent.clientX - startX) / this.scale;
+            const dy = (moveEvent.clientY - startY) / this.scale;
+            
+            marker.x = startMarkerX + dx;
+            marker.y = startMarkerY + dy;
+            
+            this.updateMarkerPosition(marker);
+        };
+        
+        const upHandler = () => {
+            document.removeEventListener('mousemove', moveHandler);
+            document.removeEventListener('mouseup', upHandler);
+        };
+        
+        document.addEventListener('mousemove', moveHandler);
+        document.addEventListener('mouseup', upHandler);
+    });
 
-          markerElement.innerHTML = `<span class="material-icons">${icon}</span>`
+console.log('Creating marker with type:', type);
+    // Handle encounter markers with monster data
+    if (type === 'encounter' && data.monster?.token) {
+    console.log('Creating encounter marker with monster data:', data.monster);
+    const tokenSource = data.monster.token.data || data.monster.token.url;
+    console.log('Token source:', tokenSource);
+    const monsterSize = this.getMonsterSizeInSquares(data.monster.basic.size);
+    console.log('Monster size in squares:', monsterSize);
+    const baseSize = 32;
+    const scaledSize = baseSize * monsterSize;
+    console.log('Scaled size in pixels:', scaledSize);
 
-              // Add this: Context menu handler
-    markerElement.addEventListener('contextmenu', (e) => {
-        e.preventDefault();  // Prevent default context menu
+        markerElement.innerHTML = `
+            <div class="monster-token" style="
+                width: ${scaledSize}px !important; 
+                height: ${scaledSize}px !important; 
+                border-radius: 50%; 
+                border: 2px solid #f44336; 
+                overflow: hidden;
+               <!-- transform: translate(-50%, -50%); -->
+            ">
+                <img src="${tokenSource}" 
+                     style="width: 100%; height: 100%; object-fit: cover;"
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-icons\' style=\'font-size: ${scaledSize}px;\'>local_fire_department</span>';" />
+            </div>
+        `;
+    } else {
+        // Add the default icon based on type
+        const icon = {
+            'player-start': 'person_pin_circle',
+            'encounter': 'local_fire_department',
+            'treasure': 'workspace_premium',
+            'trap': 'warning',
+            'teleport': 'swap_calls'
+        }[type] || 'location_on';
+        
+        markerElement.innerHTML = `<span class="material-icons">${icon}</span>`;
+    }
+    
+    // Set initial cursor based on edit mode
+    markerElement.style.cursor = this.isMarkerEditMode ? 'move' : 'pointer';
+    
+    if (type === 'teleport') {
+        markerElement.setAttribute(
+            'data-teleport-point',
+            data.isPointA ? 'a' : 'b'
+        );
+    }
+
+    // Add context menu handler
+    markerElement.addEventListener('contextmenu', e => {
+        e.preventDefault(); // Prevent default context menu
         this.showMarkerContextMenu(marker, e);
     });
 
-          // Add special styling for teleport points
-          if (type.startsWith('teleport')) {
-            markerElement.setAttribute(
-              'data-teleport-point',
-              type === 'teleport' ? 'a' : 'b'
-            )
-          }
+    // Add special styling for teleport points
+    if (type.startsWith('teleport')) {
+        markerElement.setAttribute(
+            'data-teleport-point',
+            type === 'teleport' ? 'a' : 'b'
+        );
+    }
 
-          // Position marker
-          markerElement.style.left = `${x * this.scale + this.offset.x}px`
-          markerElement.style.top = `${y * this.scale + this.offset.y}px`
+    // Position marker
+    markerElement.style.left = `${x * this.scale + this.offset.x}px`;
+    markerElement.style.top = `${y * this.scale + this.offset.y}px`;
 
-          // Add hover effects
-          markerElement.addEventListener('mouseenter', () => {
-            markerElement.classList.add('highlighted')
-            if (marker.data.pairedMarker) {
-              // Highlight paired teleport point
-              marker.data.pairedMarker.element.classList.add('highlighted')
-            }
-          })
-
-          markerElement.addEventListener('mouseleave', () => {
-            markerElement.classList.remove('highlighted')
-            if (marker.data.pairedMarker) {
-              marker.data.pairedMarker.element.classList.remove('highlighted')
-            }
-          })
-
-          document.querySelector('.canvas-container').appendChild(markerElement)
-          marker.element = markerElement
-          return marker
+    // Add hover effects
+    markerElement.addEventListener('mouseenter', () => {
+        markerElement.classList.add('highlighted');
+        if (marker.data.pairedMarker) {
+            // Highlight paired teleport point
+            marker.data.pairedMarker.element.classList.add('highlighted');
         }
+    });
+
+    markerElement.addEventListener('mouseleave', () => {
+        markerElement.classList.remove('highlighted');
+        if (marker.data.pairedMarker) {
+            marker.data.pairedMarker.element.classList.remove('highlighted');
+        }
+    });
+
+    document.querySelector('.canvas-container').appendChild(markerElement);
+    marker.element = markerElement;
+    return marker;
+}
+
+updateMarkerPosition(marker) {
+    if (marker.element) {
+        const x = marker.x * this.scale + this.offset.x;
+        const y = marker.y * this.scale + this.offset.y;
+        
+        marker.element.style.left = `${x}px`;
+        marker.element.style.top = `${y}px`;
+        
+        // Scale the token based on current zoom
+        const token = marker.element.querySelector('.monster-token');
+        if (token) {
+            token.style.transform = `scale(${this.scale})`;
+        }
+    }
+}
+
+    updateMarkerPositions() {
+    this.markers.forEach(marker => {
+        if (marker.element) {
+            marker.element.style.left = `${marker.x * this.scale + this.offset.x}px`;
+            marker.element.style.top = `${marker.y * this.scale + this.offset.y}px`;
+            
+            // Update connection line if this is a teleport point A
+            if (marker.type === 'teleport' && 
+                marker.data.isPointA && 
+                marker.data.pairedMarker && 
+                marker.connection) {
+                this.updateTeleportConnection(marker, marker.data.pairedMarker);
+            }
+        }
+    });
+
+    if (this.playerStart && this.playerStart.element) {
+        this.playerStart.element.style.left = `${this.playerStart.x * this.scale + this.offset.x}px`;
+        this.playerStart.element.style.top = `${this.playerStart.y * this.scale + this.offset.y}px`;
+    }
+
+}
 
         removeMarker(marker) {
           if (marker.element) {
@@ -2993,8 +3499,10 @@ rows.forEach(row => {
         }
 
         finalizeRoom(room) {
-          room.finalized = true
-          room.createThumbnail(this.canvas)
+            room.finalized = true;
+    room.updateEditState(false);
+    room.createThumbnail(this.canvas);
+    // this.layersPanel.updateLayersList();
 
           // Update room appearance
           const roomElement = document.getElementById(`room-${room.id}`)
