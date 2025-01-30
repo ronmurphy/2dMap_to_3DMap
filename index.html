@@ -687,6 +687,242 @@ sl-input::part(form-control-label) {
     z-index: 1000;
 }
 
+.marker-tooltip {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 10000;
+    transform: translate(-50%, -100%);
+    white-space: pre-line;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    min-width: 150px;
+    text-align: center;
+}
+
+.marker-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid rgba(0, 0, 0, 0.9);
+}
+
+.canvas-container {
+    position: relative;  /* Ensure container has relative positioning */
+    overflow: visible !important;  /* Allow tooltips to overflow */
+}
+
+.map-marker {
+    pointer-events: all !important;
+    z-index: 100;
+}
+
+.monster-token {
+    pointer-events: all !important;
+    z-index: 100;
+}
+
+.header {
+    grid-column: 1 / -1;
+    background: var(--secondary-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 1000; /* Ensure header stays on top */
+    position: relative; /* Required for z-index to work */
+}
+
+.sidebar {
+    background: var(--secondary-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000; /* Ensure sidebar stays on top */
+    position: relative; /* Required for z-index to work */
+}
+
+/* Update layers panel structure */
+.layers-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Take full height */
+}
+
+.layers-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0; /* Prevent header from shrinking */
+    background: var(--secondary-bg); /* Match sidebar background */
+}
+
+.layers-list {
+    flex: 1;
+    overflow-y: auto; /* Only the list scrolls */
+    padding: 10px;
+}
+
+/* Tool sections should not scroll */
+.tool-section {
+    margin-bottom: 16px;
+    flex-shrink: 0; /* Prevent tool sections from shrinking */
+}
+
+/* Ensure canvas container doesn't overflow header/sidebar */
+.canvas-container {
+    position: relative;
+    overflow: hidden;
+    background: var(--primary-bg);
+    z-index: 1; /* Lower than header/sidebar */
+}
+
+.sidebar {
+    background: var(--secondary-bg);
+    border-right: 1px solid var(--border-border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Remove scrolling from sidebar */
+    z-index: 1000;
+    position: relative;
+}
+
+.sidebar-content {
+    flex-shrink: 0; /* Prevent shrinking */
+    padding: 16px;
+    overflow: hidden; /* No scrolling */
+}
+
+/* Fixed heights for tool sections */
+.tool-section {
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+.layers-panel {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    /* This will take remaining height */
+    flex: 1;
+}
+
+.layers-header {
+    flex-shrink: 0; /* Don't shrink */
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--secondary-bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#layersList {
+    /* Calculate remaining height */
+    height: calc(100vh - var(--header-height) - 200px); /* Adjust 200px based on your actual toolbars height */
+    overflow-y: auto;
+    padding: 10px;
+}
+
+/* Make sure layer items don't shrink */
+.layer-item {
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+
+.sidebar {
+    background: var(--secondary-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Full height */
+    overflow: hidden;
+}
+
+.sidebar-content {
+    flex: 0 0 auto; /* Don't grow or shrink, use auto height */
+    padding: 16px;
+}
+
+.layers-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* Take remaining space */
+    min-height: 0; /* Important for nested flex scrolling */
+}
+
+.layers-header {
+    flex: 0 0 auto; /* Don't grow or shrink */
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--secondary-bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.layers-list {
+    flex: 1 1 auto; /* Grow and shrink as needed */
+    overflow-y: auto; /* Enable vertical scrolling */
+    min-height: 0; /* Important for nested flex scrolling */
+    padding: 10px;
+}
+
+/* Style the scrollbar */
+.layers-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.layers-list::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+}
+
+.layers-list::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+}
+
+.layers-list {
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px;
+    margin: 0;
+    background: var(--secondary-bg);
+}
+
+/* Add a subtle fade effect to indicate scrollable content */
+.layers-list::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, transparent, var(--secondary-bg));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.layers-list:hover::after {
+    opacity: 1;
+}
+
+
 
     </style>
   </head>
@@ -819,14 +1055,15 @@ sl-input::part(form-control-label) {
 
           <div class="layers-panel">
             <div class="layers-header">
-              <h3 style="margin: 0">Rooms & Layers</h3>
-              <sl-button size="small" variant="primary" id="addRoomBtn">
-                <span class="material-icons">add_box</span>
-                Add Room
-              </sl-button>
+                <h3 style="margin: 0">Rooms & Layers</h3>
+                <sl-button size="small" variant="primary" id="addRoomBtn">
+                    <span class="material-icons">add_box</span>
+                    Add Room
+                </sl-button>
             </div>
-            <div id="layersList" class="layers-list"></div>
-          </div>
+            <div class="layers-list" id="layersList">
+                <!-- Room layers will be added here dynamically -->
+            </div>
         </div>
       </aside>
 
@@ -854,6 +1091,32 @@ sl-input::part(form-control-label) {
         }
         return null
       }
+
+
+      function updateLayersListHeight() {
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarContent = document.querySelector('.sidebar-content');
+    const layersHeader = document.querySelector('.layers-header');
+    const layersList = document.querySelector('#layersList');
+    
+    if (sidebar && sidebarContent && layersHeader && layersList) {
+        // Calculate total height of fixed elements
+        const toolbarsHeight = sidebarContent.offsetHeight + layersHeader.offsetHeight;
+        
+        // Calculate remaining height
+        const availableHeight = sidebar.offsetHeight - toolbarsHeight;
+        
+        // Set the height
+        layersList.style.height = `${availableHeight}px`;
+        
+        // Log the heights for debugging
+        console.log({
+            sidebarHeight: sidebar.offsetHeight,
+            toolbarsHeight,
+            availableHeight,
+        });
+    }
+}
 
       class MonsterManager {
         constructor(mapEditor) {
@@ -1514,16 +1777,92 @@ console.log('Returning monster data...');
         }
     }
 
-        cloneEncounter(marker) {
-          // Clone an existing encounter marker
-          const offset = 50 // Offset from original position
-          return this.mapEditor.addMarker(
+ 
+// In MonsterManager class
+cloneEncounter(marker) {
+    // Debug log the original marker's properties
+    // console.log('Original marker:', {
+    //     type: marker.type,
+    //     monster: marker.data.monster?.basic,
+    //     size: marker.data.monster?.basic.size,
+    //     element: marker.element?.innerHTML,
+    //     tokenStyle: marker.element?.querySelector('.monster-token')?.style.cssText
+    // });
+
+    // Clone an existing encounter marker
+    const offset = 50;
+    
+    if (marker.type === 'encounter' && marker.data.monster) {
+        // Get the monster's size and calculate dimensions
+        const monsterSize = this.mapEditor.getMonsterSizeInSquares(marker.data.monster.basic.size);
+        const baseSize = 32;
+        const scaledSize = baseSize * monsterSize;
+        
+        console.log('Size calculations:', {
+            monsterSize,
+            baseSize,
+            scaledSize
+        });
+
+        // Create new marker
+        const newMarker = this.mapEditor.addMarker(
             'encounter',
             marker.x + offset,
             marker.y + offset,
             { ...marker.data }
-          )
+        );
+
+        // Force the correct size
+        const tokenElement = newMarker.element.querySelector('.monster-token');
+        if (tokenElement) {
+            const styles = {
+                width: `${scaledSize}px !important`,
+                height: `${scaledSize}px !important`,
+                borderRadius: '10%',
+                border: '2px solid #f44336',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'absolute',
+                left: `-${scaledSize/2}px`,
+                top: `-${scaledSize/2}px`,
+                transformOrigin: 'center'
+            };
+
+            Object.assign(tokenElement.style, styles);
+            
+            // Log the new marker's properties
+            // console.log('New marker:', {
+            //     type: newMarker.type,
+            //     monster: newMarker.data.monster?.basic,
+            //     size: newMarker.data.monster?.basic.size,
+            //     element: newMarker.element?.innerHTML,
+            //     tokenStyle: tokenElement.style.cssText
+            // });
         }
+
+        // Call updateMarkerAppearance but preserve our size
+        this.mapEditor.updateMarkerAppearance(newMarker);
+        
+        // Re-apply size after updateMarkerAppearance
+        if (tokenElement) {
+            tokenElement.style.width = `${scaledSize}px`;
+            tokenElement.style.height = `${scaledSize}px`;
+            tokenElement.style.left = `-${scaledSize/2}px`;
+            tokenElement.style.top = `-${scaledSize/2}px`;
+        }
+
+        return newMarker;
+    } else {
+        return this.mapEditor.addMarker(
+            marker.type,
+            marker.x + offset,
+            marker.y + offset,
+            { ...marker.data }
+        );
+    }
+}
 
         getMonsterTooltip(monster) {
           if (!monster) return 'Unlinked Encounter'
@@ -1884,12 +2223,12 @@ console.log('Returning monster data...');
       }
 
       class LayersPanel {
-        constructor(editor) {
-          this.editor = editor
-          this.panel = document.querySelector('.layers-panel')
-          this.layersList = document.getElementById('layersList')
-          this.setupPanel()
-        }
+    constructor(editor) {
+        this.editor = editor;
+        this.panel = document.querySelector('.layers-panel');
+        this.layersList = document.getElementById('layersList');
+        this.setupPanel();
+    }
 
         setupPanel() {
           // Get the existing Add Room button and set up its event listener
@@ -1902,13 +2241,12 @@ console.log('Returning monster data...');
         }
 
         updateLayersList() {
-          this.layersList.innerHTML = ''
-
-          this.editor.rooms.forEach(room => {
-            const layerItem = this.createLayerItem(room)
-            this.layersList.appendChild(layerItem)
-          })
-        }
+        this.layersList.innerHTML = '';
+        this.editor.rooms.forEach(room => {
+            const layerItem = this.createLayerItem(room);
+            this.layersList.appendChild(layerItem);
+        });
+    }
 
         createLayerItem(room) {
           const layerItem = document.createElement('div')
@@ -2092,10 +2430,61 @@ console.log('Returning monster data...');
           this.playerStart = null
           this.isMarkerEditMode = false;
           this.layersPanel = new LayersPanel(this)
+        //   this.initializeLayersHeight = initializeLayersHeight;
           this.monsterManager = new MonsterManager(this)
           this.setupEventListeners()
           this.setupCanvas()
+
+                  // Add the height calculation method to the instance
+        this.calculateLayersListHeight = this.calculateLayersListHeight.bind(this);
+        
+        // Set up the observer for content changes
+        this.setupLayersObserver();
+        
+        // Initial calculation after a short delay to ensure DOM is ready
+        setTimeout(() => this.calculateLayersListHeight(), 100);
+        
+        // Add resize listener
+        window.addEventListener('resize', this.calculateLayersListHeight);
+}
+
+calculateLayersListHeight() {
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarContent = document.querySelector('.sidebar-content');
+        const layersHeader = document.querySelector('.layers-header');
+        const layersList = document.querySelector('.layers-list');
+        const mainHeader = document.querySelector('.header');
+
+        if (sidebar && sidebarContent && layersHeader && layersList && mainHeader) {
+            const mainHeaderHeight = mainHeader.offsetHeight;
+            const toolsHeight = sidebarContent.offsetHeight;
+            const layersHeaderHeight = layersHeader.offsetHeight;
+            const totalHeight = window.innerHeight;
+            const availableHeight = totalHeight - mainHeaderHeight - toolsHeight - layersHeaderHeight - 40;
+
+            console.log('Height calculations:', {
+                totalHeight,
+                mainHeaderHeight,
+                toolsHeight,
+                layersHeaderHeight,
+                availableHeight
+            });
+
+            layersList.style.height = `${availableHeight}px`;
+            layersList.style.overflowY = 'auto';
         }
+    }
+
+    setupLayersObserver() {
+        const layersList = document.querySelector('.layers-list');
+        if (layersList) {
+            const observer = new MutationObserver(this.calculateLayersListHeight);
+            observer.observe(layersList, {
+                childList: true,
+                subtree: true
+            });
+        }
+    }
 
         setupCanvas() {
           const updateCanvasSize = () => {
@@ -2891,31 +3280,51 @@ console.log('Returning monster data...');
           this.isDragging = false
         }
 
+
         handleWheel(e) {
-          e.preventDefault()
-          const delta = e.deltaY * -0.001
-          const newScale = Math.min(Math.max(0.1, this.scale + delta), 4)
+    e.preventDefault();
+    const delta = e.deltaY * -0.001;
+    const newScale = Math.min(Math.max(0.1, this.scale + delta), 4);
 
-          // Get mouse position relative to canvas
-          const rect = this.canvas.getBoundingClientRect()
-          const mouseX = e.clientX - rect.left
-          const mouseY = e.clientY - rect.top
+    // Get mouse position relative to canvas
+    const rect = this.canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
-          // Calculate the position under the mouse in image coordinates
-          const imageX = (mouseX - this.offset.x) / this.scale
-          const imageY = (mouseY - this.offset.y) / this.scale
+    // Calculate the position under the mouse in image coordinates
+    const imageX = (mouseX - this.offset.x) / this.scale;
+    const imageY = (mouseY - this.offset.y) / this.scale;
 
-          // Update the scale
-          this.scale = newScale
+    // Update the scale
+    this.scale = newScale;
 
-          // Calculate new offset to keep the same image position under the mouse
-          this.offset.x = mouseX - imageX * this.scale
-          this.offset.y = mouseY - imageY * this.scale
+    // Calculate new offset to keep the same image position under the mouse
+    this.offset.x = mouseX - imageX * this.scale;
+    this.offset.y = mouseY - imageY * this.scale;
 
-          // Update all room positions when zooming
-          this.rooms.forEach(room => room.updateElement())
-          this.render()
+    // Update all room positions when zooming
+    this.rooms.forEach(room => room.updateElement());
+
+    // Update all markers
+    this.markers.forEach(marker => {
+        this.updateMarkerPosition(marker);
+        if (marker.type === 'encounter' && marker.data.monster) {
+            // Additional zoom handling for encounter markers
+            const token = marker.element.querySelector('.monster-token');
+            if (token) {
+                token.style.transform = `scale(${this.scale})`;
+                token.style.transformOrigin = 'center';
+            }
         }
+    });
+
+    // Update player start marker if it exists
+    if (this.playerStart) {
+        this.updateMarkerPosition(this.playerStart);
+    }
+
+    this.render();
+}
 
         centerMap() {
           if (!this.baseImage) return
@@ -3159,14 +3568,6 @@ updateMarkerAppearance(marker) {
         const cellSize = this.cellSize || 32; // Fallback to 32 if cellSize not calculated yet
         const totalSize = cellSize * monsterSize; // This will be both width and height
 
-        // const tooltipContent = `
-        //     ${marker.data.monster.basic.name}
-        //     Size: ${marker.data.monster.basic.size} (${monsterSize}x${monsterSize} squares)
-        //     AC: ${marker.data.monster.stats.ac}
-        //     HP: ${marker.data.monster.stats.hp.average}
-        // `;
-
-        // marker.element.setAttribute('title', tooltipContent);
 
         // Make the token square and centered
         marker.element.innerHTML = `
@@ -3257,41 +3658,45 @@ updateMarkerZoom(marker) {
 console.log('Creating marker with type:', type);
     // Handle encounter markers with monster data
     if (type === 'encounter' && data.monster?.token) {
-    console.log('Creating encounter marker with monster data:', data.monster);
     const tokenSource = data.monster.token.data || data.monster.token.url;
-    console.log('Token source:', tokenSource);
     const monsterSize = this.getMonsterSizeInSquares(data.monster.basic.size);
-    console.log('Monster size in squares:', monsterSize);
     const baseSize = 32;
     const scaledSize = baseSize * monsterSize;
-    console.log('Scaled size in pixels:', scaledSize);
+    
+    markerElement.innerHTML = `
+        <div class="monster-token" style="
+            width: ${scaledSize}px !important;
+            height: ${scaledSize}px !important;
+            border-radius: 10%;
+            border: 2px solid #f44336;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            left: -${scaledSize/2}px;
+            top: -${scaledSize/2}px;
+            transform-origin: center;
+            transform: scale(${this.scale}); /* Add map scaling */
+        ">
+            <img src="${tokenSource}"
+                 style="width: 100%; height: 100%; object-fit: cover;"
+                 onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\\'material-icons\\' style=\\'font-size: ${scaledSize * 0.75}px;\\'>local_fire_department</span>';" />
+        </div>
+    `;
 
-        markerElement.innerHTML = `
-            <div class="monster-token" style="
-                width: ${scaledSize}px !important; 
-                height: ${scaledSize}px !important; 
-                border-radius: 50%; 
-                border: 2px solid #f44336; 
-                overflow: hidden;
-               <!-- transform: translate(-50%, -50%); -->
-            ">
-                <img src="${tokenSource}" 
-                     style="width: 100%; height: 100%; object-fit: cover;"
-                     onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-icons\' style=\'font-size: ${scaledSize}px;\'>local_fire_department</span>';" />
-            </div>
-        `;
-    } else {
-        // Add the default icon based on type
-        const icon = {
-            'player-start': 'person_pin_circle',
-            'encounter': 'local_fire_department',
-            'treasure': 'workspace_premium',
-            'trap': 'warning',
-            'teleport': 'swap_calls'
-        }[type] || 'location_on';
-        
-        markerElement.innerHTML = `<span class="material-icons">${icon}</span>`;
-    }
+} else {
+    // Add the default icon based on type
+    const icon = {
+        'player-start': 'person_pin_circle',
+        'encounter': 'local_fire_department',
+        'treasure': 'workspace_premium',
+        'trap': 'warning',
+        'teleport': 'swap_calls'
+    }[type] || 'location_on';
+    
+    markerElement.innerHTML = `<span class="material-icons">${icon}</span>`;
+}
     
     // Set initial cursor based on edit mode
     markerElement.style.cursor = this.isMarkerEditMode ? 'move' : 'pointer';
@@ -3339,6 +3744,13 @@ console.log('Creating marker with type:', type);
 
     document.querySelector('.canvas-container').appendChild(markerElement);
     marker.element = markerElement;
+
+
+    markerElement.addEventListener('mouseover', (e) => {
+    console.log('Mouse over marker:', marker.type);
+});
+
+
     return marker;
 }
 
@@ -3412,91 +3824,158 @@ updateMarkerPosition(marker) {
           }
         }
 
-        // In MapEditor class
-        async showMarkerContextMenu(marker, event) {
-          const dialog = document.createElement('sl-dialog')
-          dialog.label = 'Marker Options'
 
-          let content =
-            '<div style="display: flex; flex-direction: column; gap: 10px;">'
 
-          if (marker.type === 'encounter') {
-            if (marker.data.monster) {
-              content += `
-                <div style="margin-bottom: 10px;">
-                    <strong>${marker.data.monster.basic.name}</strong>
-                    <div>CR ${marker.data.monster.basic.cr} (${marker.data.monster.basic.xp} XP)</div>
+    async showMarkerContextMenu(marker, event) {
+    const dialog = document.createElement('sl-dialog');
+    dialog.label = 'Marker Options';
+
+    let content = '<div style="display: flex; flex-direction: column; gap: 10px;">';
+
+        if (marker.type === 'encounter') {
+    if (marker.data.monster) {
+        // Create monster URL using name and source
+        const baseUrl = 'https://5e.tools/bestiary.html';
+        const monsterName = marker.data.monster.basic.name.toLowerCase().replace(/\s+/g, '_');
+        const sourceCode = 'xphb'; // We could extract this from source data if available
+        const monsterUrl = `${baseUrl}#${monsterName}_${sourceCode}`;
+
+        content += `
+            <div style="margin-bottom: 16px;">
+                <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+                    ${marker.data.monster.token ? `
+                        <div style="width: 100px; height: 100px; border-radius: 8px; border: 2px solid #f44336; overflow: hidden;">
+                            <img src="${marker.data.monster.token.data || marker.data.monster.token.url}" 
+                                 style="width: 100%; height: 100%; object-fit: cover;" />
+                        </div>
+                    ` : ''}
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 4px 0; font-size: 1.2em;">
+                            <a href="${monsterUrl}" target="_blank" style="color: #2196F3; text-decoration: none;">
+                                ${marker.data.monster.basic.name}
+                                <span class="material-icons" style="font-size: 14px; vertical-align: middle;">open_in_new</span>
+                            </a>
+                        </h3>
+                        <div style="color: #666; font-style: italic; margin-bottom: 8px;">
+                            ${marker.data.monster.basic.size} ${marker.data.monster.basic.type}, 
+                            ${marker.data.monster.basic.alignment}
+                        </div>
+                        <div style="color: #666;">
+                            CR ${marker.data.monster.basic.cr} (${marker.data.monster.basic.xp} XP)
+                        </div>
+                    </div>
                 </div>
-                <sl-button id="cloneMonster">
-                    <span class="material-icons">content_copy</span>
-                    Clone Encounter
-                </sl-button>
-            `
-            }
-            content += `
-            <sl-button id="linkMonster">
-                <span class="material-icons">link</span>
-                ${marker.data.monster ? 'Change Monster' : 'Link Monster'}
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; text-align: center; background: #f5f5f5; padding: 8px; border-radius: 4px;">
+                    <div>
+                        <div style="font-weight: bold;">Armor Class</div>
+                        <div>${marker.data.monster.stats.ac}</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">Hit Points</div>
+                        <div>${marker.data.monster.stats.hp.average} (${marker.data.monster.stats.hp.roll})</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">Speed</div>
+                        <div>${marker.data.monster.stats.speed}</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; text-align: center; background: #f5f5f5; padding: 8px; border-radius: 4px;">
+                    <div>
+                        <div style="font-weight: bold;">STR</div>
+                        <div>${marker.data.monster.abilities.str.score} (${marker.data.monster.abilities.str.modifier >= 0 ? '+' : ''}${marker.data.monster.abilities.str.modifier})</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">DEX</div>
+                        <div>${marker.data.monster.abilities.dex.score} (${marker.data.monster.abilities.dex.modifier >= 0 ? '+' : ''}${marker.data.monster.abilities.dex.modifier})</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">CON</div>
+                        <div>${marker.data.monster.abilities.con.score} (${marker.data.monster.abilities.con.modifier >= 0 ? '+' : ''}${marker.data.monster.abilities.con.modifier})</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">INT</div>
+                        <div>${marker.data.monster.abilities.int.score} (${marker.data.monster.abilities.int.modifier >= 0 ? '+' : ''}${marker.data.monster.abilities.int.modifier})</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">WIS</div>
+                        <div>${marker.data.monster.abilities.wis.score} (${marker.data.monster.abilities.wis.modifier >= 0 ? '+' : ''}${marker.data.monster.abilities.wis.modifier})</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold;">CHA</div>
+                        <div>${marker.data.monster.abilities.cha.score} (${marker.data.monster.abilities.cha.modifier >= 0 ? '+' : ''}${marker.data.monster.abilities.cha.modifier})</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Add action buttons in a single row
+    content += `
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <sl-button id="cloneMonster" size="small">
+                <span class="material-icons">content_copy</span>
+                Clone
             </sl-button>
-        `
-          } else if (['treasure', 'trap'].includes(marker.type)) {
-            content += `
+            <sl-button id="linkMonster" size="small">
+                <span class="material-icons">link</span>
+                ${marker.data.monster ? 'Change' : 'Link'}
+            </sl-button>
+            <sl-button id="removeMarker" variant="danger" size="small">
+                <span class="material-icons">delete</span>
+                Remove
+            </sl-button>
+        </div>
+    `;
+    } else if (['treasure', 'trap'].includes(marker.type)) {
+        content += `
             <sl-input id="markerDescription" 
                      label="Description"
                      value="${marker.data.description || ''}">
             </sl-input>
-        `
-          }
+        `;
+    }
 
-          content += `
-        <sl-button variant="danger" id="removeMarker">
-            <span class="material-icons">delete</span>
-            Remove Marker
-        </sl-button>
-    </div>`
+    content += '</div>';
 
-          dialog.innerHTML = content
-          document.body.appendChild(dialog)
-          dialog.show()
+    dialog.innerHTML = content;
+    document.body.appendChild(dialog);
+    dialog.show();
 
-          // Handle clone
-          const cloneBtn = dialog.querySelector('#cloneMonster')
-          if (cloneBtn) {
-            cloneBtn.addEventListener('click', () => {
-              this.monsterManager.cloneEncounter(marker)
-              dialog.hide()
-            })
-          }
+    // Add your existing event handlers here...
+    const cloneBtn = dialog.querySelector('#cloneMonster');
+    if (cloneBtn) {
+        cloneBtn.addEventListener('click', () => {
+            this.monsterManager.cloneEncounter(marker);
+            dialog.hide();
+        });
+    }
 
-          // Handle monster linking
-          const linkBtn = dialog.querySelector('#linkMonster')
-          if (linkBtn) {
-            linkBtn.addEventListener('click', () => {
-              this.monsterManager.showMonsterSelector(marker)
-              dialog.hide()
-            })
-          }
+    const linkBtn = dialog.querySelector('#linkMonster');
+    if (linkBtn) {
+        linkBtn.addEventListener('click', () => {
+            this.monsterManager.showMonsterSelector(marker);
+            dialog.hide();
+        });
+    }
 
-          // Handle description updates
-          const descInput = dialog.querySelector('#markerDescription')
-          if (descInput) {
-            descInput.addEventListener('sl-change', e => {
-              marker.data.description = e.target.value
-            })
-          }
+    const descInput = dialog.querySelector('#markerDescription');
+    if (descInput) {
+        descInput.addEventListener('sl-change', e => {
+            marker.data.description = e.target.value;
+        });
+    }
 
-          // Handle removal
-          dialog
-            .querySelector('#removeMarker')
-            .addEventListener('click', () => {
-              this.removeMarker(marker)
-              dialog.hide()
-            })
+    dialog.querySelector('#removeMarker')?.addEventListener('click', () => {
+        this.removeMarker(marker);
+        dialog.hide();
+    });
 
-          dialog.addEventListener('sl-after-hide', () => {
-            dialog.remove()
-          })
-        }
+    dialog.addEventListener('sl-after-hide', () => {
+        dialog.remove();
+    });
+}
 
         finalizeRoom(room) {
             room.finalized = true;
@@ -3533,6 +4012,12 @@ updateMarkerPosition(marker) {
           // Implementation from previous artifact
         }
       }
+
+
+      document.addEventListener('DOMContentLoaded', updateLayersListHeight);
+
+// Also call it when the window is resized
+window.addEventListener('resize', updateLayersListHeight);
 
       // Initialize the application
       window.addEventListener('DOMContentLoaded', () => {
