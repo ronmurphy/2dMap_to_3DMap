@@ -1890,14 +1890,14 @@ sl-input::part(form-control-label) {
                 roomElement.appendChild(controls);
 
                 // Add dragging functionality (only for non-polygon or finalized polygon)
-                if (this.shape !== 'polygon' || this.finalized) {
+                // if (this.shape !== 'polygon' || this.finalized) {
                     roomElement.addEventListener('mousedown', e => {
                         if (!e.target.classList.contains('resize-handle') &&
                             !e.target.classList.contains('material-icons')) {
                             editor.startDragging(this, e);
                         }
                     });
-                }
+                // }
 
                 this.element = roomElement;
                 this.updateElement();
