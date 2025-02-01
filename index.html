@@ -4619,14 +4619,11 @@ const markerTools = {
                 this.layersPanel.updateLayersList()
             }
 
-// Add this function to MapEditor class
 
-// Add to MapEditor class
-// Add to MapEditor class
 async init3DScene(updateStatus) {
 
     const renderState = {
-    clippingEnabled: true
+    clippingEnabled: false // true
 };
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x222222);
@@ -4644,9 +4641,15 @@ async init3DScene(updateStatus) {
     renderer.shadowMap.enabled = true;
 
     const wallTextureRoom = this.rooms.find(room => room.name === 'WallTexture');
+console.log('Looking for WallTexture room:', {
+    found: !!wallTextureRoom,
+    roomDetails: wallTextureRoom,
+    allRooms: this.rooms.map(r => r.name)
+});
 let wallTexture = null;
 
 if (wallTextureRoom) {
+    console.log('Creating wall texture from room:', wallTextureRoom);
     // Create a canvas to capture the wall texture portion
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -4666,12 +4669,13 @@ if (wallTextureRoom) {
         canvas.height
     );
 
-    // Create the wall texture
+    // Create wall texture
     wallTexture = new THREE.CanvasTexture(canvas);
     wallTexture.wrapS = THREE.RepeatWrapping;
     wallTexture.wrapT = THREE.RepeatWrapping;
     wallTexture.repeat.set(1, 1);
     wallTexture.needsUpdate = true;
+    console.log('Wall texture created:', wallTexture);
 }
 
     // Create floor texture
@@ -4685,144 +4689,19 @@ if (wallTextureRoom) {
     const boxHeight = 4;  // Wall height
     const boxDepth = this.baseImage.height / 50;
 
-    // Create main dungeon geometry
-
-    // Create initial dungeon geometry
-    // const dungeonGeometry = createDungeonGeometry();
-
-    // Create room geometries for each room
-    // const createRoomGeometry = (room) => {
-    //     const positions = [];
-    //     const normals = [];
-    //     const uvs = [];
-    //     const indices = [];
-
-    //     switch(room.shape) {
-    //         case 'circle': {
-    //             const segments = 32;
-    //             const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
-    //             const centerX = (room.bounds.x / 50) - (boxWidth/2);
-    //             const centerZ = (room.bounds.y / 50) - (boxDepth/2);
-
-    //             // Create vertices for cylinder
-    //             for (let i = 0; i <= segments; i++) {
-    //                 const theta = (i / segments) * Math.PI * 2;
-    //                 const x = centerX + radius * Math.cos(theta);
-    //                 const z = centerZ + radius * Math.sin(theta);
-
-    //                 // Bottom vertex
-    //                 positions.push(x, 0, z);
-    //                 // Top vertex
-    //                 positions.push(x, boxHeight, z);
-
-    //                 // Normals (pointing outward)
-    //                 const normal = [Math.cos(theta), 0, Math.sin(theta)];
-    //                 normals.push(...normal, ...normal);
-
-    //                 // UVs
-    //                 uvs.push(i/segments, 0, i/segments, 1);
-    //             }
-
-    //             // Create faces
-    //             for (let i = 0; i < segments; i++) {
-    //                 const base = i * 2;
-    //                 indices.push(
-    //                     base, base + 1, base + 2,
-    //                     base + 1, base + 3, base + 2
-    //                 );
-    //             }
-    //             break;
-    //         }
-
-    //         case 'polygon': {
-    //             if (!room.points || room.points.length < 3) return null;
-
-    //             const baseZ = (room.bounds.y / 50) - (boxDepth/2);
-    //             const baseX = (room.bounds.x / 50) - (boxWidth/2);
-
-    //             room.points.forEach((point, i) => {
-    //                 const x = (point.x / 50) + baseX;
-    //                 const z = (point.y / 50) + baseZ;
-
-    //                 // Add vertices for both bottom and top
-    //                 positions.push(x, 0, z);
-    //                 positions.push(x, boxHeight, z);
-
-    //                 // Simple normal (might need improvement)
-    //                 normals.push(0, 0, 1, 0, 0, 1);
-
-    //                 // Basic UVs
-    //                 uvs.push(i / room.points.length, 0);
-    //                 uvs.push(i / room.points.length, 1);
-    //             });
-
-    //             // Create faces
-    //             for (let i = 0; i < room.points.length; i++) {
-    //                 const next = (i + 1) % room.points.length;
-    //                 const base = i * 2;
-    //                 const nextBase = next * 2;
-
-    //                 indices.push(
-    //                     base, base + 1, nextBase,
-    //                     base + 1, nextBase + 1, nextBase
-    //                 );
-    //             }
-    //             break;
-    //         }
-
-    //         default: { // rectangle
-    //             const x1 = (room.bounds.x / 50) - (boxWidth/2);
-    //             const x2 = x1 + (room.bounds.width / 50);
-    //             const z1 = (room.bounds.y / 50) - (boxDepth/2);
-    //             const z2 = z1 + (room.bounds.height / 50);
-
-    //             // Add vertices for walls
-    //             const wallVertices = [
-    //                 // Front wall
-    //                 x1, 0, z1, x1, boxHeight, z1, x2, boxHeight, z1, x2, 0, z1,
-    //                 // Back wall
-    //                 x1, 0, z2, x2, 0, z2, x2, boxHeight, z2, x1, boxHeight, z2,
-    //                 // Left wall
-    //                 x1, 0, z1, x1, 0, z2, x1, boxHeight, z2, x1, boxHeight, z1,
-    //                 // Right wall
-    //                 x2, 0, z1, x2, boxHeight, z1, x2, boxHeight, z2, x2, 0, z2
-    //             ];
-    //             positions.push(...wallVertices);
-
-    //             // Add indices for walls
-    //             for (let i = 0; i < 4; i++) {
-    //                 const base = i * 4;
-    //                 indices.push(
-    //                     base, base + 1, base + 2,
-    //                     base, base + 2, base + 3
-    //                 );
-    //             }
-
-    //             // Add simple normals and UVs
-    //             for (let i = 0; i < wallVertices.length / 3; i++) {
-    //                 normals.push(0, 0, 1);
-    //                 uvs.push(i % 2, Math.floor(i / 2) % 2);
-    //             }
-    //             break;
-    //         }
-    //     }
-
-    //     const geometry = new THREE.BufferGeometry();
-    //     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    //     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    //     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    //     geometry.setIndex(indices);
-
-    //     return geometry;
-    // };
-
     const createRoomGeometry = (room) => {
         const positions = [];
         const normals = [];
         const uvs = [];
         const indices = [];
 
-        const isWall = room.type === 'wall';
+// Add at the start of createRoomGeometry:
+const isWall = room.type === 'wall';
+console.log('Room geometry creation:', {
+    roomName: room.name,
+    roomType: room.type,
+    isWall: isWall
+});
 
         switch(room.shape) {
             case 'circle': {
@@ -5001,9 +4880,22 @@ if (wallTextureRoom) {
                     for (let i = 0; i < 4; i++) normals.push(1, 0, 0);   // Right
 
                     // Add UVs
-                    for (let face = 0; face < 6; face++) {
-                        uvs.push(0, 0,  1, 0,  1, 1,  0, 1);
-                    }
+                    // for (let face = 0; face < 6; face++) {
+                    //     uvs.push(0, 0,  1, 0,  1, 1,  0, 1);
+                    // }
+
+                    const scaleU = wallTexture ? (room.bounds.width / wallTextureRoom.bounds.width) : 1;
+    const scaleV = wallTexture ? (boxHeight / wallTextureRoom.bounds.height) : 1;
+
+    // Adjust UV coordinates for each face
+    for (let face = 0; face < 6; face++) {
+        uvs.push(
+            0, 0,          // bottom left
+            scaleU, 0,     // bottom right
+            scaleU, scaleV, // top right
+            0, scaleV      // top left
+        );
+    }
 
                     // Add indices for each face (6 faces, 2 triangles each)
                     for (let face = 0; face < 6; face++) {
@@ -5046,24 +4938,73 @@ if (wallTextureRoom) {
         geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
         geometry.setIndex(indices);
 
+        console.log('Wall Material Creation Attempt:', {
+    isWall,
+    wallTexture,
+    renderState
+});
+
         // Create appropriate material based on type
+        // const material = isWall ? 
+        //     new THREE.MeshStandardMaterial({
+        //         color: wallTexture ? 0xffffff : 0x505050,
+        //         map: wallTexture,
+        //         roughness: 0.8,
+        //         metalness: 0.1,
+        //         transparent: false,  // Start completely solid
+        //         opacity: 1.0,
+        //         side: THREE.FrontSide,
+        //         depthWrite: true    // Ensure proper depth rendering
+        //     }) :
+        //     new THREE.MeshStandardMaterial({
+        //         color: 0x808080,
+        //         roughness: 0.7,
+        //         transparent: false, //true
+        //         opacity: 1.0, //0.8,
+        //         side: THREE.DoubleSide
+        //     });
+
+        // // Add debug logs for wall material
+        // if (isWall) {
+        //     console.log('Wall Material Creation:', {
+        //         isWall,
+        //         hasTexture: !!wallTexture,
+        //         textureValid: wallTexture ? wallTexture.image !== null : false,
+        //         materialColor: material.color,
+        //         materialTransparent: material.transparent,
+        //         materialOpacity: material.opacity
+        //     });
+        // }
+
         const material = isWall ? 
-        new THREE.MeshStandardMaterial({
-            color: wallTexture ? 0xffffff : 0x505050, // White if using texture
-            map: wallTexture, // Use texture if available
-            roughness: 0.8,
-            metalness: 0.1,
-            transparent: !renderState.clippingEnabled,
-            opacity: renderState.clippingEnabled ? 1.0 : 0.8,
-            side: renderState.clippingEnabled ? THREE.FrontSide : THREE.DoubleSide
-        }) :
-        new THREE.MeshStandardMaterial({
-            color: 0x808080,
-            roughness: 0.7,
-            transparent: true,
-            opacity: 0.8,
-            side: THREE.DoubleSide
-        });
+    new THREE.MeshStandardMaterial({
+        color: wallTexture ? 0xffffff : 0x505050,
+        map: wallTexture,
+        roughness: 0.8,
+        metalness: 0.1,
+        transparent: false,
+        opacity: 1.0,
+        side: THREE.FrontSide,
+        depthWrite: true
+    }) :
+    new THREE.MeshStandardMaterial({
+        color: 0x808080,
+        roughness: 0.7,
+        transparent: false,
+        opacity: 1.0,
+        side: THREE.DoubleSide
+    });
+
+// Add debug for material creation
+if (isWall) {
+    console.log('Creating wall material:', {
+        roomName: room.name,
+        roomType: room.type,
+        hasTexture: !!wallTexture,
+        textureValid: wallTexture ? wallTexture.image !== null : false,
+        isWall: isWall
+    });
+}
 
     return new THREE.Mesh(geometry, material);
 };
@@ -5081,21 +5022,27 @@ if (wallTextureRoom) {
     })
 ];
 
-    // Create main dungeon mesh
-    // const dungeon = new THREE.Mesh(dungeonGeometry, materials[1]);
-    // scene.add(dungeon);
-
     // Create rooms and subtract from main mesh
-    updateStatus(20);
-this.rooms.forEach((room, index) => {
-    const roomMesh = createRoomGeometry(room);
-    if (roomMesh) {
-        // Store if this is a wall for material updates
-        roomMesh.userData.isWall = room.type === 'wall';
-        scene.add(roomMesh);
-    }
-    updateStatus(20 + (60 * (index / this.rooms.length)));
-});
+updateStatus(20);
+    this.rooms.forEach((room, index) => {
+        // Skip the WallTexture room in 3D view
+        if (room.name === 'WallTexture') return;
+        
+        const roomMesh = createRoomGeometry(room);
+        if (roomMesh) {
+            roomMesh.userData.isWall = room.type === 'wall';
+            if (roomMesh.userData.isWall) {
+                console.log('Creating wall mesh:', {
+                    roomName: room.name,
+                    hasTexture: !!roomMesh.material.map,
+                    isTransparent: roomMesh.material.transparent,
+                    opacity: roomMesh.material.opacity
+                });
+            }
+            scene.add(roomMesh);
+        }
+        updateStatus(20 + (60 * (index / this.rooms.length)));
+    });
 
     // Add floor
     const floorGeometry = new THREE.PlaneGeometry(boxWidth, boxDepth);
@@ -5130,7 +5077,7 @@ if (this.playerStart) {
     backward: false,
     left: false,
     right: false,
-    speed: 0.15,
+    speed: 0.025, // Initial speed 0.15
     sprint: false
 };
 
@@ -5154,7 +5101,7 @@ if (this.playerStart) {
                 break;
             case 'ShiftLeft':
                 moveState.sprint = true;
-                moveState.speed = 0.3;
+                moveState.speed = 0.050;
                 break;
                 case 'KeyC':
             if (!event.repeat) {
@@ -5194,7 +5141,7 @@ if (this.playerStart) {
                 break;
             case 'ShiftLeft':
                 moveState.sprint = false;
-                moveState.speed = 0.15;
+                moveState.speed = 0.025;
                 break;
         }
     };
@@ -5272,7 +5219,7 @@ setupDrawer() {
     drawer.placement = "end";
     drawer.classList.add('drawer-3d-view');
     // Use CSS custom property for width
-    drawer.style.setProperty('--size', '75vw');
+    drawer.style.setProperty('--size', '85vw');
     
     // Container for Three.js
     const container = document.createElement('div');
@@ -5289,43 +5236,6 @@ setupDrawer() {
     return { drawer, container, progress };
 }
 
-// async show3DView() {
-//     const { drawer, container, progress } = this.setupDrawer();
-    
-//     progress.style.display = 'block';
-//     progress.value = 0;
-    
-//     const updateStatus = (percent) => {
-//         progress.value = percent;
-//     };
-
-//     try {
-//         drawer.show();
-//         const { scene, camera, renderer, animate, controls } = 
-//             await this.init3DScene(updateStatus);
-        
-//         container.appendChild(renderer.domElement);
-        
-//         // Animation loop that respects drawer state
-//         const animationLoop = () => {
-//             if (drawer.open) {
-//                 requestAnimationFrame(animationLoop);
-//                 animate();
-//             }
-//         };
-//         animationLoop();
-
-//     } catch (error) {
-//         console.error('Error creating 3D view:', error);
-//         container.innerHTML = `
-//             <div style="color: red; padding: 20px;">
-//                 Error creating 3D view: ${error.message}
-//             </div>
-//         `;
-//     } finally {
-//         progress.style.display = 'none';
-//     }
-// }
 
 async show3DView() {
     const { drawer, container, progress } = this.setupDrawer();
@@ -5488,39 +5398,7 @@ async processRooms(scene, mainBox, updateStatus) {
     scene.add(result);
     return result;
 }
-
-// async createRoomGeometry(scene, updateStatus) {
-//     // Create a large box representing the entire map
-//     const mapGeometry = new THREE.BoxGeometry(
-//         this.baseImage.width / 50,  // Scale down for reasonable size
-//         20,  // Height
-//         this.baseImage.height / 50
-//     );
-//     const mapMaterial = new THREE.MeshStandardMaterial({ 
-//         color: 0x444444 
-//     });
-//     const mapMesh = new THREE.Mesh(mapGeometry, mapMaterial);
-    
-//     // For each room, create a "negative" space
-//     let roomsProcessed = 0;
-//     const totalRooms = this.rooms.length;
-
-//     for (const room of this.rooms) {
-//         if (updateStatus) {
-//             updateStatus((roomsProcessed / totalRooms) * 100);
-//         }
-
-//         const roomShape = this.createRoomShape(room);
-//         if (roomShape) {
-//             // Subtract room shape from map using CSG
-//             // We'll implement CSG in the next step
-//         }
-//         roomsProcessed++;
-//     }
-
-//     scene.add(mapMesh);
-// }
-        }
+}
 
 
         document.addEventListener('DOMContentLoaded', updateLayersListHeight);
