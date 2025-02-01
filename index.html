@@ -792,6 +792,149 @@ sl-input::part(form-control-label) {
 .drawer-3d-view::part(panel) {
     background-color: #1a1a1a;  /* Match your app's dark theme */
 }
+
+.layer-visibility {
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+    }
+
+    .visibility-toggle {
+        font-size: 20px;
+        transition: color 0.2s ease;
+    }
+
+    .visibility-toggle:hover {
+        color: #2196F3 !important;
+    }
+
+    .layer-content {
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
+        align-items: center;
+        gap: 8px;
+    }
+
+
+    /* new sidebar UI */
+    .tool-section {
+        margin-bottom: 12px;
+        flex-shrink: 0;
+    }
+
+    .tool-section-title {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        color: #888;
+        margin-bottom: 4px;
+        padding: 0 8px;
+    }
+
+    .tool-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        padding: 0 8px;
+    }
+
+    .tool-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: 32px;
+        width: 32px;
+        position: relative;
+    }
+
+    .tool-button:hover {
+        background: var(--hover-bg);
+    }
+
+    .tool-button.active {
+        background: var(--sl-color-primary-600);
+        border-color: var(--sl-color-primary-400);
+    }
+
+    .tool-button .material-icons {
+        font-size: 20px;
+        color: #fff;
+    }
+
+    .tool-button:hover .material-icons {
+        color: var(--sl-color-primary-400);
+    }
+
+    .tool-button.active .material-icons {
+        color: white;
+    }
+
+    /* Tooltip styles */
+    .tool-button::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 4px 8px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        font-size: 12px;
+        border-radius: 4px;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+        pointer-events: none;
+        margin-bottom: 4px;
+    }
+
+    .tool-button:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Add divider style */
+    .tool-divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 8px 8px;
+        opacity: 0.5;
+    }
+
+    /* Marker tools specific styles */
+    .marker-tools {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .room-block.wall-room {
+        background: rgba(70, 70, 70, 0.3) !important;
+        border: 2px dashed #666 !important;
+    }
+
+    .room-block.wall-room.highlighted {
+        background: rgba(70, 70, 70, 0.5) !important;
+        border: 2px dashed #888 !important;
+    }
+
+    .room-block.wall-room.editing {
+        background: rgba(70, 70, 70, 0.4) !important;
+        border: 2px dashed #4CAF50 !important;
+    }
+
+    .layer-item.wall-room .layer-name {
+        color: #888;
+    }
+
+    .layer-item.wall-room .layer-name::before {
+        content: '🧱';
+        margin-right: 4px;
+    }
     </style>
 </head>
 
@@ -825,78 +968,63 @@ sl-input::part(form-control-label) {
                     <div class="tool-grid">
                         <div class="tool-button" id="selectTool" data-tooltip="Rectangle [R]">
                             <span class="material-icons">crop_square</span>
-                            <span class="tool-button-label">Rectangle</span>
                         </div>
                         <div class="tool-button" id="circleTool" data-tooltip="Circle [C]">
                             <span class="material-icons">circle</span>
-                            <span class="tool-button-label">Circle</span>
                         </div>
                         <div class="tool-button" id="polygonTool" data-tooltip="Polygon [P]">
                             <span class="material-icons">pentagon</span>
-                            <span class="tool-button-label">Polygon</span>
                         </div>
-                        <div class="tool-button" id="panTool" data-tooltip="Drag [Space]">
+                        <div class="tool-button" id="wallTool" data-tooltip="Define Wall [W]">
+                            <span class="material-icons">account_tree</span>
+                        </div>
+                        <div class="tool-button" id="panTool" data-tooltip="Pan [Space]">
                             <span class="material-icons">pan_tool</span>
-                            <span class="tool-button-label">Drag</span>
+                        </div>
+                        <div class="tool-button" id="centerMap" data-tooltip="Center Map">
+                            <span class="material-icons">center_focus_strong</span>
+                        </div>
+                        <div class="tool-button" id="zoomFit" data-tooltip="Fit to View [F]">
+                            <span class="material-icons">fit_screen</span>
+                        </div>
+                        <div class="tool-button" id="addRoomBtn" data-tooltip="Add Room">
+                            <span class="material-icons">add_box</span>
                         </div>
                     </div>
                 </div>
-
+        
+                <div class="tool-divider"></div>
+        
                 <div class="tool-section">
                     <div class="tool-section-title">Map Markers</div>
-                    <div class="tool-grid">
+                    <div class="tool-grid marker-tools">
                         <div class="tool-button" id="playerStartTool" data-tooltip="Player Start [S]">
                             <span class="material-icons">person_pin_circle</span>
-                            <span class="tool-button-label">Start Point</span>
                         </div>
                         <div class="tool-button" id="encounterTool" data-tooltip="Add Encounter [E]">
                             <span class="material-icons">local_fire_department</span>
-                            <span class="tool-button-label">Encounter</span>
                         </div>
                         <div class="tool-button" id="treasureTool" data-tooltip="Add Treasure [T]">
                             <span class="material-icons">workspace_premium</span>
-                            <span class="tool-button-label">Treasure</span>
                         </div>
                         <div class="tool-button" id="trapTool" data-tooltip="Add Trap [X]">
                             <span class="material-icons">warning</span>
-                            <span class="tool-button-label">Trap</span>
                         </div>
-                        <div class="tool-button" id="teleportTool" data-tooltip="Add Teleport [T]">
+                        <div class="tool-button" id="teleportTool" data-tooltip="Add Teleport">
                             <span class="material-icons">swap_calls</span>
-                            <span class="tool-button-label">Teleport</span>
                         </div>
                     </div>
                 </div>
-
-                <div class="tool-section">
-                    <div class="tool-section-title">View</div>
-                    <div class="tool-grid">
-                        <div class="tool-button" id="centerMap" data-tooltip="Center Map [Space]">
-                            <span class="material-icons">center_focus_strong</span>
-                            <span class="tool-button-label">Center</span>
-                        </div>
-                        <div class="tool-button" id="zoomFit" data-tooltip="Zoom to Fit [F]">
-                            <span class="material-icons">fit_screen</span>
-                            <span class="tool-button-label">Fit</span>
-                        </div>
-                    </div>
-                </div>
-
+        
+                <div class="tool-divider"></div>
+        
                 <div class="layers-panel">
-
                     <div class="tool-section-title">Rooms</div>
-                    <div class="tool-grid">
-                        <div class="tool-button" id="addRoomBtn" data-tooltip="Add Room">
-                            <span class="material-icons">add_box</span>
-                            <span class="tool-button-label">Add Room</span>
-                        </div>
-                    </div>
-
-                    <!-- </div> -->
                     <div class="layers-list" id="layersList">
                         <!-- Room layers will be added here dynamically -->
-                        <!-- </div> -->
                     </div>
+                </div>
+            </div>
         </aside>
 
         <main class="canvas-container">
@@ -943,6 +1071,8 @@ sl-input::part(form-control-label) {
                 });
             }
         }
+
+
 
         class MonsterManager {
             constructor(mapEditor) {
@@ -1786,24 +1916,34 @@ sl-input::part(form-control-label) {
         }
 
         class Room {
-            constructor(id, bounds, name = '', shape = 'rectangle') {
-                console.log('Creating room with shape:', shape);
-                this.id = id
-                this.bounds = bounds
-                this.name = name || `Room ${id}`
-                this.shape = mapEditor.currentTool
-                this.finalized = false
-                this.thumbnail = null
-                this.element = null
-                this.points = bounds.points || null
-                this.isEditing = false;
-            }
+    constructor(id, bounds, name = '', shape = 'rectangle', type = 'room') {
+        this.id = id;
+        this.bounds = bounds;
+        this.name = name || `${type === 'wall' ? 'Wall' : 'Room'} ${id}`;
+        this.shape = shape;
+        this.type = type; // 'room' or 'wall'
+        this.finalized = false;
+        this.thumbnail = null;
+        this.element = null;
+        this.points = bounds.points || null;
+        this.isEditing = false;
+        this.visible = true;
+    }
 
-            createDOMElement(editor) {
-                const roomElement = document.createElement('div');
-                roomElement.id = `room-${this.id}`;
-                roomElement.className = `room-block ${this.shape}-room`;
-                roomElement.style.pointerEvents = 'auto';
+            toggleVisibility() {
+        this.visible = !this.visible;
+        if (this.element) {
+            this.element.style.display = this.visible ? 'block' : 'none';
+        }
+    }
+
+    createDOMElement(editor) {
+        const roomElement = document.createElement('div');
+        roomElement.id = `room-${this.id}`;
+        roomElement.className = `room-block ${this.shape}-room ${this.type}-room`;
+        roomElement.style.pointerEvents = 'auto';
+        // roomElement.style.display = this.visible ? 'block' : 'none';
+                // roomElement.style.pointerEvents = 'auto';
                 console.log(`Creating element for ${this.shape} room`);
 
                 if (this.shape === 'polygon' && this.points) {
@@ -2121,29 +2261,28 @@ sl-input::part(form-control-label) {
             }
 
             createLayerItem(room) {
-                const layerItem = document.createElement('div')
-                layerItem.className = `layer-item ${room.finalized ? '' : 'editing'
-                    } ${room.id === this.editor.selectedRoomId ? 'selected' : ''}`
-                layerItem.innerHTML = `
+        const layerItem = document.createElement('div');
+        layerItem.className = `layer-item ${room.finalized ? '' : 'editing'} ${room.id === this.editor.selectedRoomId ? 'selected' : ''}`;
+        layerItem.innerHTML = `
             <div class="layer-content">
+                <div class="layer-visibility">
+                    <span class="material-icons visibility-toggle" style="cursor: pointer; color: ${room.visible ? '#fff' : '#666'};">
+                        ${room.visible ? 'visibility' : 'visibility_off'}
+                    </span>
+                </div>
                 <div class="layer-thumbnail">
-                    ${room.thumbnail
-                        ? `<img src="${room.thumbnail}" alt="Room thumbnail">`
-                        : ''
-                    }
+                    ${room.thumbnail ? `<img src="${room.thumbnail}" alt="Room thumbnail">` : ''}
                 </div>
                 <div class="layer-info">
                     <div class="layer-name">${room.name}</div>
-                    <div class="layer-dimensions">${Math.round(
-                        room.bounds.width
-                    )}×${Math.round(room.bounds.height)}</div>
+                    <div class="layer-dimensions">${Math.round(room.bounds.width)}×${Math.round(room.bounds.height)}</div>
                 </div>
                 <div class="layer-controls">
                     <span class="material-icons edit-btn" style="color: #2196F3; cursor: pointer;">edit</span>
                     <span class="material-icons delete-btn" style="color: #f44336; cursor: pointer;">delete</span>
                 </div>
             </div>
-        `
+        `;
 
                 // Add hover effect
                 layerItem.addEventListener('mouseenter', () => {
@@ -2182,24 +2321,30 @@ sl-input::part(form-control-label) {
                     }
                 })
 
-                // Add edit button handler
-                layerItem.querySelector('.edit-btn').addEventListener('click', e => {
-                    e.stopPropagation()
-                    this.editor.editRoom(room)
-                })
+                const visibilityToggle = layerItem.querySelector('.visibility-toggle');
+        visibilityToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            room.toggleVisibility();
+            visibilityToggle.textContent = room.visible ? 'visibility' : 'visibility_off';
+            visibilityToggle.style.color = room.visible ? '#fff' : '#666';
+        });
 
-                // Add delete button handler
-                layerItem
-                    .querySelector('.delete-btn')
-                    .addEventListener('click', e => {
-                        e.stopPropagation()
-                        this.editor.deleteRoom(room)
-                    })
+        // Add existing button handlers
+        layerItem.querySelector('.edit-btn').addEventListener('click', e => {
+            e.stopPropagation();
+            this.editor.editRoom(room);
+        });
 
-                // Add double-click handler for renaming
-                layerItem.addEventListener('dblclick', () => {
-                    this.showRenameDialog(room)
-                })
+        layerItem.querySelector('.delete-btn').addEventListener('click', e => {
+            e.stopPropagation();
+            this.editor.deleteRoom(room);
+        });
+
+        // Add double-click handler for renaming
+        layerItem.addEventListener('dblclick', () => {
+            this.showRenameDialog(room);
+        });
+
 
                 return layerItem
             }
@@ -2640,6 +2785,7 @@ sl-input::part(form-control-label) {
                     });
 
                     // Update display
+                    this.centerMap();
                     this.render();
                     this.layersPanel.updateLayersList();
 
@@ -2789,23 +2935,23 @@ sl-input::part(form-control-label) {
                     }
                 })
 
-                // Add keyboard shortcuts
-                document.addEventListener('keydown', e => {
-                    if (e.target.tagName === 'INPUT') return // Skip if typing in an input
+                // // Add keyboard shortcuts
+                // document.addEventListener('keydown', e => {
+                //     if (e.target.tagName === 'INPUT') return // Skip if typing in an input
 
-                    const shortcuts = {
-                        r: 'rectangle',
-                        c: 'circle',
-                        p: 'polygon'
-                    }
+                //     const shortcuts = {
+                //         r: 'rectangle',
+                //         c: 'circle',
+                //         p: 'polygon'
+                //     }
 
-                    if (shortcuts[e.key.toLowerCase()]) {
-                        e.preventDefault()
-                        const shape = shortcuts[e.key.toLowerCase()]
-                        this.setShape(shape)
-                        updateMainButton(shape)
-                    }
-                })
+                //     if (shortcuts[e.key.toLowerCase()]) {
+                //         e.preventDefault()
+                //         const shape = shortcuts[e.key.toLowerCase()]
+                //         this.setShape(shape)
+                //         updateMainButton(shape)
+                //     }
+                // })
             }
 
             setShape(shape) {
@@ -2988,157 +3134,156 @@ sl-input::part(form-control-label) {
                 }
 
                 const saveProjectBtn = document.getElementById('saveProjectBtn');
-                if (saveProjectBtn) {
-                    saveProjectBtn.addEventListener('click', () => this.saveMap());
-                }
+    if (saveProjectBtn) {
+        saveProjectBtn.addEventListener('click', () => this.saveMap());
+    }
 
-                // Create 3D view button
-                const create3dBtn = document.getElementById('create3d')
-                if (create3dBtn) {
-                    create3dBtn.addEventListener('click', () => this.show3DView())
-                }
+    // Create 3D view button
+    const create3dBtn = document.getElementById('create3d');
+    if (create3dBtn) {
+        create3dBtn.addEventListener('click', () => this.show3DView());
+    }
 
-                // Tool buttons
-                const toolButtons = document.querySelectorAll('.tool-button')
-                toolButtons.forEach(button => {
-                    button.addEventListener('click', () => {
-                        switch (button.id) {
-                            case 'selectTool':
-                                this.setTool('rectangle')
-                                break
-                            case 'circleTool':
-                                this.setTool('circle')
-                                break
-                            case 'polygonTool':
-                                this.setTool('polygon')
-                                break
-                            case 'panTool':
-                                this.setTool('pan')
-                                break
-                            case 'centerMap':
-                                this.centerMap()
-                                break
-                            case 'zoomFit':
-                                this.zoomToFit()
-                                break
-                        }
-                    })
-                })
+    // Tool buttons
+    const toolButtons = document.querySelectorAll('.tool-button');
+    toolButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            switch (button.id) {
+                case 'selectTool':
+                    this.setTool('rectangle');
+                    break;
+                case 'circleTool':
+                    this.setTool('circle');
+                    break;
+                case 'polygonTool':
+                    this.setTool('polygon');
+                    break;
+                case 'panTool':
+                    this.setTool('pan');
+                    break;
+                case 'centerMap':
+                    this.centerMap();
+                    break;
+                case 'zoomFit':
+                    this.zoomToFit();
+                    break;
+            }
+        });
+    });
 
                 // Canvas events
-                const wrapper = document.getElementById('canvasWrapper')
-                if (wrapper) {
-                    wrapper.addEventListener(
-                        'mousedown',
-                        this.handleMouseDown.bind(this)
-                    )
-                    wrapper.addEventListener(
-                        'mousemove',
-                        this.handleMouseMove.bind(this)
-                    )
-                    wrapper.addEventListener('mouseup', this.handleMouseUp.bind(this))
-                    wrapper.addEventListener('wheel', this.handleWheel.bind(this))
-                }
+    // Canvas events
+    const wrapper = document.getElementById('canvasWrapper');
+    if (wrapper) {
+        wrapper.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        wrapper.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        wrapper.addEventListener('mouseup', this.handleMouseUp.bind(this));
+        wrapper.addEventListener('wheel', this.handleWheel.bind(this));
+    }
 
-                // Keyboard shortcuts
-                document.addEventListener('keydown', e => {
-                    if (e.target.tagName === 'INPUT') return // Skip if typing in an input
+    // document.addEventListener('keydown', e => {
+    //     if (e.target.tagName === 'INPUT') return; // Skip if typing in an input
 
-                    switch (e.key.toLowerCase()) {
-                        case 'r':
-                            this.setTool('rectangle')
-                            break
-                        case 'c':
-                            this.setTool('circle')
-                            break
-                        case 'p':
-                            this.setTool('polygon')
-                            break
-                        case ' ': // Space bar
-                            if (!e.repeat) {
-                                e.preventDefault() // Prevent page scroll
-                                this.previousTool = this.currentTool
-                                this.setTool('pan')
-                            }
-                            break
-                        case 'f':
-                            this.zoomToFit()
-                            break
-                        case 'escape':
-                            if (this.currentTool === 'polygon' && this.isDrawingPolygon) {
-                                this.cancelPolygonDrawing()
-                            }
-                            break
-                    }
-                })
+    //     switch (e.key.toLowerCase()) {
+    //         case 'r':
+    //             this.setTool('rectangle');
+    //             break;
+    //         case 'c':
+    //             this.setTool('circle');
+    //             break;
+    //         case 'p':
+    //             this.setTool('polygon');
+    //             break;
+    //         case ' ': // Space bar
+    //             if (!e.repeat) {
+    //                 e.preventDefault(); // Prevent page scroll
+    //                 this.previousTool = this.currentTool;
+    //                 this.setTool('pan');
+    //             }
+    //             break;
+    //         case 'f':
+    //             this.zoomToFit();
+    //             break;
+    //         case 'escape':
+    //             if (this.currentTool === 'polygon' && this.isDrawingPolygon) {
+    //                 this.cancelPolygonDrawing();
+    //             }
+    //             break;
+    //             case 'w':
+    //                 if (!e.ctrlKey) { // Don't interfere with browser shortcuts
+    //                     this.setTool('wall');
+    //                 }
+    //                 break;
+    //     }
+    // });
 
-                document.addEventListener('keyup', e => {
-                    if (e.key === ' ' && this.currentTool === 'pan') {
-                        this.setTool(this.previousTool || 'rectangle')
-                    }
-                })
+    // document.addEventListener('keyup', e => {
+    //     if (e.key === ' ' && this.currentTool === 'pan') {
+    //         this.setTool(this.previousTool || 'rectangle');
+    //     }
+    // });
 
-                const markerToolsGrid = document.querySelector('.tool-section:nth-child(2) .tool-grid');
-                const editMarkerBtn = document.createElement('div');
-                editMarkerBtn.className = 'tool-button';
-                editMarkerBtn.id = 'editMarkerTool';
-                editMarkerBtn.setAttribute('data-tooltip', 'Edit Markers [M]');
-                editMarkerBtn.innerHTML = `
-            <span class="material-icons">edit_location</span>
-            <span class="tool-button-label">Edit Markers</span>
-        `;
-                markerToolsGrid.appendChild(editMarkerBtn);
+    document.getElementById('wallTool')?.addEventListener('click', () => {
+            this.setTool('wall');
+        });
 
-                // Add edit marker button click handler
-                editMarkerBtn.addEventListener('click', () => {
-                    this.toggleMarkerEditMode();
-                });
+// First, get the marker tools container
+const markerToolsContainer = document.querySelector('.marker-tools');
+if (markerToolsContainer && !document.getElementById('editMarkerTool')) {
+    const editMarkerBtn = document.createElement('div');
+    editMarkerBtn.className = 'tool-button';
+    editMarkerBtn.id = 'editMarkerTool';
+    editMarkerBtn.setAttribute('data-tooltip', 'Edit Markers [M]');
+    editMarkerBtn.innerHTML = `<span class="material-icons">edit_location</span>`;
+    markerToolsContainer.appendChild(editMarkerBtn);
 
-                // Add keyboard shortcut for marker edit mode
-                document.addEventListener('keydown', (e) => {
-                    if (e.key.toLowerCase() === 'm' && !e.repeat && e.target.tagName !== 'INPUT') {
-                        this.toggleMarkerEditMode();
-                    }
-                });
+    // Add edit marker button click handler
+    editMarkerBtn.addEventListener('click', () => {
+        this.toggleMarkerEditMode();
+    });
+}
 
-                // In setupEventListeners, replace all the marker tool handling with this:
-                const markerTools = {
-                    playerStartTool: 'player-start',
-                    encounterTool: 'encounter',
-                    treasureTool: 'treasure',
-                    trapTool: 'trap',
-                    teleportTool: 'teleport'
-                }
+// Add keyboard shortcut for marker edit mode
+document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'm' && !e.repeat && e.target.tagName !== 'INPUT') {
+        this.toggleMarkerEditMode();
+    }
+});
 
-                Object.entries(markerTools).forEach(([toolId, markerType]) => {
-                    document.getElementById(toolId)?.addEventListener('click', () => {
-                        this.setTool(`marker-${markerType}`)
-                    })
-                })
+// Marker tool type mapping
+const markerTools = {
+    playerStartTool: 'player-start',
+    encounterTool: 'encounter',
+    treasureTool: 'treasure',
+    trapTool: 'trap',
+    teleportTool: 'teleport'
+};
+
+    Object.entries(markerTools).forEach(([toolId, markerType]) => {
+        document.getElementById(toolId)?.addEventListener('click', () => {
+            this.setTool(`marker-${markerType}`);
+        });
+    });
 
                 // Add to your canvas click handler for marker placement
                 document.getElementById('canvasWrapper').addEventListener('click', (e) => {
-                    if (this.currentTool?.startsWith('marker-')) {
-                        const rect = this.canvas.getBoundingClientRect();
-                        // Calculate position relative to the map, accounting for scale and offset
-                        const x = (e.clientX - rect.left - this.offset.x) / this.scale;
-                        const y = (e.clientY - rect.top - this.offset.y) / this.scale;
+        if (this.currentTool?.startsWith('marker-')) {
+            const rect = this.canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left - this.offset.x) / this.scale;
+            const y = (e.clientY - rect.top - this.offset.y) / this.scale;
+            const markerType = this.currentTool.replace('marker-', '');
+            this.addMarker(markerType, x, y);
+        }
+    });
 
-                        const markerType = this.currentTool.replace('marker-', '');
-                        this.addMarker(markerType, x, y);
-                    }
-                });
+    window.addEventListener('resize', () => this.handleResize());
 
-                // In MapEditor's setupEventListeners method
-// const create3dBtn = document.getElementById('create3d');
-// if (create3dBtn) {
-//     create3dBtn.addEventListener('click', () => {
-//         this.show3DView();
-//     });
-// }
-
-                // Handle window resize
-                window.addEventListener('resize', () => this.handleResize())
+    // Add keyboard shortcut for marker edit mode
+    document.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'm' && !e.repeat && e.target.tagName !== 'INPUT') {
+            this.toggleMarkerEditMode();
+        }
+    });
             }
 
             setTool(tool) {
@@ -3148,18 +3293,23 @@ sl-input::part(form-control-label) {
                 this.currentTool = tool
 
                 // Update UI
-                const toolButtons = document.querySelectorAll('.tool-button')
-                toolButtons.forEach(button => {
-                    button.classList.remove('active')
-                    if (
-                        (tool === 'rectangle' && button.id === 'selectTool') ||
-                        (tool === 'circle' && button.id === 'circleTool') ||
-                        (tool === 'polygon' && button.id === 'polygonTool') ||
-                        (tool === 'pan' && button.id === 'panTool')
-                    ) {
-                        button.classList.add('active')
-                    }
-                })
+                const toolButtons = document.querySelectorAll('.tool-button');
+        toolButtons.forEach(button => {
+            button.classList.remove('active');
+            if (
+                (tool === 'rectangle' && button.id === 'selectTool') ||
+                (tool === 'circle' && button.id === 'circleTool') ||
+                (tool === 'polygon' && button.id === 'polygonTool') ||
+                (tool === 'wall' && button.id === 'wallTool') ||
+                (tool === 'pan' && button.id === 'panTool')
+            ) {
+                button.classList.add('active');
+            }
+        });
+
+        if (tool === 'wall') {
+            this.startWallCreation();
+        }
 
                 const rooms = document.querySelectorAll('.room-block');
                 rooms.forEach(room => {
@@ -3206,6 +3356,102 @@ sl-input::part(form-control-label) {
                 this.rooms.forEach(room => room.updateElement())
                 this.render()
             }
+
+            startWallCreation() {
+        if (!this.baseImage) {
+            alert('Please load a map first');
+            return;
+        }
+
+        // Similar to polygon tool setup
+        const wrapper = document.getElementById('canvasWrapper');
+        const clickHandler = e => {
+            if (this.currentTool === 'wall') {
+                this.handleWallClick(e);
+            }
+        };
+
+        wrapper.addEventListener('click', clickHandler);
+        this.wallClickHandler = clickHandler;
+    }
+
+    handleWallClick(e) {
+        // Similar to handlePolygonClick but creates wall areas
+        const wrapper = document.getElementById('canvasWrapper');
+        const rect = wrapper.getBoundingClientRect();
+        const x = (e.clientX - rect.left - this.offset.x) / this.scale;
+        const y = (e.clientY - rect.top - this.offset.y) / this.scale;
+
+        if (!this.isDrawingPolygon) {
+            // Start new wall polygon
+            this.isDrawingPolygon = true;
+            this.polygonPoints = [{ x, y }];
+
+            // Create preview element
+            this.polygonPreviewElement = document.createElement('div');
+            this.polygonPreviewElement.className = 'polygon-preview wall-preview';
+            wrapper.appendChild(this.polygonPreviewElement);
+
+            this.updatePolygonPreview();
+        } else {
+            // Check if near starting point to close wall
+            const startPoint = this.polygonPoints[0];
+            const distance = Math.sqrt(
+                Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2)
+            );
+
+            if (distance < 20 / this.scale && this.polygonPoints.length > 2) {
+                this.finalizeWall();
+            } else {
+                // Add new point
+                this.polygonPoints.push({ x, y });
+                this.updatePolygonPreview();
+            }
+        }
+    }
+
+    finalizeWall() {
+        if (!this.isDrawingPolygon || this.polygonPoints.length < 3) return;
+
+        // Calculate bounding box
+        const xs = this.polygonPoints.map(p => p.x);
+        const ys = this.polygonPoints.map(p => p.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+
+        // Create wall room
+        const wall = new Room(
+            Date.now(),
+            {
+                x: minX,
+                y: minY,
+                width: maxX - minX,
+                height: maxY - minY,
+                points: this.polygonPoints.map(p => ({
+                    x: p.x - minX,
+                    y: p.y - minY
+                }))
+            },
+            '',
+            'polygon',
+            'wall' // Set type as wall
+        );
+
+        this.rooms.push(wall);
+        const wallElement = wall.createDOMElement(this);
+        document.querySelector('.canvas-container').appendChild(wallElement);
+        this.layersPanel.updateLayersList();
+
+        // Clean up
+        this.isDrawingPolygon = false;
+        this.polygonPoints = [];
+        if (this.polygonPreviewElement) {
+            this.polygonPreviewElement.remove();
+            this.polygonPreviewElement = null;
+        }
+    }
 
             startCircleRoom() {
                 if (!this.baseImage) {
@@ -4378,6 +4624,10 @@ sl-input::part(form-control-label) {
 // Add to MapEditor class
 // Add to MapEditor class
 async init3DScene(updateStatus) {
+
+    const renderState = {
+    clippingEnabled: true
+};
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x222222);
 
@@ -4393,6 +4643,37 @@ async init3DScene(updateStatus) {
     renderer.setSize(window.innerWidth * 0.75, window.innerHeight);
     renderer.shadowMap.enabled = true;
 
+    const wallTextureRoom = this.rooms.find(room => room.name === 'WallTexture');
+let wallTexture = null;
+
+if (wallTextureRoom) {
+    // Create a canvas to capture the wall texture portion
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = wallTextureRoom.bounds.width;
+    canvas.height = wallTextureRoom.bounds.height;
+    
+    // Draw the portion of the map that contains the wall texture
+    ctx.drawImage(
+        this.baseImage,
+        wallTextureRoom.bounds.x,
+        wallTextureRoom.bounds.y,
+        wallTextureRoom.bounds.width,
+        wallTextureRoom.bounds.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    // Create the wall texture
+    wallTexture = new THREE.CanvasTexture(canvas);
+    wallTexture.wrapS = THREE.RepeatWrapping;
+    wallTexture.wrapT = THREE.RepeatWrapping;
+    wallTexture.repeat.set(1, 1);
+    wallTexture.needsUpdate = true;
+}
+
     // Create floor texture
     const texture = new THREE.Texture(this.baseImage);
     texture.needsUpdate = true;
@@ -4405,91 +4686,143 @@ async init3DScene(updateStatus) {
     const boxDepth = this.baseImage.height / 50;
 
     // Create main dungeon geometry
-    const createDungeonGeometry = () => {
-        const positions = [];
-        const normals = [];
-        const uvs = [];
-        const indices = [];
-
-        // Function to add a quad
-        const addQuad = (v1, v2, v3, v4, normal) => {
-            const startIdx = positions.length / 3;
-            positions.push(...v1, ...v2, ...v3, ...v4);
-            
-            // Add normal for each vertex
-            for (let i = 0; i < 4; i++) {
-                normals.push(...normal);
-            }
-            
-            // Add UVs
-            uvs.push(0, 0, 1, 0, 1, 1, 0, 1);
-            
-            // Add indices for two triangles
-            indices.push(
-                startIdx, startIdx + 1, startIdx + 2,
-                startIdx, startIdx + 2, startIdx + 3
-            );
-        };
-
-        // Create box vertices
-        const x1 = -boxWidth/2, x2 = boxWidth/2;
-        const y1 = 0, y2 = boxHeight;
-        const z1 = -boxDepth/2, z2 = boxDepth/2;
-
-        // Bottom
-        addQuad(
-            [x1, y1, z1], [x2, y1, z1], [x2, y1, z2], [x1, y1, z2],
-            [0, -1, 0]
-        );
-
-        // Top
-        addQuad(
-            [x1, y2, z1], [x1, y2, z2], [x2, y2, z2], [x2, y2, z1],
-            [0, 1, 0]
-        );
-
-        // Front
-        addQuad(
-            [x1, y1, z1], [x1, y2, z1], [x2, y2, z1], [x2, y1, z1],
-            [0, 0, -1]
-        );
-
-        // Back
-        addQuad(
-            [x1, y1, z2], [x2, y1, z2], [x2, y2, z2], [x1, y2, z2],
-            [0, 0, 1]
-        );
-
-        // Left
-        addQuad(
-            [x1, y1, z1], [x1, y1, z2], [x1, y2, z2], [x1, y2, z1],
-            [-1, 0, 0]
-        );
-
-        // Right
-        addQuad(
-            [x2, y1, z1], [x2, y2, z1], [x2, y2, z2], [x2, y1, z2],
-            [1, 0, 0]
-        );
-
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-        geometry.setIndex(indices);
-
-        return geometry;
-    };
 
     // Create initial dungeon geometry
-    const dungeonGeometry = createDungeonGeometry();
+    // const dungeonGeometry = createDungeonGeometry();
 
     // Create room geometries for each room
+    // const createRoomGeometry = (room) => {
+    //     const positions = [];
+    //     const normals = [];
+    //     const uvs = [];
+    //     const indices = [];
+
+    //     switch(room.shape) {
+    //         case 'circle': {
+    //             const segments = 32;
+    //             const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
+    //             const centerX = (room.bounds.x / 50) - (boxWidth/2);
+    //             const centerZ = (room.bounds.y / 50) - (boxDepth/2);
+
+    //             // Create vertices for cylinder
+    //             for (let i = 0; i <= segments; i++) {
+    //                 const theta = (i / segments) * Math.PI * 2;
+    //                 const x = centerX + radius * Math.cos(theta);
+    //                 const z = centerZ + radius * Math.sin(theta);
+
+    //                 // Bottom vertex
+    //                 positions.push(x, 0, z);
+    //                 // Top vertex
+    //                 positions.push(x, boxHeight, z);
+
+    //                 // Normals (pointing outward)
+    //                 const normal = [Math.cos(theta), 0, Math.sin(theta)];
+    //                 normals.push(...normal, ...normal);
+
+    //                 // UVs
+    //                 uvs.push(i/segments, 0, i/segments, 1);
+    //             }
+
+    //             // Create faces
+    //             for (let i = 0; i < segments; i++) {
+    //                 const base = i * 2;
+    //                 indices.push(
+    //                     base, base + 1, base + 2,
+    //                     base + 1, base + 3, base + 2
+    //                 );
+    //             }
+    //             break;
+    //         }
+
+    //         case 'polygon': {
+    //             if (!room.points || room.points.length < 3) return null;
+
+    //             const baseZ = (room.bounds.y / 50) - (boxDepth/2);
+    //             const baseX = (room.bounds.x / 50) - (boxWidth/2);
+
+    //             room.points.forEach((point, i) => {
+    //                 const x = (point.x / 50) + baseX;
+    //                 const z = (point.y / 50) + baseZ;
+
+    //                 // Add vertices for both bottom and top
+    //                 positions.push(x, 0, z);
+    //                 positions.push(x, boxHeight, z);
+
+    //                 // Simple normal (might need improvement)
+    //                 normals.push(0, 0, 1, 0, 0, 1);
+
+    //                 // Basic UVs
+    //                 uvs.push(i / room.points.length, 0);
+    //                 uvs.push(i / room.points.length, 1);
+    //             });
+
+    //             // Create faces
+    //             for (let i = 0; i < room.points.length; i++) {
+    //                 const next = (i + 1) % room.points.length;
+    //                 const base = i * 2;
+    //                 const nextBase = next * 2;
+
+    //                 indices.push(
+    //                     base, base + 1, nextBase,
+    //                     base + 1, nextBase + 1, nextBase
+    //                 );
+    //             }
+    //             break;
+    //         }
+
+    //         default: { // rectangle
+    //             const x1 = (room.bounds.x / 50) - (boxWidth/2);
+    //             const x2 = x1 + (room.bounds.width / 50);
+    //             const z1 = (room.bounds.y / 50) - (boxDepth/2);
+    //             const z2 = z1 + (room.bounds.height / 50);
+
+    //             // Add vertices for walls
+    //             const wallVertices = [
+    //                 // Front wall
+    //                 x1, 0, z1, x1, boxHeight, z1, x2, boxHeight, z1, x2, 0, z1,
+    //                 // Back wall
+    //                 x1, 0, z2, x2, 0, z2, x2, boxHeight, z2, x1, boxHeight, z2,
+    //                 // Left wall
+    //                 x1, 0, z1, x1, 0, z2, x1, boxHeight, z2, x1, boxHeight, z1,
+    //                 // Right wall
+    //                 x2, 0, z1, x2, boxHeight, z1, x2, boxHeight, z2, x2, 0, z2
+    //             ];
+    //             positions.push(...wallVertices);
+
+    //             // Add indices for walls
+    //             for (let i = 0; i < 4; i++) {
+    //                 const base = i * 4;
+    //                 indices.push(
+    //                     base, base + 1, base + 2,
+    //                     base, base + 2, base + 3
+    //                 );
+    //             }
+
+    //             // Add simple normals and UVs
+    //             for (let i = 0; i < wallVertices.length / 3; i++) {
+    //                 normals.push(0, 0, 1);
+    //                 uvs.push(i % 2, Math.floor(i / 2) % 2);
+    //             }
+    //             break;
+    //         }
+    //     }
+
+    //     const geometry = new THREE.BufferGeometry();
+    //     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    //     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    //     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    //     geometry.setIndex(indices);
+
+    //     return geometry;
+    // };
+
     const createRoomGeometry = (room) => {
         const positions = [];
         const normals = [];
         const uvs = [];
         const indices = [];
+
+        const isWall = room.type === 'wall';
 
         switch(room.shape) {
             case 'circle': {
@@ -4498,32 +4831,76 @@ async init3DScene(updateStatus) {
                 const centerX = (room.bounds.x / 50) - (boxWidth/2);
                 const centerZ = (room.bounds.y / 50) - (boxDepth/2);
 
-                // Create vertices for cylinder
-                for (let i = 0; i <= segments; i++) {
-                    const theta = (i / segments) * Math.PI * 2;
-                    const x = centerX + radius * Math.cos(theta);
-                    const z = centerZ + radius * Math.sin(theta);
+                if (isWall) {
+                    // For walls, create solid cylinder including top and bottom
+                    for (let i = 0; i <= segments; i++) {
+                        const theta = (i / segments) * Math.PI * 2;
+                        const x = Math.cos(theta);
+                        const z = Math.sin(theta);
 
-                    // Bottom vertex
-                    positions.push(x, 0, z);
-                    // Top vertex
-                    positions.push(x, boxHeight, z);
+                        // Bottom vertices
+                        positions.push(centerX + radius * x, 0, centerZ + radius * z);
+                        normals.push(x, 0, z);
+                        uvs.push(i/segments, 0);
 
-                    // Normals (pointing outward)
-                    const normal = [Math.cos(theta), 0, Math.sin(theta)];
-                    normals.push(...normal, ...normal);
+                        // Top vertices
+                        positions.push(centerX + radius * x, boxHeight, centerZ + radius * z);
+                        normals.push(x, 0, z);
+                        uvs.push(i/segments, 1);
+                    }
 
-                    // UVs
-                    uvs.push(i/segments, 0, i/segments, 1);
-                }
+                    // Create faces for cylinder walls
+                    for (let i = 0; i < segments; i++) {
+                        const base = i * 2;
+                        indices.push(
+                            base, base + 1, base + 2,
+                            base + 1, base + 3, base + 2
+                        );
+                    }
 
-                // Create faces
-                for (let i = 0; i < segments; i++) {
-                    const base = i * 2;
-                    indices.push(
-                        base, base + 1, base + 2,
-                        base + 1, base + 3, base + 2
-                    );
+                    // Add center vertices for top and bottom caps
+                    const bottomCenterIndex = positions.length / 3;
+                    positions.push(centerX, 0, centerZ);
+                    normals.push(0, -1, 0);
+                    uvs.push(0.5, 0.5);
+
+                    const topCenterIndex = positions.length / 3;
+                    positions.push(centerX, boxHeight, centerZ);
+                    normals.push(0, 1, 0);
+                    uvs.push(0.5, 0.5);
+
+                    // Add cap faces
+                    for (let i = 0; i < segments; i++) {
+                        const current = i * 2;
+                        const next = ((i + 1) % segments) * 2;
+                        // Bottom cap
+                        indices.push(bottomCenterIndex, current, next);
+                        // Top cap
+                        indices.push(topCenterIndex, next + 1, current + 1);
+                    }
+                } else {
+                    // Original hollow room code
+                    for (let i = 0; i <= segments; i++) {
+                        const theta = (i / segments) * Math.PI * 2;
+                        const x = centerX + radius * Math.cos(theta);
+                        const z = centerZ + radius * Math.sin(theta);
+
+                        positions.push(x, 0, z);
+                        positions.push(x, boxHeight, z);
+
+                        const normal = [Math.cos(theta), 0, Math.sin(theta)];
+                        normals.push(...normal, ...normal);
+
+                        uvs.push(i/segments, 0, i/segments, 1);
+                    }
+
+                    for (let i = 0; i < segments; i++) {
+                        const base = i * 2;
+                        indices.push(
+                            base, base + 1, base + 2,
+                            base + 1, base + 3, base + 2
+                        );
+                    }
                 }
                 break;
             }
@@ -4534,32 +4911,62 @@ async init3DScene(updateStatus) {
                 const baseZ = (room.bounds.y / 50) - (boxDepth/2);
                 const baseX = (room.bounds.x / 50) - (boxWidth/2);
 
-                room.points.forEach((point, i) => {
-                    const x = (point.x / 50) + baseX;
-                    const z = (point.y / 50) + baseZ;
+                if (isWall) {
+                    // Create solid wall with top and bottom
+                    room.points.forEach((point, i) => {
+                        const x = (point.x / 50) + baseX;
+                        const z = (point.y / 50) + baseZ;
 
-                    // Add vertices for both bottom and top
-                    positions.push(x, 0, z);
-                    positions.push(x, boxHeight, z);
+                        // Bottom vertices
+                        positions.push(x, 0, z);
+                        normals.push(0, -1, 0);
+                        uvs.push(x / boxWidth, z / boxDepth);
 
-                    // Simple normal (might need improvement)
-                    normals.push(0, 0, 1, 0, 0, 1);
+                        // Top vertices
+                        positions.push(x, boxHeight, z);
+                        normals.push(0, 1, 0);
+                        uvs.push(x / boxWidth, z / boxDepth);
+                    });
 
-                    // Basic UVs
-                    uvs.push(i / room.points.length, 0);
-                    uvs.push(i / room.points.length, 1);
-                });
+                    // Create faces for walls
+                    for (let i = 0; i < room.points.length; i++) {
+                        const next = (i + 1) % room.points.length;
+                        const base = i * 2;
+                        const nextBase = next * 2;
 
-                // Create faces
-                for (let i = 0; i < room.points.length; i++) {
-                    const next = (i + 1) % room.points.length;
-                    const base = i * 2;
-                    const nextBase = next * 2;
+                        indices.push(
+                            base, base + 1, nextBase,
+                            base + 1, nextBase + 1, nextBase,
+                            // Add faces for top and bottom
+                            base, nextBase, nextBase + 1,
+                            base, nextBase + 1, base + 1
+                        );
+                    }
+                } else {
+                    // Original hollow room code
+                    room.points.forEach((point, i) => {
+                        const x = (point.x / 50) + baseX;
+                        const z = (point.y / 50) + baseZ;
 
-                    indices.push(
-                        base, base + 1, nextBase,
-                        base + 1, nextBase + 1, nextBase
-                    );
+                        positions.push(x, 0, z);
+                        positions.push(x, boxHeight, z);
+
+                        normals.push(0, 0, 1, 0, 0, 1);
+
+                        uvs.push(i / room.points.length, 0);
+                        uvs.push(i / room.points.length, 1);
+                    });
+
+                    for (let i = 0; i < room.points.length; i++) {
+                        const next = (i + 1) % room.points.length;
+                        const base = i * 2;
+                        const nextBase = next * 2;
+
+                        indices.push(
+                            base, base + 1, nextBase,
+                            base + 1, nextBase + 1, nextBase
+                        );
+                    }
                 }
                 break;
             }
@@ -4570,32 +4977,64 @@ async init3DScene(updateStatus) {
                 const z1 = (room.bounds.y / 50) - (boxDepth/2);
                 const z2 = z1 + (room.bounds.height / 50);
 
-                // Add vertices for walls
-                const wallVertices = [
-                    // Front wall
-                    x1, 0, z1, x1, boxHeight, z1, x2, boxHeight, z1, x2, 0, z1,
-                    // Back wall
-                    x1, 0, z2, x2, 0, z2, x2, boxHeight, z2, x1, boxHeight, z2,
-                    // Left wall
-                    x1, 0, z1, x1, 0, z2, x1, boxHeight, z2, x1, boxHeight, z1,
-                    // Right wall
-                    x2, 0, z1, x2, boxHeight, z1, x2, boxHeight, z2, x2, 0, z2
-                ];
-                positions.push(...wallVertices);
-
-                // Add indices for walls
-                for (let i = 0; i < 4; i++) {
-                    const base = i * 4;
-                    indices.push(
-                        base, base + 1, base + 2,
-                        base, base + 2, base + 3
+                if (isWall) {
+                    // Create solid box vertices
+                    positions.push(
+                        // Bottom face
+                        x1, 0, z1,  x2, 0, z1,  x2, 0, z2,  x1, 0, z2,
+                        // Top face
+                        x1, boxHeight, z1,  x2, boxHeight, z1,  x2, boxHeight, z2,  x1, boxHeight, z2,
+                        // Front and back
+                        x1, 0, z1,  x2, 0, z1,  x2, boxHeight, z1,  x1, boxHeight, z1,
+                        x1, 0, z2,  x2, 0, z2,  x2, boxHeight, z2,  x1, boxHeight, z2,
+                        // Left and right
+                        x1, 0, z1,  x1, 0, z2,  x1, boxHeight, z2,  x1, boxHeight, z1,
+                        x2, 0, z1,  x2, 0, z2,  x2, boxHeight, z2,  x2, boxHeight, z1
                     );
-                }
 
-                // Add simple normals and UVs
-                for (let i = 0; i < wallVertices.length / 3; i++) {
-                    normals.push(0, 0, 1);
-                    uvs.push(i % 2, Math.floor(i / 2) % 2);
+                    // Add corresponding normals for each face
+                    for (let i = 0; i < 4; i++) normals.push(0, -1, 0);  // Bottom
+                    for (let i = 0; i < 4; i++) normals.push(0, 1, 0);   // Top
+                    for (let i = 0; i < 4; i++) normals.push(0, 0, -1);  // Front
+                    for (let i = 0; i < 4; i++) normals.push(0, 0, 1);   // Back
+                    for (let i = 0; i < 4; i++) normals.push(-1, 0, 0);  // Left
+                    for (let i = 0; i < 4; i++) normals.push(1, 0, 0);   // Right
+
+                    // Add UVs
+                    for (let face = 0; face < 6; face++) {
+                        uvs.push(0, 0,  1, 0,  1, 1,  0, 1);
+                    }
+
+                    // Add indices for each face (6 faces, 2 triangles each)
+                    for (let face = 0; face < 6; face++) {
+                        const base = face * 4;
+                        indices.push(
+                            base, base + 1, base + 2,
+                            base, base + 2, base + 3
+                        );
+                    }
+                } else {
+                    // Original hollow room code
+                    const wallVertices = [
+                        x1, 0, z1,  x1, boxHeight, z1,  x2, boxHeight, z1,  x2, 0, z1,
+                        x1, 0, z2,  x2, 0, z2,  x2, boxHeight, z2,  x1, boxHeight, z2,
+                        x1, 0, z1,  x1, 0, z2,  x1, boxHeight, z2,  x1, boxHeight, z1,
+                        x2, 0, z1,  x2, boxHeight, z1,  x2, boxHeight, z2,  x2, 0, z2
+                    ];
+                    positions.push(...wallVertices);
+
+                    for (let i = 0; i < 4; i++) {
+                        const base = i * 4;
+                        indices.push(
+                            base, base + 1, base + 2,
+                            base, base + 2, base + 3
+                        );
+                    }
+
+                    for (let i = 0; i < wallVertices.length / 3; i++) {
+                        normals.push(0, 0, 1);
+                        uvs.push(i % 2, Math.floor(i / 2) % 2);
+                    }
                 }
                 break;
             }
@@ -4607,36 +5046,56 @@ async init3DScene(updateStatus) {
         geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
         geometry.setIndex(indices);
 
-        return geometry;
-    };
+        // Create appropriate material based on type
+        const material = isWall ? 
+        new THREE.MeshStandardMaterial({
+            color: wallTexture ? 0xffffff : 0x505050, // White if using texture
+            map: wallTexture, // Use texture if available
+            roughness: 0.8,
+            metalness: 0.1,
+            transparent: !renderState.clippingEnabled,
+            opacity: renderState.clippingEnabled ? 1.0 : 0.8,
+            side: renderState.clippingEnabled ? THREE.FrontSide : THREE.DoubleSide
+        }) :
+        new THREE.MeshStandardMaterial({
+            color: 0x808080,
+            roughness: 0.7,
+            transparent: true,
+            opacity: 0.8,
+            side: THREE.DoubleSide
+        });
+
+    return new THREE.Mesh(geometry, material);
+};
 
     // Create materials
     const materials = [
-        new THREE.MeshStandardMaterial({ 
-            map: texture,
-            side: THREE.DoubleSide
-        }),
-        new THREE.MeshStandardMaterial({ 
-            color: 0x808080,
-            roughness: 0.7,
-            side: THREE.DoubleSide
-        })
-    ];
+    new THREE.MeshStandardMaterial({ 
+        map: texture,
+        side: THREE.DoubleSide
+    }),
+    new THREE.MeshStandardMaterial({ 
+        color: 0x808080,
+        roughness: 0.7,
+        side: THREE.DoubleSide
+    })
+];
 
     // Create main dungeon mesh
-    const dungeon = new THREE.Mesh(dungeonGeometry, materials[1]);
-    scene.add(dungeon);
+    // const dungeon = new THREE.Mesh(dungeonGeometry, materials[1]);
+    // scene.add(dungeon);
 
     // Create rooms and subtract from main mesh
     updateStatus(20);
-    this.rooms.forEach((room, index) => {
-        const roomGeometry = createRoomGeometry(room);
-        if (roomGeometry) {
-            const roomMesh = new THREE.Mesh(roomGeometry, materials[1]);
-            scene.add(roomMesh);
-        }
-        updateStatus(20 + (60 * (index / this.rooms.length)));
-    });
+this.rooms.forEach((room, index) => {
+    const roomMesh = createRoomGeometry(room);
+    if (roomMesh) {
+        // Store if this is a wall for material updates
+        roomMesh.userData.isWall = room.type === 'wall';
+        scene.add(roomMesh);
+    }
+    updateStatus(20 + (60 * (index / this.rooms.length)));
+});
 
     // Add floor
     const floorGeometry = new THREE.PlaneGeometry(boxWidth, boxDepth);
@@ -4667,13 +5126,13 @@ if (this.playerStart) {
     const controls = new THREE.PointerLockControls(camera, renderer.domElement);
     
     const moveState = {
-        forward: false,
-        backward: false,
-        left: false,
-        right: false,
-        speed: 0.15,
-        sprint: false
-    };
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+    speed: 0.15,
+    sprint: false
+};
 
     const handleKeyDown = (event) => {
         switch (event.code) {
@@ -4697,6 +5156,21 @@ if (this.playerStart) {
                 moveState.sprint = true;
                 moveState.speed = 0.3;
                 break;
+                case 'KeyC':
+            if (!event.repeat) {
+                renderState.clippingEnabled = !renderState.clippingEnabled;
+                // Update all wall materials
+                scene.traverse(object => {
+                    if (object.material && object.userData.isWall) {
+                        object.material.transparent = !renderState.clippingEnabled;
+                        object.material.opacity = renderState.clippingEnabled ? 1.0 : 0.8;
+                        object.material.side = renderState.clippingEnabled ? THREE.FrontSide : THREE.DoubleSide;
+                        object.material.needsUpdate = true;
+                    }
+                });
+            }
+            break;
+    
         }
     };
 
@@ -4873,25 +5347,26 @@ async show3DView() {
         
         // Instructions overlay
         const instructions = document.createElement('div');
-        instructions.style.cssText = `
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 20px;
-            border-radius: 5px;
-            text-align: center;
-            pointer-events: none;
-        `;
-        instructions.innerHTML = `
-            Click to start<br>
-            WASD or Arrow Keys to move<br>
-            Hold Shift to sprint<br>
-            ESC to exit
-        `;
-        container.appendChild(instructions);
+instructions.style.cssText = `
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 20px;
+    border-radius: 5px;
+    text-align: center;
+    pointer-events: none;
+`;
+instructions.innerHTML = `
+    Click to start<br>
+    WASD or Arrow Keys to move<br>
+    Hold Shift to sprint<br>
+    C to toggle wall clipping<br>
+    ESC to exit
+`;
+container.appendChild(instructions);
 
         // Hide instructions when controls are locked
         controls.addEventListener('lock', () => {
