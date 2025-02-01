@@ -41,13 +41,15 @@
         src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/tab-group/tab-group.js"></script>
     <script type="module"
         src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/tab-panel/tab-panel.js"></script>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/drawer/drawer.js"></script>
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/progress-bar/progress-bar.js"></script>
 
 
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
-
-    <style>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/three-js-csg@72.0.0/index.min.js"></script> -->
+        <style>
 :root {
     --app-height: 100vh;
     --header-height: 48px;
@@ -783,7 +785,13 @@ sl-input::part(form-control-label) {
     border-radius: 4px;
 }
 
+.drawer-3d-view::part(body) {
+    padding: 0;  /* Remove default padding for full canvas */
+}
 
+.drawer-3d-view::part(panel) {
+    background-color: #1a1a1a;  /* Match your app's dark theme */
+}
     </style>
 </head>
 
@@ -3121,6 +3129,14 @@ sl-input::part(form-control-label) {
                     }
                 });
 
+                // In MapEditor's setupEventListeners method
+// const create3dBtn = document.getElementById('create3d');
+// if (create3dBtn) {
+//     create3dBtn.addEventListener('click', () => {
+//         this.show3DView();
+//     });
+// }
+
                 // Handle window resize
                 window.addEventListener('resize', () => this.handleResize())
             }
@@ -4357,13 +4373,678 @@ sl-input::part(form-control-label) {
                 this.layersPanel.updateLayersList()
             }
 
-            async show3DView() {
-                // Implementation from previous artifact
+// Add this function to MapEditor class
+
+// Add to MapEditor class
+// Add to MapEditor class
+async init3DScene(updateStatus) {
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x222222);
+
+    const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth * 0.75 / window.innerHeight,
+        0.1,
+        1000
+    );
+    camera.position.set(0, 2, 5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth * 0.75, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+
+    // Create floor texture
+    const texture = new THREE.Texture(this.baseImage);
+    texture.needsUpdate = true;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    
+    // Create main block dimensions
+    const boxWidth = this.baseImage.width / 50;
+    const boxHeight = 4;  // Wall height
+    const boxDepth = this.baseImage.height / 50;
+
+    // Create main dungeon geometry
+    const createDungeonGeometry = () => {
+        const positions = [];
+        const normals = [];
+        const uvs = [];
+        const indices = [];
+
+        // Function to add a quad
+        const addQuad = (v1, v2, v3, v4, normal) => {
+            const startIdx = positions.length / 3;
+            positions.push(...v1, ...v2, ...v3, ...v4);
+            
+            // Add normal for each vertex
+            for (let i = 0; i < 4; i++) {
+                normals.push(...normal);
+            }
+            
+            // Add UVs
+            uvs.push(0, 0, 1, 0, 1, 1, 0, 1);
+            
+            // Add indices for two triangles
+            indices.push(
+                startIdx, startIdx + 1, startIdx + 2,
+                startIdx, startIdx + 2, startIdx + 3
+            );
+        };
+
+        // Create box vertices
+        const x1 = -boxWidth/2, x2 = boxWidth/2;
+        const y1 = 0, y2 = boxHeight;
+        const z1 = -boxDepth/2, z2 = boxDepth/2;
+
+        // Bottom
+        addQuad(
+            [x1, y1, z1], [x2, y1, z1], [x2, y1, z2], [x1, y1, z2],
+            [0, -1, 0]
+        );
+
+        // Top
+        addQuad(
+            [x1, y2, z1], [x1, y2, z2], [x2, y2, z2], [x2, y2, z1],
+            [0, 1, 0]
+        );
+
+        // Front
+        addQuad(
+            [x1, y1, z1], [x1, y2, z1], [x2, y2, z1], [x2, y1, z1],
+            [0, 0, -1]
+        );
+
+        // Back
+        addQuad(
+            [x1, y1, z2], [x2, y1, z2], [x2, y2, z2], [x1, y2, z2],
+            [0, 0, 1]
+        );
+
+        // Left
+        addQuad(
+            [x1, y1, z1], [x1, y1, z2], [x1, y2, z2], [x1, y2, z1],
+            [-1, 0, 0]
+        );
+
+        // Right
+        addQuad(
+            [x2, y1, z1], [x2, y2, z1], [x2, y2, z2], [x2, y1, z2],
+            [1, 0, 0]
+        );
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+        geometry.setIndex(indices);
+
+        return geometry;
+    };
+
+    // Create initial dungeon geometry
+    const dungeonGeometry = createDungeonGeometry();
+
+    // Create room geometries for each room
+    const createRoomGeometry = (room) => {
+        const positions = [];
+        const normals = [];
+        const uvs = [];
+        const indices = [];
+
+        switch(room.shape) {
+            case 'circle': {
+                const segments = 32;
+                const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
+                const centerX = (room.bounds.x / 50) - (boxWidth/2);
+                const centerZ = (room.bounds.y / 50) - (boxDepth/2);
+
+                // Create vertices for cylinder
+                for (let i = 0; i <= segments; i++) {
+                    const theta = (i / segments) * Math.PI * 2;
+                    const x = centerX + radius * Math.cos(theta);
+                    const z = centerZ + radius * Math.sin(theta);
+
+                    // Bottom vertex
+                    positions.push(x, 0, z);
+                    // Top vertex
+                    positions.push(x, boxHeight, z);
+
+                    // Normals (pointing outward)
+                    const normal = [Math.cos(theta), 0, Math.sin(theta)];
+                    normals.push(...normal, ...normal);
+
+                    // UVs
+                    uvs.push(i/segments, 0, i/segments, 1);
+                }
+
+                // Create faces
+                for (let i = 0; i < segments; i++) {
+                    const base = i * 2;
+                    indices.push(
+                        base, base + 1, base + 2,
+                        base + 1, base + 3, base + 2
+                    );
+                }
+                break;
             }
 
-            async init3DScene(updateStatus) {
-                // Implementation from previous artifact
+            case 'polygon': {
+                if (!room.points || room.points.length < 3) return null;
+
+                const baseZ = (room.bounds.y / 50) - (boxDepth/2);
+                const baseX = (room.bounds.x / 50) - (boxWidth/2);
+
+                room.points.forEach((point, i) => {
+                    const x = (point.x / 50) + baseX;
+                    const z = (point.y / 50) + baseZ;
+
+                    // Add vertices for both bottom and top
+                    positions.push(x, 0, z);
+                    positions.push(x, boxHeight, z);
+
+                    // Simple normal (might need improvement)
+                    normals.push(0, 0, 1, 0, 0, 1);
+
+                    // Basic UVs
+                    uvs.push(i / room.points.length, 0);
+                    uvs.push(i / room.points.length, 1);
+                });
+
+                // Create faces
+                for (let i = 0; i < room.points.length; i++) {
+                    const next = (i + 1) % room.points.length;
+                    const base = i * 2;
+                    const nextBase = next * 2;
+
+                    indices.push(
+                        base, base + 1, nextBase,
+                        base + 1, nextBase + 1, nextBase
+                    );
+                }
+                break;
             }
+
+            default: { // rectangle
+                const x1 = (room.bounds.x / 50) - (boxWidth/2);
+                const x2 = x1 + (room.bounds.width / 50);
+                const z1 = (room.bounds.y / 50) - (boxDepth/2);
+                const z2 = z1 + (room.bounds.height / 50);
+
+                // Add vertices for walls
+                const wallVertices = [
+                    // Front wall
+                    x1, 0, z1, x1, boxHeight, z1, x2, boxHeight, z1, x2, 0, z1,
+                    // Back wall
+                    x1, 0, z2, x2, 0, z2, x2, boxHeight, z2, x1, boxHeight, z2,
+                    // Left wall
+                    x1, 0, z1, x1, 0, z2, x1, boxHeight, z2, x1, boxHeight, z1,
+                    // Right wall
+                    x2, 0, z1, x2, boxHeight, z1, x2, boxHeight, z2, x2, 0, z2
+                ];
+                positions.push(...wallVertices);
+
+                // Add indices for walls
+                for (let i = 0; i < 4; i++) {
+                    const base = i * 4;
+                    indices.push(
+                        base, base + 1, base + 2,
+                        base, base + 2, base + 3
+                    );
+                }
+
+                // Add simple normals and UVs
+                for (let i = 0; i < wallVertices.length / 3; i++) {
+                    normals.push(0, 0, 1);
+                    uvs.push(i % 2, Math.floor(i / 2) % 2);
+                }
+                break;
+            }
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+        geometry.setIndex(indices);
+
+        return geometry;
+    };
+
+    // Create materials
+    const materials = [
+        new THREE.MeshStandardMaterial({ 
+            map: texture,
+            side: THREE.DoubleSide
+        }),
+        new THREE.MeshStandardMaterial({ 
+            color: 0x808080,
+            roughness: 0.7,
+            side: THREE.DoubleSide
+        })
+    ];
+
+    // Create main dungeon mesh
+    const dungeon = new THREE.Mesh(dungeonGeometry, materials[1]);
+    scene.add(dungeon);
+
+    // Create rooms and subtract from main mesh
+    updateStatus(20);
+    this.rooms.forEach((room, index) => {
+        const roomGeometry = createRoomGeometry(room);
+        if (roomGeometry) {
+            const roomMesh = new THREE.Mesh(roomGeometry, materials[1]);
+            scene.add(roomMesh);
+        }
+        updateStatus(20 + (60 * (index / this.rooms.length)));
+    });
+
+    // Add floor
+    const floorGeometry = new THREE.PlaneGeometry(boxWidth, boxDepth);
+    const floor = new THREE.Mesh(floorGeometry, materials[0]);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0.01; // Slightly above ground to prevent z-fighting
+    scene.add(floor);
+
+    // Add lighting
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 10, 5);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+// Position camera at player start if available
+if (this.playerStart) {
+        camera.position.set(
+            this.playerStart.x / 50 - boxWidth / 2,
+            1.7, // Eye level
+            this.playerStart.y / 50 - boxDepth / 2
+        );
+    }
+
+    // Setup controls
+    const controls = new THREE.PointerLockControls(camera, renderer.domElement);
+    
+    const moveState = {
+        forward: false,
+        backward: false,
+        left: false,
+        right: false,
+        speed: 0.15,
+        sprint: false
+    };
+
+    const handleKeyDown = (event) => {
+        switch (event.code) {
+            case 'ArrowUp':
+            case 'KeyW':
+                moveState.forward = true;
+                break;
+            case 'ArrowDown':
+            case 'KeyS':
+                moveState.backward = true;
+                break;
+            case 'ArrowLeft':
+            case 'KeyA':
+                moveState.left = true;
+                break;
+            case 'ArrowRight':
+            case 'KeyD':
+                moveState.right = true;
+                break;
+            case 'ShiftLeft':
+                moveState.sprint = true;
+                moveState.speed = 0.3;
+                break;
+        }
+    };
+
+    const handleKeyUp = (event) => {
+        switch (event.code) {
+            case 'ArrowUp':
+            case 'KeyW':
+                moveState.forward = false;
+                break;
+            case 'ArrowDown':
+            case 'KeyS':
+                moveState.backward = false;
+                break;
+            case 'ArrowLeft':
+            case 'KeyA':
+                moveState.left = false;
+                break;
+            case 'ArrowRight':
+            case 'KeyD':
+                moveState.right = false;
+                break;
+            case 'ShiftLeft':
+                moveState.sprint = false;
+                moveState.speed = 0.15;
+                break;
+        }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+
+    // Lock/unlock controls
+    renderer.domElement.addEventListener('click', () => {
+        controls.lock();
+    });
+
+    controls.addEventListener('lock', () => {
+        renderer.domElement.style.cursor = 'none';
+    });
+
+    controls.addEventListener('unlock', () => {
+        renderer.domElement.style.cursor = 'auto';
+    });
+
+    updateStatus(100);
+
+    // Animation loop
+    const animate = () => {
+        const currentSpeed = moveState.speed;
+        
+        // Handle movement
+        if (moveState.forward) controls.moveForward(currentSpeed);
+        if (moveState.backward) controls.moveForward(-currentSpeed);
+        if (moveState.left) controls.moveRight(-currentSpeed);
+        if (moveState.right) controls.moveRight(currentSpeed);
+
+        // Keep player at constant height (no jumping/falling)
+        camera.position.y = 1.7;
+
+        // Render the scene
+        renderer.render(scene, camera);
+    };
+
+    // Return all necessary objects and cleanup function
+    return { 
+        scene, 
+        camera, 
+        renderer, 
+        animate, 
+        controls,
+        cleanup: () => {
+            // Remove event listeners
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('keyup', handleKeyUp);
+            
+            // Dispose of renderer
+            renderer.dispose();
+            
+            // Dispose of geometries and materials
+            scene.traverse(object => {
+                if (object.geometry) {
+                    object.geometry.dispose();
+                }
+                if (object.material) {
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(material => material.dispose());
+                    } else {
+                        object.material.dispose();
+                    }
+                }
+            });
+        }
+    };
+}
+
+setupDrawer() {
+    const drawer = document.createElement('sl-drawer');
+    drawer.label = "3D View";
+    drawer.placement = "end";
+    drawer.classList.add('drawer-3d-view');
+    // Use CSS custom property for width
+    drawer.style.setProperty('--size', '75vw');
+    
+    // Container for Three.js
+    const container = document.createElement('div');
+    container.style.width = '100%';
+    container.style.height = '100%';
+    drawer.appendChild(container);
+    
+    // Progress indicator
+    const progress = document.createElement('sl-progress-bar');
+    progress.style.display = 'none';
+    drawer.appendChild(progress);
+
+    document.body.appendChild(drawer);
+    return { drawer, container, progress };
+}
+
+// async show3DView() {
+//     const { drawer, container, progress } = this.setupDrawer();
+    
+//     progress.style.display = 'block';
+//     progress.value = 0;
+    
+//     const updateStatus = (percent) => {
+//         progress.value = percent;
+//     };
+
+//     try {
+//         drawer.show();
+//         const { scene, camera, renderer, animate, controls } = 
+//             await this.init3DScene(updateStatus);
+        
+//         container.appendChild(renderer.domElement);
+        
+//         // Animation loop that respects drawer state
+//         const animationLoop = () => {
+//             if (drawer.open) {
+//                 requestAnimationFrame(animationLoop);
+//                 animate();
+//             }
+//         };
+//         animationLoop();
+
+//     } catch (error) {
+//         console.error('Error creating 3D view:', error);
+//         container.innerHTML = `
+//             <div style="color: red; padding: 20px;">
+//                 Error creating 3D view: ${error.message}
+//             </div>
+//         `;
+//     } finally {
+//         progress.style.display = 'none';
+//     }
+// }
+
+async show3DView() {
+    const { drawer, container, progress } = this.setupDrawer();
+    
+    progress.style.display = 'block';
+    progress.value = 0;
+    
+    const updateStatus = (percent) => {
+        progress.value = percent;
+        progress.innerHTML = `Processing... ${Math.round(percent)}%`;
+    };
+
+    try {
+        drawer.show();
+        const { scene, camera, renderer, animate, controls, cleanup } = 
+            await this.init3DScene(updateStatus);
+        
+        container.appendChild(renderer.domElement);
+        
+        // Instructions overlay
+        const instructions = document.createElement('div');
+        instructions.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            pointer-events: none;
+        `;
+        instructions.innerHTML = `
+            Click to start<br>
+            WASD or Arrow Keys to move<br>
+            Hold Shift to sprint<br>
+            ESC to exit
+        `;
+        container.appendChild(instructions);
+
+        // Hide instructions when controls are locked
+        controls.addEventListener('lock', () => {
+            instructions.style.display = 'none';
+        });
+
+        controls.addEventListener('unlock', () => {
+            instructions.style.display = 'block';
+        });
+        
+        // Animation loop that respects drawer state
+        let animationFrameId;
+        const animationLoop = () => {
+            if (drawer.open) {
+                animationFrameId = requestAnimationFrame(animationLoop);
+                animate();
+            }
+        };
+        animationLoop();
+
+        // Cleanup when drawer closes
+        drawer.addEventListener('sl-after-hide', () => {
+            cancelAnimationFrame(animationFrameId);
+            cleanup();
+            container.innerHTML = '';
+        }, { once: true });
+
+    } catch (error) {
+        console.error('Error creating 3D view:', error);
+        container.innerHTML = `
+            <div style="color: red; padding: 20px;">
+                Error creating 3D view: ${error.message}
+            </div>
+        `;
+    } finally {
+        progress.style.display = 'none';
+    }
+}
+
+createRoomShape(room) {
+    let geometry;
+    
+    switch(room.shape) {
+        case 'circle':
+            const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
+            geometry = new THREE.CylinderGeometry(radius, radius, 4, 32);
+            break;
+            
+        case 'polygon':
+            if (!room.points || room.points.length < 3) return null;
+            
+            const shape = new THREE.Shape();
+            room.points.forEach((point, index) => {
+                const x = point.x / 50;
+                const y = point.y / 50;
+                if (index === 0) shape.moveTo(x, y);
+                else shape.lineTo(x, y);
+            });
+            shape.closePath();
+            
+            geometry = new THREE.ExtrudeGeometry(shape, {
+                depth: 4,
+                bevelEnabled: false
+            });
+            break;
+            
+        default: // rectangle
+            geometry = new THREE.BoxGeometry(
+                room.bounds.width / 50,
+                4,
+                room.bounds.height / 50
+            );
+    }
+    
+    const material = new THREE.MeshStandardMaterial({
+        color: 0x808080,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.0 // Make it invisible
+    });
+    
+    const mesh = new THREE.Mesh(geometry, material);
+    
+    // Position the room correctly
+    mesh.position.set(
+        room.bounds.x / 50,
+        2, // Half of height
+        room.bounds.y / 50
+    );
+    
+    return mesh;
+}
+
+async processRooms(scene, mainBox, updateStatus) {
+    let result = mainBox;
+    const totalRooms = this.rooms.length;
+    
+    for (let i = 0; i < totalRooms; i++) {
+        const room = this.rooms[i];
+        const roomMesh = this.createRoomShape(room);
+        
+        if (roomMesh) {
+            try {
+                // Perform CSG subtraction
+                const bspA = CSG.fromMesh(result);
+                const bspB = CSG.fromMesh(roomMesh);
+                const bspResult = bspA.subtract(bspB);
+                result = CSG.toMesh(bspResult, result.matrix, result.material);
+            } catch (error) {
+                console.error(`Error processing room ${room.id}:`, error);
+            }
+        }
+        
+        if (updateStatus) {
+            updateStatus(20 + (60 * (i / totalRooms)));
+        }
+    }
+    
+    scene.add(result);
+    return result;
+}
+
+// async createRoomGeometry(scene, updateStatus) {
+//     // Create a large box representing the entire map
+//     const mapGeometry = new THREE.BoxGeometry(
+//         this.baseImage.width / 50,  // Scale down for reasonable size
+//         20,  // Height
+//         this.baseImage.height / 50
+//     );
+//     const mapMaterial = new THREE.MeshStandardMaterial({ 
+//         color: 0x444444 
+//     });
+//     const mapMesh = new THREE.Mesh(mapGeometry, mapMaterial);
+    
+//     // For each room, create a "negative" space
+//     let roomsProcessed = 0;
+//     const totalRooms = this.rooms.length;
+
+//     for (const room of this.rooms) {
+//         if (updateStatus) {
+//             updateStatus((roomsProcessed / totalRooms) * 100);
+//         }
+
+//         const roomShape = this.createRoomShape(room);
+//         if (roomShape) {
+//             // Subtract room shape from map using CSG
+//             // We'll implement CSG in the next step
+//         }
+//         roomsProcessed++;
+//     }
+
+//     scene.add(mapMesh);
+// }
         }
 
 
