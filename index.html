@@ -26,14 +26,13 @@
       href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/themes/light.css"
     />
 
+    <!-- Load required Shoelace components -->
     <script type="module">
       import { setBasePath } from 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/utilities/base-path.js'
       setBasePath(
         'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/'
       )
     </script>
-
-    <!-- Load required Shoelace components -->
     <script
       type="module"
       src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/button/button.js"
@@ -77,6 +76,18 @@
     <script
       type="module"
       src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/progress-bar/progress-bar.js"
+    ></script>
+    <script
+      type="module"
+      src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/radio/radio.js"
+    ></script>
+    <script
+      type="module"
+      src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/radio-group/radio-group.js"
+    ></script>
+    <script
+      type="module"
+      src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/checkbox/checkbox.js"
     ></script>
 
     <!-- Three.js -->
@@ -973,7 +984,36 @@
         margin-right: 4px;
       }
 
+      .room-block.wall-room {
+        background: rgba(70, 70, 70, 0.3);
+        border: 2px dashed #666;
+      }
 
+      .room-block.room-room {
+        background: rgba(128, 128, 255, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.7);
+      }
+
+      .room-block[data-texture-room='true'] {
+        border: 2px dashed #4caf50;
+        background: rgba(76, 175, 80, 0.2);
+      }
+
+      .layer-item .layer-name::before {
+        margin-right: 4px;
+      }
+
+      .layer-item[data-room-type='wall'] .layer-name::before {
+        content: '🧱';
+      }
+
+      .layer-item[data-room-type='room'] .layer-name::before {
+        content: '🏠';
+      }
+
+      .layer-item[data-texture-room='true'] .layer-name::before {
+        content: '🎨';
+      }
     </style>
   </head>
 
@@ -1020,33 +1060,10 @@
               </div>
               <div
                 class="tool-button"
-                id="polygonTool"
-                data-tooltip="Polygon [P]"
-              >
-                <span class="material-icons">pentagon</span>
-              </div>
-              <div
-                class="tool-button"
                 id="wallTool"
-                data-tooltip="Define Wall [W]"
+                data-tooltip="Create Polygon/Wall [W]"
               >
                 <span class="material-icons">account_tree</span>
-              </div>
-              <div class="tool-button" id="panTool" data-tooltip="Pan [Space]">
-                <span class="material-icons">pan_tool</span>
-              </div>
-              <div class="tool-button" id="centerMap" data-tooltip="Center Map">
-                <span class="material-icons">center_focus_strong</span>
-              </div>
-              <div
-                class="tool-button"
-                id="zoomFit"
-                data-tooltip="Fit to View [F]"
-              >
-                <span class="material-icons">fit_screen</span>
-              </div>
-              <div class="tool-button" id="addRoomBtn" data-tooltip="Add Room">
-                <span class="material-icons">add_box</span>
               </div>
             </div>
           </div>
@@ -1154,15 +1171,15 @@
       }
 
       class Token {
-    constructor(x, y, size, image, type = 'monster') {
-        this.x = x;
-        this.y = y;
-        this.size = size || 1;
-        this.image = image;
-        this.type = type;
-        this.height = 2; // Height above ground
-    }
-}
+        constructor(x, y, size, image, type = 'monster') {
+          this.x = x
+          this.y = y
+          this.size = size || 1
+          this.image = image
+          this.type = type
+          this.height = 2 // Height above ground
+        }
+      }
 
       class MonsterManager {
         constructor(mapEditor) {
@@ -1910,7 +1927,6 @@
         }
 
         cloneEncounter(marker) {
-
           // Clone an existing encounter marker
           const offset = 50
 
@@ -1956,7 +1972,6 @@
               }
 
               Object.assign(tokenElement.style, styles)
-
             }
 
             // Call updateMarkerAppearance but preserve our size
@@ -2076,7 +2091,6 @@
         }
       }
 
-
       class Room {
         constructor(id, bounds, name = '', shape = 'rectangle', type = 'wall') {
           // Default to 'wall'
@@ -2101,15 +2115,18 @@
         }
 
         createDOMElement(editor) {
-    const roomElement = document.createElement('div');
-    roomElement.id = `room-${this.id}`;
-    roomElement.className = `room-block ${this.shape}-room ${this.type}-room`;
-    roomElement.style.pointerEvents = 'auto';
+          const roomElement = document.createElement('div')
+          roomElement.id = `room-${this.id}`
+          roomElement.className = `room-block ${this.shape}-room ${this.type}-room`
+          roomElement.style.pointerEvents = 'auto'
 
-    // Add position tooltip
-    const gridX = Math.floor(this.bounds.x / editor.cellSize);
-    const gridY = Math.floor(this.bounds.y / editor.cellSize);
-    roomElement.setAttribute('data-tooltip', `Grid Position: ${gridX}, ${gridY}`);
+          // Add position tooltip
+          const gridX = Math.floor(this.bounds.x / editor.cellSize)
+          const gridY = Math.floor(this.bounds.y / editor.cellSize)
+          roomElement.setAttribute(
+            'data-tooltip',
+            `Grid Position: ${gridX}, ${gridY}`
+          )
           // roomElement.style.display = this.visible ? 'block' : 'none';
           // roomElement.style.pointerEvents = 'auto';
           console.log(`Creating element for ${this.shape} room`)
@@ -2208,6 +2225,10 @@
             .addEventListener('click', () => {
               editor.finalizeRoom(this)
             })
+
+          //   controls.querySelector('.edit-btn').addEventListener('click', () => {
+          //     editor.layersPanel.showRenameDialog(this)
+          //   })
 
           controls.querySelector('.edit-btn').addEventListener('click', () => {
             editor.layersPanel.showRenameDialog(this)
@@ -2320,6 +2341,16 @@
               vertex.style.left = `${(point.x / this.bounds.width) * 100}%`
               vertex.style.top = `${(point.y / this.bounds.height) * 100}%`
             })
+          }
+
+          // Update appearance based on type and name
+          this.element.classList.remove('wall-room', 'room-room')
+          this.element.classList.add(`${this.type}-room`)
+
+          // Special styling for texture rooms
+          if (this.name === 'WallTexture' || this.name === 'RoomTexture') {
+            this.element.style.border = '2px dashed #4CAF50'
+            this.element.style.backgroundColor = 'rgba(76, 175, 80, 0.2)'
           }
         }
 
@@ -2447,9 +2478,16 @@
 
         createLayerItem(room) {
           const layerItem = document.createElement('div')
-          layerItem.className = `layer-item ${
+          layerItem.className = `layer-item ${room.type}-room ${
             room.finalized ? '' : 'editing'
           } ${room.id === this.editor.selectedRoomId ? 'selected' : ''}`
+
+          // Add data attributes for room type and texture
+          layerItem.setAttribute('data-room-type', room.type)
+          if (room.name === 'WallTexture' || room.name === 'RoomTexture') {
+            layerItem.setAttribute('data-texture-room', 'true')
+          }
+
           layerItem.innerHTML = `
             <div class="layer-content">
                 <div class="layer-visibility">
@@ -2527,9 +2565,14 @@
           })
 
           // Add existing button handlers
+          //   layerItem.querySelector('.edit-btn').addEventListener('click', e => {
+          //     e.stopPropagation()
+          //     this.editor.editRoom(room)
+          //   })
+
           layerItem.querySelector('.edit-btn').addEventListener('click', e => {
             e.stopPropagation()
-            this.editor.editRoom(room)
+            this.showRenameDialog(room)
           })
 
           layerItem
@@ -2549,30 +2592,115 @@
 
         async showRenameDialog(room) {
           const dialog = document.createElement('sl-dialog')
-          dialog.label = 'Rename Room'
+          dialog.label = 'Room Properties'
           dialog.innerHTML = `
-        <div style="margin-bottom: 1rem;">
-            <sl-input 
-                id="roomNameInput" 
-                value="${room.name}" 
-                label="Room Name"
-            ></sl-input>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Name input -->
+      <sl-input 
+        id="roomNameInput" 
+        value="${room.name}" 
+        label="Room Name"
+      ></sl-input>
+
+      <!-- Room/Wall Type Toggle -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label>Type:</label>
+        <sl-button-group>
+          <sl-button 
+            size="small" 
+            id="roomTypeBtn"
+            variant="${room.type === 'room' ? 'primary' : 'default'}"
+          >Room</sl-button>
+          <sl-button 
+            size="small" 
+            id="wallTypeBtn"
+            variant="${room.type === 'wall' ? 'primary' : 'default'}"
+          >Wall</sl-button>
+        </sl-button-group>
+      </div>
+
+      <!-- Texture Controls (only for rectangle rooms) -->
+      ${
+        room.shape === 'rectangle'
+          ? `
+        <div style="border: 1px solid #444; padding: 12px; border-radius: 4px;">
+          <sl-checkbox id="setAsTexture">Set as Texture</sl-checkbox>
+          
+          <div id="textureOptions" style="margin-top: 12px; display: none;">
+            <sl-radio-group label="Texture Type" name="textureType">
+              <sl-radio value="wall">Wall Texture</sl-radio>
+              <sl-radio value="room">Room Texture</sl-radio>
+            </sl-radio-group>
+          </div>
         </div>
-        <div slot="footer">
-            <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
-            <sl-button variant="primary" class="save-btn">Save</sl-button>
-        </div>
-    `
+      `
+          : ''
+      }
+    </div>
+
+    <div slot="footer">
+      <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+      <sl-button variant="primary" class="save-btn">Save</sl-button>
+    </div>
+  `
 
           document.body.appendChild(dialog)
 
-          // Wait for custom elements to be defined
+          // Get references to controls
+          const nameInput = dialog.querySelector('#roomNameInput')
+          const setAsTextureCheckbox = dialog.querySelector('#setAsTexture')
+          const textureOptions = dialog.querySelector('#textureOptions')
+          const textureTypeRadios = dialog.querySelector('sl-radio-group')
+          const roomTypeBtn = dialog.querySelector('#roomTypeBtn')
+          const wallTypeBtn = dialog.querySelector('#wallTypeBtn')
+
+          // Set up event handlers
+          if (setAsTextureCheckbox) {
+            setAsTextureCheckbox.addEventListener('sl-change', e => {
+              if (e.target.checked) {
+                textureOptions.style.display = 'block'
+                // Set name based on selected texture type
+                const textureType = textureTypeRadios.value
+                nameInput.value =
+                  textureType === 'wall' ? 'WallTexture' : 'RoomTexture'
+                nameInput.disabled = true
+              } else {
+                textureOptions.style.display = 'none'
+                nameInput.disabled = false
+              }
+            })
+          }
+
+          if (textureTypeRadios) {
+            textureTypeRadios.addEventListener('sl-change', e => {
+              if (setAsTextureCheckbox.checked) {
+                nameInput.value =
+                  e.target.value === 'wall' ? 'WallTexture' : 'RoomTexture'
+              }
+            })
+          }
+
+          // Handle room/wall type toggle
+          roomTypeBtn.addEventListener('click', () => {
+            roomTypeBtn.variant = 'primary'
+            wallTypeBtn.variant = 'default'
+            room.type = 'room'
+          })
+
+          wallTypeBtn.addEventListener('click', () => {
+            wallTypeBtn.variant = 'primary'
+            roomTypeBtn.variant = 'default'
+            room.type = 'wall'
+          })
+
           await customElements.whenDefined('sl-dialog')
           await customElements.whenDefined('sl-input')
           await customElements.whenDefined('sl-button')
+          await customElements.whenDefined('sl-checkbox')
+          await customElements.whenDefined('sl-radio')
+          await customElements.whenDefined('sl-radio-group')
 
           return new Promise(resolve => {
-            const input = dialog.querySelector('sl-input')
             const cancelBtn = dialog.querySelector('.cancel-btn')
             const saveBtn = dialog.querySelector('.save-btn')
 
@@ -2582,34 +2710,54 @@
             }
 
             const handleSave = () => {
-              const newName = input.value.trim()
+              const newName = nameInput.value.trim()
               if (newName) {
-                room.name = newName
+                const isTextureRoom = setAsTextureCheckbox?.checked || false
+                if (isTextureRoom && room.shape === 'rectangle') {
+                  // Set the appropriate texture name based on radio selection
+                  const textureType = textureTypeRadios.value
+                  room.name =
+                    textureType === 'wall' ? 'WallTexture' : 'RoomTexture'
+                  // Ensure type matches the texture type
+                  room.type = textureType
+                } else {
+                  room.name = newName
+                  // Update room type based on toggle buttons
+                  room.type =
+                    roomTypeBtn.variant === 'primary' ? 'room' : 'wall'
+                }
+
+                // Update the layer list and room appearance
+                // this.layersPanel.updateLayersList();
                 this.updateLayersList()
+
+                // Update the room's visual appearance
+                const roomElement = document.getElementById(`room-${room.id}`)
+                if (roomElement) {
+                  roomElement.classList.remove('wall-room', 'room-room')
+                  roomElement.classList.add(`${room.type}-room`)
+                }
+
+                dialog.hide()
+                resolve(true)
               }
-              dialog.hide()
-              resolve(true)
             }
 
-            // Setup event handlers
             cancelBtn.addEventListener('click', handleCancel)
             saveBtn.addEventListener('click', handleSave)
 
             dialog.addEventListener('sl-after-hide', () => {
-              // Cleanup
               cancelBtn.removeEventListener('click', handleCancel)
               saveBtn.removeEventListener('click', handleSave)
               dialog.remove()
             })
 
-            // Show dialog and focus input after a short delay
             dialog.show()
             setTimeout(() => {
-              input.focus()
+              nameInput.focus()
             }, 100)
 
-            // Add keyboard handlers
-            input.addEventListener('keydown', e => {
+            nameInput.addEventListener('keydown', e => {
               if (e.key === 'Enter') {
                 handleSave()
               } else if (e.key === 'Escape') {
@@ -2911,7 +3059,6 @@
 
             console.log('Grid settings restored:', this.gridDimensions)
 
-
             // Restore rooms
             for (const roomData of saveData.rooms) {
               console.log('Creating room:', {
@@ -2945,20 +3092,20 @@
               )
 
               // Handle monster tokens
-            //   if (marker.type === 'encounter' && marker.data.monster) {
-            //     this.updateMarkerAppearance(marker)
-            //   }
+              //   if (marker.type === 'encounter' && marker.data.monster) {
+              //     this.updateMarkerAppearance(marker)
+              //   }
 
-// Add console log after token creation
-if (marker.type === 'encounter' && marker.data.monster) {
-    this.updateMarkerAppearance(marker);
-    const tokenData = this.getMonsterTokenData(marker);
-    if (tokenData) {
-        if (!this.tokens) this.tokens = [];
-        this.tokens.push(tokenData);
-        console.log('Added monster token:', tokenData);
-    }
-}
+              // Add console log after token creation
+              if (marker.type === 'encounter' && marker.data.monster) {
+                this.updateMarkerAppearance(marker)
+                const tokenData = this.getMonsterTokenData(marker)
+                if (tokenData) {
+                  if (!this.tokens) this.tokens = []
+                  this.tokens.push(tokenData)
+                  console.log('Added monster token:', tokenData)
+                }
+              }
             }
 
             // Restore teleport connections
@@ -3095,12 +3242,12 @@ if (marker.type === 'encounter' && marker.data.monster) {
             const availableHeight =
               totalHeight - headerHeight - toolbarHeight - 40 // 40px for padding
 
-            console.log('Height calculations:', {
-              totalHeight,
-              headerHeight,
-              toolbarHeight,
-              availableHeight
-            })
+            // console.log('Height calculations:', {
+            //   totalHeight,
+            //   headerHeight,
+            //   toolbarHeight,
+            //   availableHeight
+            // })
 
             // Set the panel height
             layersPanel.style.height = `${availableHeight}px`
@@ -3169,7 +3316,6 @@ if (marker.type === 'encounter' && marker.data.monster) {
               this.startPolygonRoom()
             }
           })
-
         }
 
         setShape(shape) {
@@ -3372,7 +3518,6 @@ if (marker.type === 'encounter' && marker.data.monster) {
             create3dBtn.addEventListener('click', () => this.show3DView())
           }
 
-          // Tool buttons
           const toolButtons = document.querySelectorAll('.tool-button')
           toolButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -3383,8 +3528,8 @@ if (marker.type === 'encounter' && marker.data.monster) {
                 case 'circleTool':
                   this.setTool('circle')
                   break
-                case 'polygonTool':
-                  this.setTool('polygon')
+                case 'wallTool':
+                  this.setTool('wall')
                   break
                 case 'panTool':
                   this.setTool('pan')
@@ -3399,7 +3544,8 @@ if (marker.type === 'encounter' && marker.data.monster) {
             })
           })
 
-          // Canvas events
+          this.setupMiddleClickHandlers()
+
           // Canvas events
           const wrapper = document.getElementById('canvasWrapper')
           if (wrapper) {
@@ -3414,7 +3560,6 @@ if (marker.type === 'encounter' && marker.data.monster) {
             wrapper.addEventListener('mouseup', this.handleMouseUp.bind(this))
             wrapper.addEventListener('wheel', this.handleWheel.bind(this))
           }
-
 
           document.getElementById('wallTool')?.addEventListener('click', () => {
             this.setTool('wall')
@@ -3479,12 +3624,11 @@ if (marker.type === 'encounter' && marker.data.monster) {
             })
 
           window.addEventListener('resize', () => this.handleResize())
-
         }
 
         setTool(tool) {
-          if (this.currentTool === 'polygon') {
-            this.cleanupPolygonTool()
+          if (this.currentTool === 'wall') {
+            this.cleanupWallTool()
           }
           this.currentTool = tool
 
@@ -3495,7 +3639,6 @@ if (marker.type === 'encounter' && marker.data.monster) {
             if (
               (tool === 'rectangle' && button.id === 'selectTool') ||
               (tool === 'circle' && button.id === 'circleTool') ||
-              (tool === 'polygon' && button.id === 'polygonTool') ||
               (tool === 'wall' && button.id === 'wallTool') ||
               (tool === 'pan' && button.id === 'panTool')
             ) {
@@ -3507,30 +3650,28 @@ if (marker.type === 'encounter' && marker.data.monster) {
             this.startWallCreation()
           }
 
+          // Update cursor style
+          const wrapper = document.getElementById('canvasWrapper')
+          if (tool === 'pan') {
+            wrapper.style.cursor = 'grab'
+          } else if (['rectangle', 'circle', 'wall'].includes(tool)) {
+            wrapper.style.cursor = 'crosshair'
+          } else {
+            wrapper.style.cursor = 'default'
+          }
+
+          // Update room pointer events
           const rooms = document.querySelectorAll('.room-block')
           rooms.forEach(room => {
-            // Allow click-through only when using marker tools
             room.style.pointerEvents = tool.startsWith('marker-')
               ? 'none'
               : 'auto'
-
-            // Make sure controls and handles always work
             room
               .querySelectorAll('.room-controls, .resize-handle')
               .forEach(element => {
                 element.style.pointerEvents = 'auto'
               })
           })
-
-          // Update cursor
-          const wrapper = document.getElementById('canvasWrapper')
-          if (tool === 'pan') {
-            wrapper.style.cursor = 'grab'
-          } else if (tool === 'polygon') {
-            wrapper.style.cursor = 'crosshair'
-          } else {
-            wrapper.style.cursor = 'default'
-          }
         }
 
         handleResize() {
@@ -3563,16 +3704,24 @@ if (marker.type === 'encounter' && marker.data.monster) {
             return
           }
 
-          // Similar to polygon tool setup
           const wrapper = document.getElementById('canvasWrapper')
-          const clickHandler = e => {
+
+          // Remove any existing wall click handler
+          if (this.wallClickHandler) {
+            wrapper.removeEventListener('click', this.wallClickHandler)
+          }
+
+          // Create a new click handler
+          this.wallClickHandler = e => {
             if (this.currentTool === 'wall') {
+              e.preventDefault()
+              e.stopPropagation()
               this.handleWallClick(e)
             }
           }
 
-          wrapper.addEventListener('click', clickHandler)
-          this.wallClickHandler = clickHandler
+          // Add the click handler
+          wrapper.addEventListener('click', this.wallClickHandler)
         }
 
         handleWallClick(e) {
@@ -4030,22 +4179,77 @@ if (marker.type === 'encounter' && marker.data.monster) {
         }
 
         handleMouseDown(e) {
-          if (this.currentTool === 'pan') {
+          // Middle mouse button (wheel) press for panning
+          if (e.button === 1) {
+            // 1 is middle mouse button
+            e.preventDefault() // Prevent default middle-click behavior
             this.isDragging = true
             this.dragStart = { x: e.clientX, y: e.clientY }
+            const wrapper = document.getElementById('canvasWrapper')
+            wrapper.style.cursor = 'grabbing'
+            return
+          }
+
+          // Handle regular tools (rectangle and circle)
+          if (
+            ['rectangle', 'circle'].includes(this.currentTool) &&
+            e.button === 0
+          ) {
+            const wrapper = document.getElementById('canvasWrapper')
+            const rect = wrapper.getBoundingClientRect()
+            const x = (e.clientX - rect.left - this.offset.x) / this.scale
+            const y = (e.clientY - rect.top - this.offset.y) / this.scale
+
+            let roomSize
+            if (this.cellSize) {
+              roomSize = this.cellSize
+            } else {
+              roomSize = 100
+            }
+
+            const room = new Room(
+              Date.now(),
+              {
+                x: x - roomSize / 2,
+                y: y - roomSize / 2,
+                width: roomSize,
+                height: roomSize
+              },
+              '',
+              this.currentTool
+            )
+
+            this.rooms.push(room)
+            const roomElement = room.createDOMElement(this)
+            document.querySelector('.canvas-container').appendChild(roomElement)
+            room.updateEditState(true)
+            this.layersPanel.updateLayersList()
+            this.selectedRoomId = room.id
+          }
+        }
+
+        cleanupWallTool() {
+          const wrapper = document.getElementById('canvasWrapper')
+          if (this.wallClickHandler) {
+            wrapper.removeEventListener('click', this.wallClickHandler)
+            this.wallClickHandler = null
+          }
+          this.isDrawingPolygon = false
+          this.polygonPoints = []
+          if (this.polygonPreviewElement) {
+            this.polygonPreviewElement.remove()
+            this.polygonPreviewElement = null
           }
         }
 
         handleMouseMove(e) {
-          if (this.isDragging && this.currentTool === 'pan') {
+          if (this.isDragging) {
             const dx = e.clientX - this.dragStart.x
             const dy = e.clientY - this.dragStart.y
 
-            // Move both map and rooms
             this.offset.x += dx
             this.offset.y += dy
 
-            // Update drag start position
             this.dragStart = { x: e.clientX, y: e.clientY }
 
             // Update room positions
@@ -4070,8 +4274,39 @@ if (marker.type === 'encounter' && marker.data.monster) {
           }
         }
 
-        handleMouseUp() {
-          this.isDragging = false
+        // Update handleMouseUp to reset cursor
+        handleMouseUp(e) {
+          if (this.isDragging) {
+            this.isDragging = false
+            const wrapper = document.getElementById('canvasWrapper')
+            wrapper.style.cursor =
+              this.currentTool === 'wall' ? 'crosshair' : 'default'
+          }
+        }
+
+        // Add click handler for middle mouse button clicks
+        setupMiddleClickHandlers() {
+          const wrapper = document.getElementById('canvasWrapper')
+          let lastClickTime = 0
+          const doubleClickDelay = 300 // milliseconds
+
+          wrapper.addEventListener('auxclick', e => {
+            if (e.button === 1) {
+              // Middle mouse button
+              e.preventDefault()
+              const currentTime = new Date().getTime()
+
+              if (currentTime - lastClickTime < doubleClickDelay) {
+                // Double click - fit to view
+                this.zoomToFit()
+              } else {
+                // Single click - center map
+                this.centerMap()
+              }
+
+              lastClickTime = currentTime
+            }
+          })
         }
 
         handleWheel(e) {
@@ -4415,71 +4650,60 @@ if (marker.type === 'encounter' && marker.data.monster) {
           }
         }
 
-        // getMonsterSizeInSquares(size) {
-        //   const sizeMap = {
-        //     tiny: 0.5, // 2.5ft
-        //     small: 1, // 5ft
-        //     medium: 1, // 5ft
-        //     large: 2, // 10ft (2x2)
-        //     huge: 3, // 15ft (3x3)
-        //     gargantuan: 4 // 20ft (4x4)
-        //   }
-        //   return sizeMap[size.toLowerCase()] || 1
-        // }
+        getMonsterSizeInSquares(size) {
+          // Add debug logging
+          console.log('Getting monster size for:', size)
 
-getMonsterSizeInSquares(size) {
-    // Add debug logging
-    console.log('Getting monster size for:', size);
-    
-    // Handle undefined/null size
-    if (!size) {
-        console.log('Size undefined, defaulting to medium');
-        return 1; // Default to medium size
-    }
+          // Handle undefined/null size
+          if (!size) {
+            console.log('Size undefined, defaulting to medium')
+            return 1 // Default to medium size
+          }
 
-    const sizeMap = {
-        tiny: 0.5,    // 2.5ft
-        small: 1,     // 5ft
-        medium: 1,    // 5ft
-        large: 2,     // 10ft (2x2)
-        huge: 3,      // 15ft (3x3)
-        gargantuan: 4 // 20ft (4x4)
-    };
+          const sizeMap = {
+            tiny: 0.5, // 2.5ft
+            small: 1, // 5ft
+            medium: 1, // 5ft
+            large: 2, // 10ft (2x2)
+            huge: 3, // 15ft (3x3)
+            gargantuan: 4 // 20ft (4x4)
+          }
 
-    const calculatedSize = sizeMap[size.toLowerCase()] || 1;
-    console.log('Calculated size:', calculatedSize);
-    return calculatedSize;
-}
+          const calculatedSize = sizeMap[size.toLowerCase()] || 1
+          console.log('Calculated size:', calculatedSize)
+          return calculatedSize
+        }
 
-getMonsterTokenData(marker) {
-    console.log('Processing marker:', marker);
-    
-    if (!marker || !marker.data || !marker.data.monster) {
-        console.log('Invalid marker data');
-        return null;
-    }
-    
-    // Get correct token image source
-    const tokenSource = marker.data.monster.token.data || marker.data.monster.token.url;
-    console.log('Token image source:', tokenSource);
+        getMonsterTokenData(marker) {
+          console.log('Processing marker:', marker)
 
-    const monsterSize = this.getMonsterSizeInSquares(
-        marker.data.monster.basic.size || 'medium'
-    );
-    
-    const tokenData = {
-        x: marker.x,
-        y: marker.y,
-        size: monsterSize,
-        image: tokenSource,
-        type: 'monster',
-        name: marker.data.monster.name || 'Unknown Monster',
-        height: 2 * monsterSize
-    };
-    
-    console.log('Created token data:', tokenData);
-    return tokenData;
-}
+          if (!marker || !marker.data || !marker.data.monster) {
+            console.log('Invalid marker data')
+            return null
+          }
+
+          // Get correct token image source
+          const tokenSource =
+            marker.data.monster.token.data || marker.data.monster.token.url
+          console.log('Token image source:', tokenSource)
+
+          const monsterSize = this.getMonsterSizeInSquares(
+            marker.data.monster.basic.size || 'medium'
+          )
+
+          const tokenData = {
+            x: marker.x,
+            y: marker.y,
+            size: monsterSize,
+            image: tokenSource,
+            type: 'monster',
+            name: marker.data.monster.name || 'Unknown Monster',
+            height: 2 * monsterSize
+          }
+
+          console.log('Created token data:', tokenData)
+          return tokenData
+        }
         updateMarkerAppearance(marker) {
           if (marker.data.monster?.token) {
             const tokenSource =
@@ -4952,26 +5176,63 @@ getMonsterTokenData(marker) {
         }
 
         createTokenMesh(token) {
-    // Create billboard material
-    const spriteMaterial = new THREE.SpriteMaterial({
-        map: new THREE.TextureLoader().load(token.image),
-        transparent: true,
-        sizeAttenuation: true
-    });
-    
-    const sprite = new THREE.Sprite(spriteMaterial);
-    
-    // Scale based on token size and grid
-    const scale = token.size * (this.cellSize / 50);
-    sprite.scale.set(scale, scale, 1);
-    
-    // Position in world space
-    const x = (token.x / this.cellSize) - (boxWidth / 2);
-    const z = (token.y / this.cellSize) - (boxDepth / 2);
-    sprite.position.set(x, token.height, z);
-    
-    return sprite;
-}
+          // Create billboard material
+          const spriteMaterial = new THREE.SpriteMaterial({
+            map: new THREE.TextureLoader().load(token.image),
+            transparent: true,
+            sizeAttenuation: true
+          })
+
+          const sprite = new THREE.Sprite(spriteMaterial)
+
+          // Scale based on token size and grid
+          const scale = token.size * (this.cellSize / 50)
+          sprite.scale.set(scale, scale, 1)
+
+          // Position in world space
+          const x = token.x / this.cellSize - boxWidth / 2
+          const z = token.y / this.cellSize - boxDepth / 2
+          sprite.position.set(x, token.height, z)
+
+          return sprite
+        }
+
+        createTextureFromRoom(textureRoom) {
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          canvas.width = textureRoom.bounds.width
+          canvas.height = textureRoom.bounds.height
+
+          // Draw the portion of the map that contains the texture
+          ctx.drawImage(
+            this.baseImage,
+            textureRoom.bounds.x,
+            textureRoom.bounds.y,
+            textureRoom.bounds.width,
+            textureRoom.bounds.height,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          )
+
+          const texture = new THREE.CanvasTexture(canvas)
+          texture.wrapS = THREE.RepeatWrapping
+          texture.wrapT = THREE.RepeatWrapping
+
+          // Calculate repeats based on grid cell size
+          const horizontalRepeats = Math.round(
+            textureRoom.bounds.width / this.cellSize
+          )
+          const verticalRepeats = Math.round(
+            textureRoom.bounds.height / this.cellSize
+          )
+
+          texture.repeat.set(horizontalRepeats, verticalRepeats)
+          texture.needsUpdate = true
+
+          return texture
+        }
 
         async init3DScene(updateStatus) {
           const renderState = {
@@ -4995,58 +5256,22 @@ getMonsterTokenData(marker) {
           const wallTextureRoom = this.rooms.find(
             room => room.name === 'WallTexture'
           )
-          console.log('Looking for WallTexture room:', {
-            found: !!wallTextureRoom,
-            roomDetails: wallTextureRoom,
-            allRooms: this.rooms.map(r => r.name)
-          })
+          const roomTextureRoom = this.rooms.find(
+            room => room.name === 'RoomTexture'
+          )
+
           let wallTexture = null
+          let roomTexture = null
 
           if (wallTextureRoom) {
             console.log('Creating wall texture from room:', wallTextureRoom)
-            // Create a canvas to capture the wall texture portion
-            const canvas = document.createElement('canvas')
-            const ctx = canvas.getContext('2d')
-            canvas.width = wallTextureRoom.bounds.width
-            canvas.height = wallTextureRoom.bounds.height
+            wallTexture = this.createTextureFromRoom(wallTextureRoom)
+          }
 
-            // Draw the portion of the map that contains the wall texture
-            ctx.drawImage(
-              this.baseImage,
-              wallTextureRoom.bounds.x,
-              wallTextureRoom.bounds.y,
-              wallTextureRoom.bounds.width,
-              wallTextureRoom.bounds.height,
-              0,
-              0,
-              canvas.width,
-              canvas.height
-            )
-
-            wallTexture = new THREE.CanvasTexture(canvas)
-            wallTexture.wrapS = THREE.RepeatWrapping
-            wallTexture.wrapT = THREE.RepeatWrapping
-
-            // Calculate repeats based on grid cell size
-            const gridCellSize = this.cellSize // Your grid cell size
-            const horizontalRepeats = Math.round(
-              wallTextureRoom.bounds.width / gridCellSize
-            )
-            const verticalRepeats = Math.round(
-              wallTextureRoom.bounds.height / gridCellSize
-            )
-
-            console.log('Texture repeats:', {
-              gridCellSize,
-              textureWidth: wallTextureRoom.bounds.width,
-              textureHeight: wallTextureRoom.bounds.height,
-              horizontalRepeats,
-              verticalRepeats
-            })
-
-            wallTexture.repeat.set(horizontalRepeats, verticalRepeats)
-            wallTexture.needsUpdate = true
-            console.log('Wall texture created:', wallTexture)
+          // Create room texture if defined
+          if (roomTextureRoom) {
+            console.log('Creating room texture from room:', roomTextureRoom)
+            roomTexture = this.createTextureFromRoom(roomTextureRoom)
           }
 
           // Create floor texture
@@ -5075,53 +5300,59 @@ getMonsterTokenData(marker) {
             })
 
             switch (room.shape) {
+              case 'circle': {
+                const segments = 32
 
-            case 'circle': {
-    const segments = 32;
-    
-    // Calculate grid-aligned position
-    const gridX = Math.floor(room.bounds.x / this.cellSize);
-    const gridY = Math.floor(room.bounds.y / this.cellSize);
-    
-    const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
-    console.log('Radius:', radius);
-    console.log('Cell Size:', this.cellSize);
+                // Calculate grid-aligned position
+                const gridX = Math.floor(room.bounds.x / this.cellSize)
+                const gridY = Math.floor(room.bounds.y / this.cellSize)
 
+                const radius =
+                  Math.max(room.bounds.width, room.bounds.height) / 100
+                console.log('Radius:', radius)
+                console.log('Cell Size:', this.cellSize)
 
+                const dimensionFactor =
+                  Math.max(
+                    this.gridDimensions.width,
+                    this.gridDimensions.height
+                  ) / 10
+                const hiddenNumber = Math.ceil(dimensionFactor) * 2
+                // Add a small adjustment for smaller maps
+                const adjustment = this.gridDimensions.width < 40 ? -1 : 0
+                const finalNumber = hiddenNumber + adjustment
 
-const dimensionFactor = Math.max(this.gridDimensions.width, this.gridDimensions.height) / 10;
-const hiddenNumber = Math.ceil(dimensionFactor) * 2;
-// Add a small adjustment for smaller maps
-const adjustment = this.gridDimensions.width < 40 ? -1 : 0;
-const finalNumber = hiddenNumber + adjustment;
+                const offsetX =
+                  room.bounds.width / (this.cellSize - finalNumber)
+                const offsetZ =
+                  room.bounds.height / (this.cellSize - finalNumber)
 
-const offsetX = (room.bounds.width / (this.cellSize - finalNumber));
-const offsetZ = (room.bounds.height / (this.cellSize - finalNumber));
-    
-    const centerX = ((gridX * this.cellSize) / 50) + offsetX - (boxWidth/2);
-    const centerZ = ((gridY * this.cellSize) / 50) + offsetZ - (boxDepth/2);
+                const centerX =
+                  (gridX * this.cellSize) / 50 + offsetX - boxWidth / 2
+                const centerZ =
+                  (gridY * this.cellSize) / 50 + offsetZ - boxDepth / 2
 
-    console.log('Cylinder Position:', {
-        gridX,
-        gridY,
-        offsetX,
-        offsetZ,
-        finalX: centerX,
-        finalZ: centerZ
-    });
+                console.log('Cylinder Position:', {
+                  gridX,
+                  gridY,
+                  offsetX,
+                  offsetZ,
+                  finalX: centerX,
+                  finalZ: centerZ
+                })
 
-    console.log('Circle Position Calculations:', {
-    cellSize: this.cellSize,
-    gridDimensions: this.gridDimensions,
-    roomBounds: room.bounds,
-    calculatedOffsets: { offsetX, offsetZ },
-    boxDimensions: { boxWidth, boxDepth }
-});
+                console.log('Circle Position Calculations:', {
+                  cellSize: this.cellSize,
+                  gridDimensions: this.gridDimensions,
+                  roomBounds: room.bounds,
+                  calculatedOffsets: { offsetX, offsetZ },
+                  boxDimensions: { boxWidth, boxDepth }
+                })
 
-console.log('Grid settings restored:', {
-    width: this.gridDimensions?.width,
-    height: this.gridDimensions?.height
-});
+                console.log('Grid settings restored:', {
+                  width: this.gridDimensions?.width,
+                  height: this.gridDimensions?.height
+                })
 
                 if (isWall) {
                   // For walls, create solid cylinder including top and bottom
@@ -5624,35 +5855,26 @@ console.log('Grid settings restored:', {
               renderState
             })
 
-            const material = isWall
-              ? new THREE.MeshStandardMaterial({
-                  color: wallTexture ? 0xffffff : 0x505050,
-                  map: wallTexture,
-                  roughness: 0.8,
-                  metalness: 0.1,
-                  transparent: false,
-                  opacity: 1.0,
-                  side: THREE.DoubleSide,
-                  depthWrite: true
-                })
-              : new THREE.MeshStandardMaterial({
-                  color: 0x808080,
-                  roughness: 0.7,
-                  transparent: false,
-                  opacity: 1.0,
-                  side: THREE.DoubleSide
-                })
-
-            // Add debug for material creation
-            if (isWall) {
-              console.log('Creating wall material:', {
-                roomName: room.name,
-                roomType: room.type,
-                hasTexture: !!wallTexture,
-                textureValid: wallTexture ? wallTexture.image !== null : false,
-                isWall: isWall
-              })
-            }
+            const material =
+              room.type === 'wall'
+                ? new THREE.MeshStandardMaterial({
+                    color: wallTexture ? 0xffffff : 0x505050,
+                    map: wallTexture,
+                    roughness: 0.8,
+                    metalness: 0.1,
+                    transparent: false,
+                    opacity: 1.0,
+                    side: THREE.DoubleSide,
+                    depthWrite: true
+                  })
+                : new THREE.MeshStandardMaterial({
+                    color: roomTexture ? 0xffffff : 0x808080,
+                    map: roomTexture,
+                    roughness: 0.7,
+                    transparent: false,
+                    opacity: 1.0,
+                    side: THREE.DoubleSide
+                  })
 
             return new THREE.Mesh(geometry, material)
           }
@@ -5674,7 +5896,8 @@ console.log('Grid settings restored:', {
           updateStatus(20)
           this.rooms.forEach((room, index) => {
             // Skip the WallTexture room in 3D view
-            if (room.name === 'WallTexture') return
+            if (room.name === 'WallTexture' || room.name === 'RoomTexture')
+              return
 
             const roomMesh = createRoomGeometry(room)
             if (roomMesh) {
@@ -5718,58 +5941,60 @@ console.log('Grid settings restored:', {
           }
 
           if (this.tokens && this.tokens.length > 0) {
-    console.log('Creating 3D tokens:', this.tokens);
-    this.tokens.forEach(token => {
-        const textureLoader = new THREE.TextureLoader();
-        textureLoader.load(token.image, (texture) => {
-            console.log('Token texture loaded:', texture);
-            
-            const spriteMaterial = new THREE.SpriteMaterial({
-                map: texture,
-                transparent: true,
-                depthWrite: false,
-                sizeAttenuation: true
-            });
-            
-            const sprite = new THREE.Sprite(spriteMaterial);
-            const scale = token.size * (this.cellSize /25);
-            const aspectRatio = texture.image.width / texture.image.height;
-            sprite.scale.set(scale * aspectRatio, scale, 1);
-            
-            // Position at grid location
-            const x = (token.x / 50) - (boxWidth / 2);
-            const z = (token.y / 50) - (boxDepth / 2);
-            const y = token.size; // Height above ground based on size
-            
-            sprite.position.set(x, y, z);
-            scene.add(sprite);
-        }, 
-        undefined, // onProgress
-        (error) => {
-            console.error('Error loading token texture:', error);
-        });
-    
+            console.log('Creating 3D tokens:', this.tokens)
+            this.tokens.forEach(token => {
+              const textureLoader = new THREE.TextureLoader()
+              textureLoader.load(
+                token.image,
+                texture => {
+                  console.log('Token texture loaded:', texture)
 
-        // Keep debug box for reference
-        const debugGeometry = new THREE.BoxGeometry(
-            token.size * (this.cellSize / 25),
-            0.1,
-            token.size * (this.cellSize / 25)
-        );
-        const debugMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0xff0000,
-            transparent: true,
-            opacity: 0.5 
-        });
-        const debugBox = new THREE.Mesh(debugGeometry, debugMaterial);
-        debugBox.position.set(
-            (token.x / 50) - (boxWidth / 2),
-            0.05,
-            (token.y / 50) - (boxDepth / 2)
-        );
-        scene.add(debugBox);
-    });
-}
+                  const spriteMaterial = new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    depthWrite: false,
+                    sizeAttenuation: true
+                  })
+
+                  const sprite = new THREE.Sprite(spriteMaterial)
+                  const scale = token.size * (this.cellSize / 25)
+                  const aspectRatio = texture.image.width / texture.image.height
+                  sprite.scale.set(scale * aspectRatio, scale, 1)
+
+                  // Position at grid location
+                  const x = token.x / 50 - boxWidth / 2
+                  const z = token.y / 50 - boxDepth / 2
+                  const y = token.size // Height above ground based on size
+
+                  sprite.position.set(x, y, z)
+                  scene.add(sprite)
+                },
+                undefined, // onProgress
+                error => {
+                  console.error('Error loading token texture:', error)
+                }
+              )
+
+              // Keep debug box for reference
+              const debugGeometry = new THREE.BoxGeometry(
+                token.size * (this.cellSize / 25),
+                0.1,
+                token.size * (this.cellSize / 25)
+              )
+              const debugMaterial = new THREE.MeshBasicMaterial({
+                color: 0xff0000,
+                transparent: true,
+                opacity: 0.5
+              })
+              const debugBox = new THREE.Mesh(debugGeometry, debugMaterial)
+              debugBox.position.set(
+                token.x / 50 - boxWidth / 2,
+                0.05,
+                token.y / 50 - boxDepth / 2
+              )
+              scene.add(debugBox)
+            })
+          }
 
           // Setup controls
           const controls = new THREE.PointerLockControls(
@@ -5778,37 +6003,38 @@ console.log('Grid settings restored:', {
           )
 
           const moveState = {
-    forward: false,
-    backward: false,
-    left: false,
-    right: false,
-    speed: 0.025,
-    sprint: false,
-    mouseRightDown: false
-};
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            speed: 0.025,
+            sprint: false,
+            mouseRightDown: false
+          }
 
-renderer.domElement.addEventListener('contextmenu', (e) => {
-    e.preventDefault(); // Prevent right-click menu
-});
+          renderer.domElement.addEventListener('contextmenu', e => {
+            e.preventDefault() // Prevent right-click menu
+          })
 
-renderer.domElement.addEventListener('mousedown', (e) => {
-    if (e.button === 2) { // Right mouse button
-        moveState.mouseRightDown = true;
-        moveState.sprint = true;
-        moveState.speed = 0.05;
-    }
-});
+          renderer.domElement.addEventListener('mousedown', e => {
+            if (e.button === 2) {
+              // Right mouse button
+              moveState.mouseRightDown = true
+              moveState.sprint = true
+              moveState.speed = 0.05
+            }
+          })
 
-renderer.domElement.addEventListener('mouseup', (e) => {
-    if (e.button === 2) {
-        moveState.mouseRightDown = false;
-        // Only disable sprint if Shift is not held
-        if (!moveState.shiftHeld) {
-            moveState.sprint = false;
-            moveState.speed = 0.025;
-        }
-    }
-});
+          renderer.domElement.addEventListener('mouseup', e => {
+            if (e.button === 2) {
+              moveState.mouseRightDown = false
+              // Only disable sprint if Shift is not held
+              if (!moveState.shiftHeld) {
+                moveState.sprint = false
+                moveState.speed = 0.025
+              }
+            }
+          })
 
           const handleKeyDown = event => {
             switch (event.code) {
@@ -5828,11 +6054,11 @@ renderer.domElement.addEventListener('mouseup', (e) => {
               case 'KeyD':
                 moveState.right = true
                 break
-                case 'ShiftLeft':
-            moveState.shiftHeld = true;
-            moveState.sprint = true;
-            moveState.speed = 0.05;
-            break;
+              case 'ShiftLeft':
+                moveState.shiftHeld = true
+                moveState.sprint = true
+                moveState.speed = 0.05
+                break
               case 'KeyC':
                 if (!event.repeat) {
                   renderState.clippingEnabled = !renderState.clippingEnabled
@@ -5872,14 +6098,14 @@ renderer.domElement.addEventListener('mouseup', (e) => {
               case 'KeyD':
                 moveState.right = false
                 break
-                case 'ShiftLeft':
-            moveState.shiftHeld = false;
-            // Only disable sprint if right mouse is not held
-            if (!moveState.mouseRightDown) {
-                moveState.sprint = false;
-                moveState.speed = 0.025;
-            }
-            break;
+              case 'ShiftLeft':
+                moveState.shiftHeld = false
+                // Only disable sprint if right mouse is not held
+                if (!moveState.mouseRightDown) {
+                  moveState.sprint = false
+                  moveState.speed = 0.025
+                }
+                break
             }
           }
 
