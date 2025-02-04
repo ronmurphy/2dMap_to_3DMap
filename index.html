@@ -972,6 +972,8 @@
         content: '🧱';
         margin-right: 4px;
       }
+
+
     </style>
   </head>
 
@@ -1907,16 +1909,7 @@
           }
         }
 
-        // In MonsterManager class
         cloneEncounter(marker) {
-          // Debug log the original marker's properties
-          // console.log('Original marker:', {
-          //     type: marker.type,
-          //     monster: marker.data.monster?.basic,
-          //     size: marker.data.monster?.basic.size,
-          //     element: marker.element?.innerHTML,
-          //     tokenStyle: marker.element?.querySelector('.monster-token')?.style.cssText
-          // });
 
           // Clone an existing encounter marker
           const offset = 50
@@ -1964,14 +1957,6 @@
 
               Object.assign(tokenElement.style, styles)
 
-              // Log the new marker's properties
-              // console.log('New marker:', {
-              //     type: newMarker.type,
-              //     monster: newMarker.data.monster?.basic,
-              //     size: newMarker.data.monster?.basic.size,
-              //     element: newMarker.element?.innerHTML,
-              //     tokenStyle: tokenElement.style.cssText
-              // });
             }
 
             // Call updateMarkerAppearance but preserve our size
@@ -2091,21 +2076,6 @@
         }
       }
 
-      //     class Room {
-      // constructor(id, bounds, name = '', shape = 'rectangle', type = 'room') {
-      //     this.id = id;
-      //     this.bounds = bounds;
-      //     // If it's explicitly a wall type OR if the name starts with "Wall", treat it as a wall
-      //     this.type = type === 'wall' || name.startsWith('Wall') ? 'wall' : 'room';
-      //     this.name = name || `${this.type === 'wall' ? 'Wall' : 'Room'} ${id}`;
-      //     this.shape = shape;
-      //     this.finalized = false;
-      //     this.thumbnail = null;
-      //     this.element = null;
-      //     this.points = bounds.points || null;
-      //     this.isEditing = false;
-      //     this.visible = true;
-      // }
 
       class Room {
         constructor(id, bounds, name = '', shape = 'rectangle', type = 'wall') {
@@ -2131,10 +2101,15 @@
         }
 
         createDOMElement(editor) {
-          const roomElement = document.createElement('div')
-          roomElement.id = `room-${this.id}`
-          roomElement.className = `room-block ${this.shape}-room ${this.type}-room`
-          roomElement.style.pointerEvents = 'auto'
+    const roomElement = document.createElement('div');
+    roomElement.id = `room-${this.id}`;
+    roomElement.className = `room-block ${this.shape}-room ${this.type}-room`;
+    roomElement.style.pointerEvents = 'auto';
+
+    // Add position tooltip
+    const gridX = Math.floor(this.bounds.x / editor.cellSize);
+    const gridY = Math.floor(this.bounds.y / editor.cellSize);
+    roomElement.setAttribute('data-tooltip', `Grid Position: ${gridX}, ${gridY}`);
           // roomElement.style.display = this.visible ? 'block' : 'none';
           // roomElement.style.pointerEvents = 'auto';
           console.log(`Creating element for ${this.shape} room`)
@@ -2262,48 +2237,6 @@
           this.updateElement()
           return roomElement
         }
-
-        // In Room class
-        // static createFromSaved(roomData, editor) {
-        //     // Store the current tool
-        //     const previousTool = editor.currentTool;
-
-        //     // Set tool based on room shape
-        //     switch (roomData.shape) {
-        //         case 'circle':
-        //             editor.currentTool = 'circle';
-        //             break;
-        //         case 'polygon':
-        //             editor.currentTool = 'polygon';
-        //             break;
-        //         default:
-        //             editor.currentTool = 'rectangle';
-        //     }
-
-        //     // Create new room instance with saved data
-        //     const room = new Room(
-        //         roomData.id,
-        //         roomData.bounds,
-        //         roomData.name,
-        //         roomData.shape
-        //     );
-
-        //     if (roomData.points) {
-        //         room.points = roomData.points;
-        //     }
-
-        //     room.thumbnail = roomData.thumbnail;
-        //     room.finalized = roomData.finalized || false;
-
-        //     // Use the existing createDOMElement method
-        //     const roomElement = room.createDOMElement(editor);
-        //     room.element = roomElement;
-
-        //     // Restore previous tool
-        //     editor.currentTool = previousTool;
-
-        //     return room;
-        // }
 
         static createFromSaved(roomData, editor) {
           // Store the current tool
@@ -3237,23 +3170,6 @@ if (marker.type === 'encounter' && marker.data.monster) {
             }
           })
 
-          // // Add keyboard shortcuts
-          // document.addEventListener('keydown', e => {
-          //     if (e.target.tagName === 'INPUT') return // Skip if typing in an input
-
-          //     const shortcuts = {
-          //         r: 'rectangle',
-          //         c: 'circle',
-          //         p: 'polygon'
-          //     }
-
-          //     if (shortcuts[e.key.toLowerCase()]) {
-          //         e.preventDefault()
-          //         const shape = shortcuts[e.key.toLowerCase()]
-          //         this.setShape(shape)
-          //         updateMainButton(shape)
-          //     }
-          // })
         }
 
         setShape(shape) {
@@ -3499,47 +3415,6 @@ if (marker.type === 'encounter' && marker.data.monster) {
             wrapper.addEventListener('wheel', this.handleWheel.bind(this))
           }
 
-          // document.addEventListener('keydown', e => {
-          //     if (e.target.tagName === 'INPUT') return; // Skip if typing in an input
-
-          //     switch (e.key.toLowerCase()) {
-          //         case 'r':
-          //             this.setTool('rectangle');
-          //             break;
-          //         case 'c':
-          //             this.setTool('circle');
-          //             break;
-          //         case 'p':
-          //             this.setTool('polygon');
-          //             break;
-          //         case ' ': // Space bar
-          //             if (!e.repeat) {
-          //                 e.preventDefault(); // Prevent page scroll
-          //                 this.previousTool = this.currentTool;
-          //                 this.setTool('pan');
-          //             }
-          //             break;
-          //         case 'f':
-          //             this.zoomToFit();
-          //             break;
-          //         case 'escape':
-          //             if (this.currentTool === 'polygon' && this.isDrawingPolygon) {
-          //                 this.cancelPolygonDrawing();
-          //             }
-          //             break;
-          //             case 'w':
-          //                 if (!e.ctrlKey) { // Don't interfere with browser shortcuts
-          //                     this.setTool('wall');
-          //                 }
-          //                 break;
-          //     }
-          // });
-
-          // document.addEventListener('keyup', e => {
-          //     if (e.key === ' ' && this.currentTool === 'pan') {
-          //         this.setTool(this.previousTool || 'rectangle');
-          //     }
-          // });
 
           document.getElementById('wallTool')?.addEventListener('click', () => {
             this.setTool('wall')
@@ -3605,12 +3480,6 @@ if (marker.type === 'encounter' && marker.data.monster) {
 
           window.addEventListener('resize', () => this.handleResize())
 
-          // Add keyboard shortcut for marker edit mode
-          // document.addEventListener('keydown', (e) => {
-          //     if (e.key.toLowerCase() === 'm' && !e.repeat && e.target.tagName !== 'INPUT') {
-          //         this.toggleMarkerEditMode();
-          //     }
-          // });
         }
 
         setTool(tool) {
@@ -5206,51 +5075,53 @@ getMonsterTokenData(marker) {
             })
 
             switch (room.shape) {
-              // case 'circle': {
-              //     const segments = 32;
-              //     const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
-              //     const centerX = (room.bounds.x / 50) - (boxWidth/2);
-              //     const centerZ = (room.bounds.y / 50) - (boxDepth/2);
 
-              case 'circle': {
-                const segments = 64 //32
-                // Debug original values
-                console.log('Original Values:', {
-                  roomX: room.bounds.x,
-                  roomY: room.bounds.y,
-                  cellSize: this.cellSize
-                })
+            case 'circle': {
+    const segments = 32;
+    
+    // Calculate grid-aligned position
+    const gridX = Math.floor(room.bounds.x / this.cellSize);
+    const gridY = Math.floor(room.bounds.y / this.cellSize);
+    
+    const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
+    console.log('Radius:', radius);
+    console.log('Cell Size:', this.cellSize);
 
-                // Calculate grid-aligned position
-                const gridX = Math.floor(room.bounds.x / this.cellSize)
-                const gridY = Math.floor(room.bounds.y / this.cellSize)
 
-                const radius =
-                  Math.max(room.bounds.width, room.bounds.height) / 100
-                // const centerX = (gridX * this.cellSize) / 50 - boxWidth / 2
-                // const centerZ = (gridY * this.cellSize) / 50 - boxDepth / 2
 
-                const centerX = (gridX * this.cellSize) / (this.cellSize /2 -4 ) - boxWidth / 2
-                const centerZ = (gridY * this.cellSize) / (this.cellSize /2 -4) - boxDepth / 2
+const dimensionFactor = Math.max(this.gridDimensions.width, this.gridDimensions.height) / 10;
+const hiddenNumber = Math.ceil(dimensionFactor) * 2;
+// Add a small adjustment for smaller maps
+const adjustment = this.gridDimensions.width < 40 ? -1 : 0;
+const finalNumber = hiddenNumber + adjustment;
 
-                console.log('Grid-Aligned Position:', {
-                  gridX,
-                  gridY,
-                  centerX,
-                  centerZ,
-                  radius,
-                  cellSize: this.cellSize
-                })
+const offsetX = (room.bounds.width / (this.cellSize - finalNumber));
+const offsetZ = (room.bounds.height / (this.cellSize - finalNumber));
+    
+    const centerX = ((gridX * this.cellSize) / 50) + offsetX - (boxWidth/2);
+    const centerZ = ((gridY * this.cellSize) / 50) + offsetZ - (boxDepth/2);
 
-                console.log('Cylinder Position:', {
-                  roomX: room.bounds.x,
-                  roomY: room.bounds.y,
-                  calculatedX: centerX,
-                  calculatedZ: centerZ,
-                  radius: radius,
-                  boxWidth: boxWidth,
-                  boxDepth: boxDepth
-                })
+    console.log('Cylinder Position:', {
+        gridX,
+        gridY,
+        offsetX,
+        offsetZ,
+        finalX: centerX,
+        finalZ: centerZ
+    });
+
+    console.log('Circle Position Calculations:', {
+    cellSize: this.cellSize,
+    gridDimensions: this.gridDimensions,
+    roomBounds: room.bounds,
+    calculatedOffsets: { offsetX, offsetZ },
+    boxDimensions: { boxWidth, boxDepth }
+});
+
+console.log('Grid settings restored:', {
+    width: this.gridDimensions?.width,
+    height: this.gridDimensions?.height
+});
 
                 if (isWall) {
                   // For walls, create solid cylinder including top and bottom
