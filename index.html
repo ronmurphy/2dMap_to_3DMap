@@ -90,6 +90,15 @@
       src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/checkbox/checkbox.js"
     ></script>
 
+    <script
+  type="module"
+  src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/select/select.js"
+></script>
+<script
+  type="module"
+  src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/option/option.js"
+></script>
+
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
@@ -1124,6 +1133,108 @@
 
 .map-marker[data-teleport-point="b"] .material-icons {
   color: #ff9800 !important; /* Added !important for testing */
+}
+
+.layer-item {
+  transition: transform 0.2s ease;
+  cursor: move; /* Indicate item is draggable */
+}
+
+.layer-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.layer-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Visual indicator for drag target */
+.layer-item.drag-over {
+  border-bottom: 2px solid var(--sl-color-primary-600);
+}
+
+.layer-folder {
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.folder-header {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.folder-header:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.folder-toggle {
+  margin-right: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.folder-icon {
+  margin-right: 8px;
+  color: #2196F3;
+}
+
+.folder-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.folder-controls {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.folder-header:hover .folder-controls {
+  opacity: 1;
+}
+
+.folder-content {
+  padding-left: 24px;
+}
+
+.folder-content {
+  min-height: 10px;
+  padding: 8px 0 8px 24px;
+  transition: background-color 0.2s;
+}
+
+.folder-content.drag-over {
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.folder-header.drag-over {
+  background: rgba(33, 150, 243, 0.2);
+}
+
+.layer-folder {
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.folder-header .visibility-toggle {
+    transition: color 0.2s ease;
+}
+
+.folder-hidden {
+    opacity: 0.7;
+}
+
+.folder-hidden .folder-content {
+    opacity: 0.5;
 }
 
     </style>
@@ -2571,9 +2682,277 @@
           this.editor = editor;
           this.panel = document.querySelector(".layers-panel");
           this.layersList = document.getElementById("layersList");
-          this.setupPanel();
-        }
+          // this.setupPanel();
+          this.draggedItem = null;
+          this.folders = [];
+    this.setupDragAndDrop();
+    this.setupFolderControls();
+  }
 
+  setupFolderControls() {
+    // Add "New Folder" button to the panel header
+    const header = document.querySelector('.layers-panel .tool-section-title');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    
+    const newFolderBtn = document.createElement('sl-button');
+    newFolderBtn.size = 'small';
+    newFolderBtn.innerHTML = '<span class="material-icons">create_new_folder</span>';
+    newFolderBtn.style.marginLeft = 'auto';
+    newFolderBtn.addEventListener('click', () => this.createNewFolder());
+    header.appendChild(newFolderBtn);
+  }
+
+  async createNewFolder() {
+    const dialog = document.createElement('sl-dialog');
+    dialog.label = 'New Folder';
+    dialog.innerHTML = `
+      <sl-input
+        id="folderNameInput"
+        label="Folder Name"
+        placeholder="Enter folder name"
+        required
+      ></sl-input>
+      <div slot="footer">
+        <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+        <sl-button variant="primary" class="create-btn">Create</sl-button>
+      </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    return new Promise(resolve => {
+      const input = dialog.querySelector('#folderNameInput');
+      const createBtn = dialog.querySelector('.create-btn');
+      const cancelBtn = dialog.querySelector('.cancel-btn');
+
+      const handleCreate = () => {
+        const name = input.value.trim();
+        if (name) {
+          this.addFolder(name);
+          dialog.hide();
+          resolve(true);
+        }
+      };
+
+      createBtn.addEventListener('click', handleCreate);
+      cancelBtn.addEventListener('click', () => {
+        dialog.hide();
+        resolve(false);
+      });
+
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') handleCreate();
+        if (e.key === 'Escape') dialog.hide();
+      });
+
+      dialog.addEventListener('sl-after-hide', () => {
+        dialog.remove();
+      });
+
+      dialog.show();
+      setTimeout(() => input.focus(), 100);
+    });
+  }
+
+  addFolder(name) {
+    const folder = {
+      id: Date.now(),
+      name: name,
+      expanded: true,
+      rooms: []
+    };
+    this.folders.push(folder);
+    this.updateLayersList();
+  }
+
+  createFolderElement(folder) {
+    const folderElement = document.createElement('div');
+    folderElement.className = 'layer-folder';
+    folderElement.dataset.folderId = folder.id;
+    
+    folderElement.innerHTML = `
+      <div class="folder-header">
+        <span class="material-icons folder-toggle">
+          ${folder.expanded ? 'expand_more' : 'chevron_right'}
+        </span>
+        <span class="material-icons folder-icon">folder${folder.expanded ? '_open' : ''}</span>
+        <span class="folder-name">${folder.name}</span>
+        <div class="folder-controls">
+          <span class="material-icons visibility-toggle">visibility</span>
+          <span class="material-icons rename-folder">edit</span>
+          <span class="material-icons delete-folder">delete</span>
+        </div>
+      </div>
+      <div class="folder-content" style="display: ${folder.expanded ? 'block' : 'none'}">
+      </div>
+    `;
+
+    // Add event handlers
+    const toggle = folderElement.querySelector('.folder-toggle');
+    toggle.addEventListener('click', () => this.toggleFolder(folder));
+
+    const visibilityToggle = folderElement.querySelector('.visibility-toggle');
+    visibilityToggle.addEventListener('click', () => this.toggleFolderVisibility(folder));
+
+    const renameBtn = folderElement.querySelector('.rename-folder');
+    renameBtn.addEventListener('click', () => this.renameFolder(folder));
+
+    const deleteBtn = folderElement.querySelector('.delete-folder');
+    deleteBtn.addEventListener('click', () => this.deleteFolder(folder));
+
+    return folderElement;
+  }
+
+//   setupDragAndDrop() {
+//     this.layersList.addEventListener('dragstart', (e) => {
+//       if (!e.target.classList.contains('layer-item')) return;
+//       this.draggedItem = e.target;
+//       e.target.classList.add('dragging');
+//       e.dataTransfer.effectAllowed = 'move';
+//       e.dataTransfer.setData('text/plain', e.target.dataset.roomId);
+//     });
+
+//     this.layersList.addEventListener('dragend', (e) => {
+//       if (!e.target.classList.contains('layer-item')) return;
+//       e.target.classList.remove('dragging');
+//       this.draggedItem = null;
+//       this.updateRoomOrder();
+//     });
+
+//     this.layersList.addEventListener('dragover', (e) => {
+//       e.preventDefault();
+//       if (!this.draggedItem) return;
+
+//       const afterElement = this.getDragAfterElement(e.clientY);
+//       const draggable = this.draggedItem;
+//       if (afterElement) {
+//         this.layersList.insertBefore(draggable, afterElement);
+//       } else {
+//         this.layersList.appendChild(draggable);
+//       }
+//     });
+//   }
+
+//   getDragAfterElement(y) {
+//     const draggableElements = [...this.layersList.querySelectorAll('.layer-item:not(.dragging)')];
+//     return draggableElements.reduce((closest, child) => {
+//       const box = child.getBoundingClientRect();
+//       const offset = y - box.top - box.height / 2;
+//       if (offset < 0 && offset > closest.offset) {
+//         return { offset: offset, element: child };
+//       } else {
+//         return closest;
+//       }
+//     }, { offset: Number.NEGATIVE_INFINITY }).element;
+//   }
+
+setupDragAndDrop() {
+  this.layersList.addEventListener('dragstart', (e) => {
+    if (!e.target.classList.contains('layer-item')) return;
+    this.draggedItem = e.target;
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', e.target.dataset.roomId);
+  });
+
+  this.layersList.addEventListener('dragend', (e) => {
+    if (!e.target.classList.contains('layer-item')) return;
+    e.target.classList.remove('dragging');
+    this.draggedItem = null;
+    this.updateRoomOrder();
+  });
+
+  // Update dragover to handle folders
+  this.layersList.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (!this.draggedItem) return;
+
+    const folderContent = e.target.closest('.folder-content');
+    const folderHeader = e.target.closest('.folder-header');
+
+    // Remove any existing drag-over indicators
+    document.querySelectorAll('.drag-over').forEach(el => 
+      el.classList.remove('drag-over')
+    );
+
+    if (folderContent) {
+      // Dragging within a folder
+      const afterElement = this.getDragAfterElement(folderContent, e.clientY);
+      if (afterElement) {
+        folderContent.insertBefore(this.draggedItem, afterElement);
+      } else {
+        folderContent.appendChild(this.draggedItem);
+      }
+      folderContent.classList.add('drag-over');
+    } else if (folderHeader) {
+      // Dragging over a folder header - indicate can drop into folder
+      folderHeader.classList.add('drag-over');
+    } else {
+      // Dragging in root list
+      const afterElement = this.getDragAfterElement(this.layersList, e.clientY);
+      if (afterElement) {
+        this.layersList.insertBefore(this.draggedItem, afterElement);
+      } else {
+        this.layersList.appendChild(this.draggedItem);
+      }
+    }
+  });
+
+  // Add drop handling for folders
+  this.layersList.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (!this.draggedItem) return;
+
+    const folderHeader = e.target.closest('.folder-header');
+    if (folderHeader) {
+      const folderId = folderHeader.closest('.layer-folder').dataset.folderId;
+      const folder = this.folders.find(f => f.id === parseInt(folderId));
+      if (folder) {
+        const roomId = parseInt(this.draggedItem.dataset.roomId);
+        const room = this.editor.rooms.find(r => r.id === roomId);
+        
+        // Remove from any other folder first
+        this.folders.forEach(f => {
+          f.rooms = f.rooms.filter(r => r.id !== roomId);
+        });
+
+        // Add to new folder
+        folder.rooms.push(room);
+        this.updateLayersList();
+      }
+    }
+
+    // Remove drag-over indicators
+    document.querySelectorAll('.drag-over').forEach(el => 
+      el.classList.remove('drag-over')
+    );
+  });
+}
+
+// Update getDragAfterElement to work with folders
+getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.layer-item:not(.dragging)')];
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+  updateRoomOrder() {
+    const newOrder = [...this.layersList.querySelectorAll('.layer-item')]
+      .map(item => {
+        return this.editor.rooms.find(room => room.id === parseInt(item.dataset.roomId));
+      })
+      .filter(room => room); // Filter out any undefined rooms
+    this.editor.rooms = newOrder;
+  }
         setupPanel() {
           // Get the existing Add Room button and set up its event listener
           const addRoomBtn = document.getElementById("addRoomBtn");
@@ -2584,19 +2963,157 @@
           }
         }
 
+        // updateLayersList() {
+        //   this.layersList.innerHTML = "";
+        //   this.editor.rooms.forEach((room) => {
+        //     const layerItem = this.createLayerItem(room);
+        //     this.layersList.appendChild(layerItem);
+        //   });
+        // }
+
         updateLayersList() {
-          this.layersList.innerHTML = "";
-          this.editor.rooms.forEach((room) => {
-            const layerItem = this.createLayerItem(room);
-            this.layersList.appendChild(layerItem);
-          });
+    this.layersList.innerHTML = '';
+    
+    // Make sure we have folders initialized
+    if (!this.folders) {
+        this.folders = [];
+    }
+    
+    // Add folders and their contents
+    this.folders.forEach(folder => {
+        const folderElement = this.createFolderElement(folder);
+        this.layersList.appendChild(folderElement);
+        
+        // Add rooms in this folder's content area
+        const folderContent = folderElement.querySelector('.folder-content');
+        folder.rooms.forEach(room => {
+            const roomElement = this.createLayerItem(room);
+            folderContent.appendChild(roomElement);
+        });
+    });
+
+    // Only show unassigned rooms (not in any folder)
+    const unassignedRooms = this.editor.rooms.filter(room => 
+        !this.folders.some(folder => folder.rooms.includes(room))
+    );
+    unassignedRooms.forEach(room => {
+        const roomElement = this.createLayerItem(room);
+        this.layersList.appendChild(roomElement);
+    });
+}
+
+
+  toggleFolder(folder) {
+    folder.expanded = !folder.expanded;
+    const folderElement = document.querySelector(`[data-folder-id="${folder.id}"]`);
+    if (folderElement) {
+        const folderContent = folderElement.querySelector('.folder-content');
+        const folderIcon = folderElement.querySelector('.folder-icon');
+        const folderToggle = folderElement.querySelector('.folder-toggle');
+        
+        if (folder.expanded) {
+            folderContent.style.display = 'block';
+            folderIcon.textContent = 'folder_open';
+            folderToggle.textContent = 'expand_more';
+        } else {
+            folderContent.style.display = 'none';
+            folderIcon.textContent = 'folder';
+            folderToggle.textContent = 'chevron_right';
         }
+    }
+}
+
+toggleFolderVisibility(folder) {
+    // Get current visibility state of folder (true if any room is visible)
+    const anyVisible = folder.rooms.some(room => room.visible);
+    const visibilityIcon = document.querySelector(`[data-folder-id="${folder.id}"] .visibility-toggle`);
+
+    // Toggle visibility of all rooms in folder
+    folder.rooms.forEach(room => {
+        room.visible = !anyVisible;
+        if (room.element) {
+            room.element.style.display = !anyVisible ? 'block' : 'none';
+        }
+    });
+
+    // Update the visibility icon
+    if (visibilityIcon) {
+        visibilityIcon.textContent = !anyVisible ? 'visibility' : 'visibility_off';
+        visibilityIcon.style.color = !anyVisible ? '#fff' : '#666';
+    }
+
+    // For visual feedback
+    const folderElement = document.querySelector(`[data-folder-id="${folder.id}"]`);
+    if (folderElement) {
+        folderElement.classList.toggle('folder-hidden', anyVisible);
+    }
+}
+
+  async renameFolder(folder) {
+    const dialog = document.createElement('sl-dialog');
+    dialog.label = 'Rename Folder';
+    dialog.innerHTML = `
+      <sl-input
+        id="folderNameInput"
+        label="Folder Name"
+        value="${folder.name}"
+        required
+      ></sl-input>
+      <div slot="footer">
+        <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+        <sl-button variant="primary" class="save-btn">Save</sl-button>
+      </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    return new Promise(resolve => {
+      const input = dialog.querySelector('#folderNameInput');
+      const saveBtn = dialog.querySelector('.save-btn');
+      const cancelBtn = dialog.querySelector('.cancel-btn');
+
+      const handleSave = () => {
+        const name = input.value.trim();
+        if (name) {
+          folder.name = name;
+          this.updateLayersList();
+          dialog.hide();
+          resolve(true);
+        }
+      };
+
+      saveBtn.addEventListener('click', handleSave);
+      cancelBtn.addEventListener('click', () => {
+        dialog.hide();
+        resolve(false);
+      });
+
+      dialog.addEventListener('sl-after-hide', () => {
+        dialog.remove();
+      });
+
+      dialog.show();
+      setTimeout(() => input.focus(), 100);
+    });
+  }
+
+  deleteFolder(folder) {
+    // Move rooms back to uncategorized
+    folder.rooms.length = 0;
+    this.folders = this.folders.filter(f => f.id !== folder.id);
+    this.updateLayersList();
+  }
+
 
         createLayerItem(room) {
           const layerItem = document.createElement("div");
           layerItem.className = `layer-item ${room.type}-room ${
             room.finalized ? "" : "editing"
           } ${room.id === this.editor.selectedRoomId ? "selected" : ""}`;
+
+              // Add draggable attributes
+    layerItem.draggable = true;
+    layerItem.dataset.roomId = room.id;
 
           // Add data attributes for room type and texture
           layerItem.setAttribute("data-room-type", room.type);
@@ -2618,34 +3135,56 @@
             layerName.setAttribute("title", getTooltipText(room));
           }
 
-          layerItem.innerHTML = `
-            <div class="layer-content">
-                <div class="layer-visibility">
-                    <span class="material-icons visibility-toggle" style="cursor: pointer; color: ${
-                      room.visible ? "#fff" : "#666"
-                    };">
-                        ${room.visible ? "visibility" : "visibility_off"}
-                    </span>
-                </div>
-                <div class="layer-thumbnail">
-                    ${
-                      room.thumbnail
-                        ? `<img src="${room.thumbnail}" alt="Room thumbnail">`
-                        : ""
-                    }
-                </div>
-                <div class="layer-info">
-                    <div class="layer-name">${room.name}</div>
-                    <div class="layer-dimensions">${Math.round(
-                      room.bounds.width
-                    )}×${Math.round(room.bounds.height)}</div>
-                </div>
-                <div class="layer-controls">
-                    <span class="material-icons edit-btn" style="color: #2196F3; cursor: pointer;">edit</span>
-                    <span class="material-icons delete-btn" style="color: #f44336; cursor: pointer;">delete</span>
-                </div>
-            </div>
-        `;
+        //   layerItem.innerHTML = `
+        //     <div class="layer-content">
+        //         <div class="layer-visibility">
+        //             <span class="material-icons visibility-toggle" style="cursor: pointer; color: ${
+        //               room.visible ? "#fff" : "#666"
+        //             };">
+        //                 ${room.visible ? "visibility" : "visibility_off"}
+        //             </span>
+        //         </div>
+        //         <div class="layer-thumbnail">
+        //             ${
+        //               room.thumbnail
+        //                 ? `<img src="${room.thumbnail}" alt="Room thumbnail">`
+        //                 : ""
+        //             }
+        //         </div>
+        //         <div class="layer-info">
+        //             <div class="layer-name">${room.name}</div>
+        //             <div class="layer-dimensions">${Math.round(
+        //               room.bounds.width
+        //             )}×${Math.round(room.bounds.height)}</div>
+        //         </div>
+        //         <div class="layer-controls">
+        //             <span class="material-icons edit-btn" style="color: #2196F3; cursor: pointer;">edit</span>
+        //             <span class="material-icons delete-btn" style="color: #f44336; cursor: pointer;">delete</span>
+        //         </div>
+        //     </div>
+        // `;
+
+        layerItem.innerHTML = `
+      <div class="layer-content">
+        <div class="layer-visibility">
+          <span class="material-icons visibility-toggle" style="cursor: pointer; color: ${
+            room.visible ? '#fff' : '#666'
+          };">
+            ${room.visible ? 'visibility' : 'visibility_off'}
+          </span>
+        </div>
+        <div class="layer-info">
+          <div class="layer-name">${room.name}</div>
+          <div class="layer-dimensions">${Math.round(room.bounds.width)}×${Math.round(
+            room.bounds.height
+          )}</div>
+        </div>
+        <div class="layer-controls">
+          <span class="material-icons edit-btn" style="color: #2196F3; cursor: pointer;">edit</span>
+          <span class="material-icons delete-btn" style="color: #f44336; cursor: pointer;">delete</span>
+        </div>
+      </div>
+    `;
 
           // Add hover effect
           layerItem.addEventListener("mouseenter", () => {
@@ -2724,58 +3263,69 @@
         }
 
         async showRenameDialog(room) {
-          const dialog = document.createElement("sl-dialog");
-          dialog.label = "Room Properties";
-          dialog.innerHTML = `
-    <div style="display: flex; flex-direction: column; gap: 16px;">
-      <!-- Name input -->
-      <sl-input 
-        id="roomNameInput" 
-        value="${room.name}" 
-        label="Room Name"
-      ></sl-input>
+    const dialog = document.createElement('sl-dialog');
+    dialog.label = 'Room Properties';
+    
+    // Get current folder if any
+    const currentFolder = this.folders.find(folder => 
+        folder.rooms.includes(room)
+    );
 
-      <!-- Room/Wall Type Toggle -->
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <label>Type:</label>
-        <sl-button-group>
-          <sl-button 
-            size="small" 
-            id="roomTypeBtn"
-            variant="${room.type === "room" ? "primary" : "default"}"
-          >Room</sl-button>
-          <sl-button 
-            size="small" 
-            id="wallTypeBtn"
-            variant="${room.type === "wall" ? "primary" : "default"}"
-          >Wall</sl-button>
-        </sl-button-group>
-      </div>
+    dialog.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <sl-input 
+                id="roomNameInput" 
+                value="${room.name}" 
+                label="Room Name"
+            ></sl-input>
 
-      <!-- Texture Controls (only for rectangle rooms) -->
-      ${
-        room.shape === "rectangle"
-          ? `
-        <div style="border: 1px solid #444; padding: 12px; border-radius: 4px;">
-          <sl-checkbox id="setAsTexture">Set as Texture</sl-checkbox>
-          
-          <div id="textureOptions" style="margin-top: 12px; display: none;">
-            <sl-radio-group label="Texture Type" name="textureType">
-              <sl-radio value="wall">Wall Texture</sl-radio>
-              <sl-radio value="room">Room Texture</sl-radio>
-            </sl-radio-group>
-          </div>
+            <!-- Room/Wall Type Toggle -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label>Type:</label>
+                <sl-button-group>
+                    <sl-button 
+                        size="small" 
+                        id="roomTypeBtn"
+                        variant="${room.type === 'room' ? 'primary' : 'default'}"
+                    >Room</sl-button>
+                    <sl-button 
+                        size="small" 
+                        id="wallTypeBtn"
+                        variant="${room.type === 'wall' ? 'primary' : 'default'}"
+                    >Wall</sl-button>
+                </sl-button-group>
+            </div>
+
+            <!-- Folder Selection -->
+            <sl-select 
+                id="folderSelect" 
+                label="Folder"
+                value="${currentFolder ? currentFolder.id : ''}"
+            >
+                <sl-option value="">No Folder</sl-option>
+                ${this.folders.map(folder => `
+                    <sl-option value="${folder.id}">${folder.name}</sl-option>
+                `).join('')}
+            </sl-select>
+
+            <!-- Texture Controls (only for rectangle rooms) -->
+            ${room.shape === 'rectangle' ? `
+                <div style="border: 1px solid #444; padding: 12px; border-radius: 4px;">
+                    <sl-checkbox id="setAsTexture">Set as Texture</sl-checkbox>
+                    <div id="textureOptions" style="margin-top: 12px; display: none;">
+                        <sl-radio-group label="Texture Type" name="textureType">
+                            <sl-radio value="wall">Wall Texture</sl-radio>
+                            <sl-radio value="room">Room Texture</sl-radio>
+                        </sl-radio-group>
+                    </div>
+                </div>
+            ` : ''}
         </div>
-      `
-          : ""
-      }
-    </div>
-
-    <div slot="footer">
-      <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
-      <sl-button variant="primary" class="save-btn">Save</sl-button>
-    </div>
-  `;
+        <div slot="footer">
+            <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+            <sl-button variant="primary" class="save-btn">Save</sl-button>
+        </div>
+    `;
 
           document.body.appendChild(dialog);
 
@@ -2843,38 +3393,56 @@
             };
 
             const handleSave = () => {
-              const newName = nameInput.value.trim();
-              if (newName) {
-                const isTextureRoom = setAsTextureCheckbox?.checked || false;
-                if (isTextureRoom && room.shape === "rectangle") {
-                  // Set the appropriate texture name based on radio selection
-                  const textureType = textureTypeRadios.value;
-                  room.name =
-                    textureType === "wall" ? "WallTexture" : "RoomTexture";
-                  // Ensure type matches the texture type
-                  room.type = textureType;
-                } else {
-                  room.name = newName;
-                  // Update room type based on toggle buttons
-                  room.type =
-                    roomTypeBtn.variant === "primary" ? "room" : "wall";
-                }
+    const nameInput = dialog.querySelector('#roomNameInput');
+    const folderSelect = dialog.querySelector('#folderSelect');  // Add this line
+    const selectedFolderId = folderSelect.value;  // Add this line
+    const newName = nameInput.value.trim();
+    if (newName) {
+        const isTextureRoom = setAsTextureCheckbox?.checked || false;
+        if (isTextureRoom && room.shape === "rectangle") {
+            // Set the appropriate texture name based on radio selection
+            const textureType = textureTypeRadios.value;
+            room.name = textureType === "wall" ? "WallTexture" : "RoomTexture";
+            // Ensure type matches the texture type
+            room.type = textureType;
+        } else {
+            room.name = newName;
+            // Update room type based on toggle buttons
+            room.type = roomTypeBtn.variant === "primary" ? "room" : "wall";
+        }
+        
+        // Handle folder assignment
+        if (selectedFolderId) {
+            // Remove from current folder if any
+            this.folders.forEach(folder => {
+                folder.rooms = folder.rooms.filter(r => r.id !== room.id);
+            });
+           
+            // Add to new folder
+            const newFolder = this.folders.find(f => f.id === parseInt(selectedFolderId));
+            if (newFolder) {
+                newFolder.rooms.push(room);
+            }
+        } else {
+            // Remove from any folder (move to root)
+            this.folders.forEach(folder => {
+                folder.rooms = folder.rooms.filter(r => r.id !== room.id);
+            });
+        }
 
-                // Update the layer list and room appearance
-                // this.layersPanel.updateLayersList();
-                this.updateLayersList();
+        // Update the layer list and room appearance
+        this.updateLayersList();
 
-                // Update the room's visual appearance
-                const roomElement = document.getElementById(`room-${room.id}`);
-                if (roomElement) {
-                  roomElement.classList.remove("wall-room", "room-room");
-                  roomElement.classList.add(`${room.type}-room`);
-                }
-
-                dialog.hide();
-                resolve(true);
-              }
-            };
+        // Update the room's visual appearance
+        const roomElement = document.getElementById(`room-${room.id}`);
+        if (roomElement) {
+            roomElement.classList.remove("wall-room", "room-room");
+            roomElement.classList.add(`${room.type}-room`);
+        }
+        dialog.hide();
+        resolve(true);
+    }
+};
 
             cancelBtn.addEventListener("click", handleCancel);
             saveBtn.addEventListener("click", handleSave);
