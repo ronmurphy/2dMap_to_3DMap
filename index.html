@@ -1265,7 +1265,7 @@
 
 /* Individual layer items */
 .layer-item {
-    background: #3d3d3d;
+    background: var(--secondary-bg); /* #3d3d3d; */
     border-radius: 3px;
     padding: 4px;
     cursor: pointer;
@@ -1276,7 +1276,7 @@
 }
 
 .layer-item:hover {
-    background: #4d4d4d;
+    background: #bbbbbb;
     border-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -1417,6 +1417,22 @@
 .lock-toggle:hover {
     color: #f44336 !important;
 }
+
+.layer-item.wall-room .layer-name {
+	color: #fff;
+}
+
+.layer-dimensions {
+	font-size: 0.8em;
+	color: #e6e6e6;
+}
+
+.layer-item:hover {
+	background: #468e2c;
+	border-color: rgb(255, 255, 255);
+}
+
+
 
     </style>
   </head>
@@ -1635,34 +1651,30 @@
         }
 
         tryStoreToken(tokenUrl) {
-          return fetch(tokenUrl, {
-            mode: "cors",
-            headers: {
-              Accept: "image/webp,*/*"
-            }
-          })
-            .then((response) => {
-              if (!response.ok) throw new Error("Failed to fetch token");
-              return response.blob();
-            })
-            .then((blob) => {
-              return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                //   console.log(
-                //     "Token data ready to return:",
-                //     reader.result.substring(0, 50) + "..."
-                //   ); // Log first 50 chars
-                  resolve(reader.result);
-                };
-                reader.readAsDataURL(blob);
-              });
-            })
-            .catch((error) => {
-              console.log("Failed to fetch token directly:", error);
-              return tokenUrl; // Return URL as fallback
-            });
+    return fetch(tokenUrl, {
+        mode: 'cors',
+        headers: {
+            'Accept': 'image/webp,*/*'
         }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to fetch token');
+        return response.blob();
+    })
+    .then(blob => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                resolve(reader.result);
+            };
+            reader.readAsDataURL(blob);
+        });
+    })
+    .catch(error => {
+        console.log('Failed to fetch token directly:', error);
+        return tokenUrl; // Return URL as fallback
+    });
+}
 
         // Complete showMonsterSelector method for MonsterManager class
         async showMonsterSelector(marker) {
@@ -1873,20 +1885,26 @@
                     immunitiesContainer.style.display = "none";
                   }
 
-                  const imgElement =
-                    preview.querySelector(".monster-image img");
-                  if (
-                    currentMonsterData.token &&
-                    (currentMonsterData.token.data ||
-                      currentMonsterData.token.url)
-                  ) {
-                    imgElement.src =
-                      currentMonsterData.token.data ||
-                      currentMonsterData.token.url;
-                    imgElement.style.display = "block";
-                  } else {
-                    imgElement.style.display = "none";
-                  }
+
+
+                const imgElement = preview.querySelector(".monster-image img");
+if (currentMonsterData.token && (currentMonsterData.token.data || currentMonsterData.token.url)) {
+    const imageUrl = currentMonsterData.token.data || currentMonsterData.token.url;
+    try {
+        const base64Data = await this.tryFetchImage(imageUrl);
+        if (base64Data) {
+            currentMonsterData.token.data = base64Data;
+            console.log("Successfully captured token as base64");
+        }
+    } catch (error) {
+        console.error("Error fetching token:", error);
+    }
+    
+    imgElement.src = imageUrl;
+    imgElement.style.display = "block";
+} else {
+    imgElement.style.display = "none";
+}
 
                   preview.style.display = "block";
                   saveBtn.disabled = false;
@@ -1904,15 +1922,19 @@
           });
 
           return new Promise((resolve) => {
+
+
             saveBtn.addEventListener("click", async () => {
-              if (currentMonsterData) {
-                marker.data.monster = currentMonsterData;
-                await this.saveMonsterToDatabase(currentMonsterData);
-                this.mapEditor.updateMarkerAppearance(marker);
-                dialog.hide();
-                resolve(true);
-              }
-            });
+    if (currentMonsterData) {
+        // At this point, currentMonsterData.token.data should already have the base64 data
+        // from when the preview image loaded
+        marker.data.monster = currentMonsterData;
+        await this.saveMonsterToDatabase(currentMonsterData);
+        this.mapEditor.updateMarkerAppearance(marker);
+        dialog.hide();
+        resolve(true);
+    }
+});
 
             cancelBtn.addEventListener("click", () => {
               dialog.hide();
@@ -1924,6 +1946,25 @@
             });
           });
         }
+
+        async tryFetchImage(url) {
+    try {
+        const response = await fetch(url, {
+            mode: 'no-cors',
+            cache: 'no-cache',
+            referrerPolicy: 'no-referrer'
+        });
+        const blob = await response.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.error("Error fetching image:", error);
+        return null;
+    }
+}
 
         // In MonsterManager class
         async extractMonsterData(url) {
@@ -2964,7 +3005,7 @@
         <div class="folder-controls">
           <span class="material-icons visibility-toggle" style="cursor: pointer;">visibility</span>
           <span class="material-icons lock-toggle" style="cursor: pointer; color: ${
-              folder.locked ? '#f44336' : '#666'
+              folder.locked ? '#f44336' : '#fff'
           };">${folder.locked ? 'lock' : 'lock_open'}</span>
           <span class="material-icons rename-folder">edit</span>
           <span class="material-icons delete-folder">delete</span>
@@ -3443,7 +3484,7 @@ createLayerItem(room) {
                     ${room.visible ? 'visibility' : 'visibility_off'}
                 </span>
                 <span class="material-icons lock-toggle" style="cursor: pointer; color: ${
-                    room.locked ? '#f44336' : '#666'
+                    room.locked ? '#f44336' : '#fff'
                 };">
                     ${room.locked ? 'lock' : 'lock_open'}
                 </span>
@@ -3473,7 +3514,7 @@ createLayerItem(room) {
         if (room.locked) {
             room.locked = false;
             lockToggle.textContent = 'lock_open';
-            lockToggle.style.color = '#666';
+            lockToggle.style.color = '#fff';
             layerItem.classList.remove('locked');
         } else {
             room.locked = true;
@@ -6273,11 +6314,11 @@ updateTeleportConnection(pointA, pointB) {
 
         getMonsterSizeInSquares(size) {
           // Add debug logging
-        //   console.log("Getting monster size for:", size);
+          console.log("Getting monster size for:", size);
 
           // Handle undefined/null size
           if (!size) {
-            // console.log("Size undefined, defaulting to medium");
+            console.log("Size undefined, defaulting to medium");
             return 1; // Default to medium size
           }
 
@@ -6291,40 +6332,70 @@ updateTeleportConnection(pointA, pointB) {
           };
 
           const calculatedSize = sizeMap[size.toLowerCase()] || 1;
-        //   console.log("Calculated size:", calculatedSize);
+          console.log("Calculated size:", calculatedSize);
           return calculatedSize;
         }
 
-        getMonsterTokenData(marker) {
+        // getMonsterTokenData(marker) {
         //   console.log("Processing marker:", marker);
 
-          if (!marker || !marker.data || !marker.data.monster) {
-            // console.log("Invalid marker data");
-            return null;
-          }
+        //   if (!marker || !marker.data || !marker.data.monster) {
+        //     console.log("Invalid marker data");
+        //     return null;
+        //   }
 
-          // Get correct token image source
-          const tokenSource =
-            marker.data.monster.token.data || marker.data.monster.token.url;
+        //   // Get correct token image source
+        //   const tokenSource =
+        //     marker.data.monster.token.data || marker.data.monster.token.url;
         //   console.log("Token image source:", tokenSource);
 
-          const monsterSize = this.getMonsterSizeInSquares(
-            marker.data.monster.basic.size || "medium"
-          );
+        //   const monsterSize = this.getMonsterSizeInSquares(
+        //     marker.data.monster.basic.size || "medium"
+        //   );
 
-          const tokenData = {
-            x: marker.x,
-            y: marker.y,
-            size: monsterSize,
-            image: tokenSource,
-            type: "monster",
-            name: marker.data.monster.name || "Unknown Monster",
-            height: 2 * monsterSize
-          };
+        //   const tokenData = {
+        //     x: marker.x,
+        //     y: marker.y,
+        //     size: monsterSize,
+        //     image: tokenSource,
+        //     type: "monster",
+        //     name: marker.data.monster.name || "Unknown Monster",
+        //     height: 2 * monsterSize
+        //   };
 
         //   console.log("Created token data:", tokenData);
-          return tokenData;
-        }
+        //   return tokenData;
+        // }
+
+        getMonsterTokenData(marker) {
+    console.log("Processing marker:", marker);
+
+    if (!marker || !marker.data || !marker.data.monster) {
+        console.log("Invalid marker data");
+        return null;
+    }
+
+    // Get correct token image source
+    const tokenSource = marker.data.monster.token.data || marker.data.monster.token.url;
+    console.log("Token image source:", tokenSource);
+
+    const monsterSize = this.getMonsterSizeInSquares(marker.data.monster.basic.size || "medium");
+
+    const tokenData = {
+        x: marker.x,
+        y: marker.y,
+        size: monsterSize,
+        image: tokenSource,
+        type: "monster",
+        name: marker.data.monster.name || "Unknown Monster",
+        height: 2 * monsterSize
+    };
+
+    console.log("Created token data:", tokenData);
+    return tokenData;
+}
+
+        
         updateMarkerAppearance(marker) {
           if (marker.data.monster?.token) {
             const tokenSource =
@@ -6916,6 +6987,21 @@ removeMarker(marker) {
           const scene = new THREE.Scene();
           scene.background = new THREE.Color(0x222222);
 
+          this.tokens = [];
+
+          // Add encounter markers to tokens array
+this.markers.forEach(marker => {
+    if (marker.type === "encounter" && marker.data.monster) {
+        console.log("Processing encounter marker for 3D:", marker);
+        
+        const tokenData = this.getMonsterTokenData(marker);
+        if (tokenData) {
+            this.tokens.push(tokenData);
+            console.log("Added token data:", tokenData);
+        }
+    }
+});
+
           const camera = new THREE.PerspectiveCamera(
             75,
             (window.innerWidth * 0.75) / window.innerHeight,
@@ -7007,27 +7093,6 @@ removeMarker(marker) {
                 const centerZ =
                   (gridY * this.cellSize) / 50 + offsetZ - boxDepth / 2;
 
-                // console.log("Cylinder Position:", {
-                //   gridX,
-                //   gridY,
-                //   offsetX,
-                //   offsetZ,
-                //   finalX: centerX,
-                //   finalZ: centerZ
-                // });
-
-                // console.log("Circle Position Calculations:", {
-                //   cellSize: this.cellSize,
-                //   gridDimensions: this.gridDimensions,
-                //   roomBounds: room.bounds,
-                //   calculatedOffsets: { offsetX, offsetZ },
-                //   boxDimensions: { boxWidth, boxDepth }
-                // });
-
-                // console.log("Grid settings restored:", {
-                //   width: this.gridDimensions?.width,
-                //   height: this.gridDimensions?.height
-                // });
 
                 if (isWall) {
                   // For walls, create solid cylinder including top and bottom
@@ -7532,11 +7597,6 @@ removeMarker(marker) {
             );
             geometry.setIndex(indices);
 
-            // console.log("Wall Material Creation Attempt:", {
-            //   isWall,
-            //   wallTexture,
-            //   renderState
-            // });
 
             const material =
               room.type === "wall"
@@ -7623,14 +7683,16 @@ removeMarker(marker) {
             );
           }
 
+
+
           if (this.tokens && this.tokens.length > 0) {
-            // console.log("Creating 3D tokens:", this.tokens);
+            console.log("Creating 3D tokens:", this.tokens);
             this.tokens.forEach((token) => {
               const textureLoader = new THREE.TextureLoader();
               textureLoader.load(
                 token.image,
                 (texture) => {
-                //   console.log("Token texture loaded:", texture);
+                  console.log("Token texture loaded:", texture);
 
                   const spriteMaterial = new THREE.SpriteMaterial({
                     map: texture,
