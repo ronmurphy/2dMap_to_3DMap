@@ -1389,6 +1389,35 @@
     color: #666;
 }
 
+.layer-item.locked {
+    position: relative;
+}
+
+.layer-item.locked::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+}
+
+.layer-item.locked .edit-btn,
+.layer-item.locked .delete-btn {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.lock-toggle {
+    transition: color 0.2s ease;
+}
+
+.lock-toggle:hover {
+    color: #f44336 !important;
+}
+
     </style>
   </head>
 
@@ -2484,6 +2513,7 @@
           this.points = bounds.points || null;
           this.isEditing = false;
           this.visible = true;
+          this.locked = false;
         }
 
         toggleVisibility() {
@@ -2920,9 +2950,8 @@
   }
 
   createFolderElement(folder) {
-    console.log("Creating folder element for:", folder);
     const folderElement = document.createElement('div');
-    folderElement.className = 'layer-folder';
+    folderElement.className = `layer-folder ${folder.locked ? 'locked' : ''}`;
     folderElement.dataset.folderId = folder.id;
    
     folderElement.innerHTML = `
@@ -2934,6 +2963,9 @@
         <span class="folder-name">${folder.name}</span>
         <div class="folder-controls">
           <span class="material-icons visibility-toggle" style="cursor: pointer;">visibility</span>
+          <span class="material-icons lock-toggle" style="cursor: pointer; color: ${
+              folder.locked ? '#f44336' : '#666'
+          };">${folder.locked ? 'lock' : 'lock_open'}</span>
           <span class="material-icons rename-folder">edit</span>
           <span class="material-icons delete-folder">delete</span>
         </div>
@@ -2941,6 +2973,12 @@
       <div class="folder-content" style="display: ${folder.expanded ? 'block' : 'none'}">
       </div>
     `;
+
+    const lockToggle = folderElement.querySelector('.lock-toggle');
+    lockToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleFolderLock(folder);
+    });
 
     // Add event handlers
     const toggle = folderElement.querySelector('.folder-toggle');
@@ -2957,18 +2995,66 @@
         this.toggleFolderVisibility(folder);
     });
 
-    const renameBtn = folderElement.querySelector('.rename-folder');
-    renameBtn.addEventListener('click', () => this.renameFolder(folder));
-
     const deleteBtn = folderElement.querySelector('.delete-folder');
-    deleteBtn.addEventListener('click', () => this.deleteFolder(folder));
+deleteBtn.addEventListener('click', () => {
+    if (folder.locked) {
+        this.editor.showLockedMessage();
+        return;
+    }
+    this.deleteFolder(folder);
+});
+
+// Also add locked state check to rename
+const renameBtn = folderElement.querySelector('.rename-folder');
+renameBtn.addEventListener('click', () => {
+    if (folder.locked) {
+        this.editor.showLockedMessage();
+        return;
+    }
+    this.renameFolder(folder);
+});
 
     return folderElement;
 }
 
+toggleFolderLock(folder) {
+    folder.locked = !folder.locked;
+    
+    // Lock/unlock all rooms in the folder
+    folder.rooms.forEach(room => {
+        room.locked = folder.locked;
+        const roomElement = document.getElementById(`room-${room.id}`);
+        if (roomElement) {
+            if (folder.locked) {
+                roomElement.classList.add('locked');
+            } else {
+                roomElement.classList.remove('locked');
+            }
+        }
+    });
+
+    // Update the folder's appearance
+    const folderElement = document.querySelector(`[data-folder-id="${folder.id}"]`);
+    if (folderElement) {
+        const lockIcon = folderElement.querySelector('.lock-toggle');
+        lockIcon.textContent = folder.locked ? 'lock' : 'lock_open';
+        lockIcon.style.color = folder.locked ? '#f44336' : '#666';
+        folderElement.classList.toggle('locked', folder.locked);
+    }
+
+    this.updateLayersList();
+}
+
 setupDragAndDrop() {
-  this.layersList.addEventListener('dragstart', (e) => {
-    if (!e.target.classList.contains('layer-item')) return;
+    this.layersList.addEventListener('dragstart', (e) => {
+        if (!e.target.classList.contains('layer-item')) return;
+        const roomId = parseInt(e.target.dataset.roomId);
+        const room = this.editor.rooms.find(r => r.id === roomId);
+        if (room && room.locked) {
+            e.preventDefault();
+            this.editor.showLockedMessage();
+            return;
+        }
     this.draggedItem = e.target;
     e.target.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
@@ -3038,6 +3124,10 @@ this.layersList.addEventListener('drop', (e) => {
         if (folder) {
             const roomId = parseInt(this.draggedItem.dataset.roomId);
             const room = this.editor.rooms.find(r => r.id === roomId);
+            if (room && room.locked) {
+        this.editor.showLockedMessage();
+        return;
+    }
             
             if (room) {
                 console.log("Adding room to folder:", {
@@ -3265,11 +3355,21 @@ toggleFolderVisibility(folder) {
                 // Move contents to root
                 folder.rooms.length = 0;
             } else if (option === 'delete') {
-                // Delete all contents
+                // Delete all contents and their DOM elements
                 folder.rooms.forEach(room => {
+                    // Remove from editor's rooms array
                     const index = this.editor.rooms.indexOf(room);
                     if (index > -1) {
                         this.editor.rooms.splice(index, 1);
+                    }
+                    // Remove the DOM element
+                    if (room.element) {
+                        room.element.remove();
+                    }
+                    // Get any associated room element by ID and remove it
+                    const roomElement = document.getElementById(`room-${room.id}`);
+                    if (roomElement) {
+                        roomElement.remove();
                     }
                 });
             }
@@ -3293,15 +3393,25 @@ toggleFolderVisibility(folder) {
     });
 }
 
-        createLayerItem(room) {
+createLayerItem(room) {
     const layerItem = document.createElement('div');
     layerItem.className = `layer-item ${room.type}-room ${
         room.finalized ? '' : 'editing'
-    } ${room.id === this.editor.selectedRoomId ? 'selected' : ''}`;
-
-              // Add draggable attributes
+    } ${room.id === this.editor.selectedRoomId ? 'selected' : ''} ${
+        room.locked ? 'locked' : ''
+    }`;
+    
     layerItem.draggable = true;
     layerItem.dataset.roomId = room.id;
+
+    layerItem.addEventListener('mousedown', (e) => {
+        if (room.locked && e.button === 0) { // Left click only
+            e.preventDefault();
+            e.stopPropagation();
+            this.editor.showLockedMessage();
+            return;
+        }
+    });
 
           // Add data attributes for room type and texture
           layerItem.setAttribute("data-room-type", room.type);
@@ -3323,42 +3433,19 @@ toggleFolderVisibility(folder) {
             layerName.setAttribute("title", getTooltipText(room));
           }
 
-        //   layerItem.innerHTML = `
-        //     <div class="layer-content">
-        //         <div class="layer-visibility">
-        //             <span class="material-icons visibility-toggle" style="cursor: pointer; color: ${
-        //               room.visible ? "#fff" : "#666"
-        //             };">
-        //                 ${room.visible ? "visibility" : "visibility_off"}
-        //             </span>
-        //         </div>
-        //         <div class="layer-thumbnail">
-        //             ${
-        //               room.thumbnail
-        //                 ? `<img src="${room.thumbnail}" alt="Room thumbnail">`
-        //                 : ""
-        //             }
-        //         </div>
-        //         <div class="layer-info">
-        //             <div class="layer-name">${room.name}</div>
-        //             <div class="layer-dimensions">${Math.round(
-        //               room.bounds.width
-        //             )}×${Math.round(room.bounds.height)}</div>
-        //         </div>
-        //         <div class="layer-controls">
-        //             <span class="material-icons edit-btn" style="color: #2196F3; cursor: pointer;">edit</span>
-        //             <span class="material-icons delete-btn" style="color: #f44336; cursor: pointer;">delete</span>
-        //         </div>
-        //     </div>
-        // `;
 
-        layerItem.innerHTML = `
+          layerItem.innerHTML = `
         <div class="layer-content">
-            <div class="layer-visibility">
+            <div class="layer-controls">
                 <span class="material-icons visibility-toggle" style="cursor: pointer; color: ${
                     room.visible ? '#fff' : '#666'
                 };">
                     ${room.visible ? 'visibility' : 'visibility_off'}
+                </span>
+                <span class="material-icons lock-toggle" style="cursor: pointer; color: ${
+                    room.locked ? '#f44336' : '#666'
+                };">
+                    ${room.locked ? 'lock' : 'lock_open'}
                 </span>
             </div>
             <div class="layer-thumbnail">
@@ -3380,27 +3467,22 @@ toggleFolderVisibility(folder) {
         </div>
     `;
 
-    //     layerItem.innerHTML = `
-    //   <div class="layer-content">
-    //     <div class="layer-visibility">
-    //       <span class="material-icons visibility-toggle" style="cursor: pointer; color: ${
-    //         room.visible ? '#fff' : '#666'
-    //       };">
-    //         ${room.visible ? 'visibility' : 'visibility_off'}
-    //       </span>
-    //     </div>
-    //     <div class="layer-info">
-    //       <div class="layer-name">${room.name}</div>
-    //       <div class="layer-dimensions">${Math.round(room.bounds.width)}×${Math.round(
-    //         room.bounds.height
-    //       )}</div>
-    //     </div>
-    //     <div class="layer-controls">
-    //       <span class="material-icons edit-btn" style="color: #2196F3; cursor: pointer;">edit</span>
-    //       <span class="material-icons delete-btn" style="color: #f44336; cursor: pointer;">delete</span>
-    //     </div>
-    //   </div>
-    // `;
+    const lockToggle = layerItem.querySelector('.lock-toggle');
+    lockToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (room.locked) {
+            room.locked = false;
+            lockToggle.textContent = 'lock_open';
+            lockToggle.style.color = '#666';
+            layerItem.classList.remove('locked');
+        } else {
+            room.locked = true;
+            lockToggle.textContent = 'lock';
+            lockToggle.style.color = '#f44336';
+            layerItem.classList.add('locked');
+        }
+    });
+
 
           // Add hover effect
           layerItem.addEventListener("mouseenter", () => {
@@ -3450,16 +3532,16 @@ toggleFolderVisibility(folder) {
             visibilityToggle.style.color = room.visible ? "#fff" : "#666";
           });
 
-          // Add existing button handlers
-          //   layerItem.querySelector('.edit-btn').addEventListener('click', e => {
-          //     e.stopPropagation()
-          //     this.editor.editRoom(room)
-          //   })
+
 
           layerItem
             .querySelector(".edit-btn")
             .addEventListener("click", (e) => {
               e.stopPropagation();
+              if (room.locked) {
+        this.editor.showLockedMessage();
+        return;
+    }
               this.showRenameDialog(room);
             });
 
@@ -3467,6 +3549,10 @@ toggleFolderVisibility(folder) {
             .querySelector(".delete-btn")
             .addEventListener("click", (e) => {
               e.stopPropagation();
+              if (room.locked) {
+        this.editor.showLockedMessage();
+        return;
+    }
               this.editor.deleteRoom(room);
             });
 
@@ -3728,6 +3814,27 @@ toggleFolderVisibility(folder) {
           window.addEventListener("resize", this.calculateLayersListHeight);
         }
 
+        showLockedMessage() {
+    const toast = document.createElement('sl-dialog');
+    toast.label = 'Layer Locked';
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="material-icons" style="color: #f44336;">lock</span>
+            <span>This layer is locked. Unlock it to make changes.</span>
+        </div>
+        <div slot="footer">
+            <sl-button variant="primary" class="ok-btn">OK</sl-button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    const okBtn = toast.querySelector('.ok-btn');
+    okBtn.addEventListener('click', () => toast.hide());
+    toast.addEventListener('sl-after-hide', () => toast.remove());
+    
+    toast.show();
+}
+
         parseMapFilename(filename) {
   // Remove file extension
   const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
@@ -3819,378 +3926,763 @@ toggleFolderVisibility(folder) {
   });
 }
 
-        async saveMap() {
-          // Show saving notification
-          const toast = document.createElement("div");
-          toast.style.position = "fixed";
-          toast.style.bottom = "20px";
-          toast.style.right = "20px";
-          toast.style.zIndex = "1000";
-          toast.style.backgroundColor = "#333";
-          toast.style.color = "white";
-          toast.style.padding = "10px 20px";
-          toast.style.borderRadius = "4px";
-          toast.style.display = "flex";
-          toast.style.alignItems = "center";
-          toast.style.gap = "10px";
-          toast.innerHTML = `
+    //     async saveMap() {
+    //       // Show saving notification
+    //       const toast = document.createElement("div");
+    //       toast.style.position = "fixed";
+    //       toast.style.bottom = "20px";
+    //       toast.style.right = "20px";
+    //       toast.style.zIndex = "1000";
+    //       toast.style.backgroundColor = "#333";
+    //       toast.style.color = "white";
+    //       toast.style.padding = "10px 20px";
+    //       toast.style.borderRadius = "4px";
+    //       toast.style.display = "flex";
+    //       toast.style.alignItems = "center";
+    //       toast.style.gap = "10px";
+    //       toast.innerHTML = `
+    //     <span class="material-icons">save</span>
+    //     <span>Saving map...</span>
+    // `;
+    //       document.body.appendChild(toast);
+
+    //       try {
+    //         console.log("Starting map save...");
+    //         // Create the save data structure
+    //         const saveData = {
+    //           version: "1.0",
+    //           timestamp: new Date().toISOString(),
+    //           mapImage: null,
+    //           gridSettings: {
+    //             cellSize: this.cellSize,
+    //             width: this.gridDimensions?.width,
+    //             height: this.gridDimensions?.height
+    //           },
+    //           rooms: this.rooms.map((room) => {
+    //             console.log("Saving room:", {
+    //               id: room.id,
+    //               shape: room.shape,
+    //               bounds: room.bounds
+    //             });
+    //             return {
+    //               id: room.id,
+    //               name: room.name,
+    //               shape: room.shape,
+    //               bounds: { ...room.bounds },
+    //               points: room.points ? [...room.points] : null,
+    //               thumbnail: room.thumbnail,
+    //               type: room.type
+    //             };
+    //           }),
+    //           markers: this.markers.map((marker) => {
+    //             // Create a clean copy of marker data
+    //             const markerData = {
+    //               id: marker.id,
+    //               type: marker.type,
+    //               x: marker.x,
+    //               y: marker.y,
+    //               data: {}
+    //             };
+
+    //             console.log("Saving marker:", {
+    //               type: marker.type,
+    //               id: marker.id
+    //             });
+
+    //             // Copy non-circular data
+    //             if (marker.data) {
+    //               Object.keys(marker.data).forEach((key) => {
+    //                 // Skip the pairedMarker object reference
+    //                 if (key !== "pairedMarker") {
+    //                   markerData.data[key] = marker.data[key];
+    //                 }
+    //               });
+    //             }
+
+    //             // Special handling for encounter markers
+    //             if (marker.type === "encounter" && marker.data.monster) {
+    //               console.log("Saving monster data:", {
+    //                 name: marker.data.monster.basic.name,
+    //                 size: marker.data.monster.basic.size,
+    //                 stats: marker.data.monster.stats
+    //               });
+
+    //               markerData.data.monster = {
+    //                 basic: { ...marker.data.monster.basic },
+    //                 stats: {
+    //                   ac: marker.data.monster.stats.ac,
+    //                   hp: { ...marker.data.monster.stats.hp },
+    //                   speed: marker.data.monster.stats.speed
+    //                 },
+    //                 abilities: { ...marker.data.monster.abilities },
+    //                 traits: { ...marker.data.monster.traits },
+    //                 token: {
+    //                   data: marker.data.monster.token.data,
+    //                   url: marker.data.monster.token.url
+    //                 }
+    //               };
+    //             }
+
+    //             // Handle teleport markers - store only the ID of the paired marker
+    //             if (marker.type === "teleport" && marker.data.pairedMarker) {
+    //               markerData.data.pairId = marker.data.pairedMarker.id;
+    //               markerData.data.isPointA = marker.data.isPointA;
+    //               markerData.data.hasPair = true;
+    //             }
+
+    //             return markerData;
+    //           }),
+    //           playerStart: this.playerStart
+    //             ? {
+    //                 x: this.playerStart.x,
+    //                 y: this.playerStart.y
+    //               }
+    //             : null,
+    //           viewSettings: {
+    //             scale: this.scale,
+    //             offset: { ...this.offset }
+    //           }
+    //         };
+
+    //         // Convert main map image to base64
+    //         if (this.baseImage) {
+    //           const canvas = document.createElement("canvas");
+    //           canvas.width = this.baseImage.width;
+    //           canvas.height = this.baseImage.height;
+    //           const ctx = canvas.getContext("2d");
+    //           ctx.drawImage(this.baseImage, 0, 0);
+    //           saveData.mapImage = canvas.toDataURL("image/webp");
+    //         }
+
+    //         console.log("Map data prepared, creating file...");
+
+    //         // Create the file
+    //         const blob = new Blob([JSON.stringify(saveData, null, 2)], {
+    //           type: "application/json"
+    //         });
+
+    //         // Generate filename based on map name and timestamp
+    //         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+    // const mapName = this.mapName || 'untitled';
+    // const filename = `${mapName}-${timestamp}.json`;
+
+    //         // Trigger download
+    //         const a = document.createElement("a");
+    //         a.href = URL.createObjectURL(blob);
+    //         a.download = filename;
+    //         document.body.appendChild(a);
+    //         a.click();
+    //         document.body.removeChild(a);
+    //         URL.revokeObjectURL(a.href);
+
+    //         console.log("Map save completed");
+
+    //         // Show success toast
+    //         toast.style.backgroundColor = "#4CAF50";
+    //         toast.innerHTML = `
+    //         <span class="material-icons">check_circle</span>
+    //         <span>Map saved successfully!</span>
+    //     `;
+    //       } catch (error) {
+    //         console.error("Error saving map:", error);
+    //         toast.style.backgroundColor = "#f44336";
+    //         toast.innerHTML = `
+    //         <span class="material-icons">error</span>
+    //         <span>Error saving map!</span>
+    //     `;
+    //       }
+
+    //       // Remove toast after delay
+    //       setTimeout(() => toast.remove(), 2000);
+    //     }
+
+    async saveMap() {
+    // Show saving notification
+    const toast = document.createElement("div");
+    toast.style.position = "fixed";
+    toast.style.bottom = "20px";
+    toast.style.right = "20px";
+    toast.style.zIndex = "1000";
+    toast.style.backgroundColor = "#333";
+    toast.style.color = "white";
+    toast.style.padding = "10px 20px";
+    toast.style.borderRadius = "4px";
+    toast.style.display = "flex";
+    toast.style.alignItems = "center";
+    toast.style.gap = "10px";
+    toast.innerHTML = `
         <span class="material-icons">save</span>
         <span>Saving map...</span>
     `;
-          document.body.appendChild(toast);
+    document.body.appendChild(toast);
 
-          try {
-            console.log("Starting map save...");
-            // Create the save data structure
-            const saveData = {
-              version: "1.0",
-              timestamp: new Date().toISOString(),
-              mapImage: null,
-              gridSettings: {
+    try {
+        console.log("Starting map save...");
+        // Create the save data structure
+        const saveData = {
+            version: "1.1", // Bumped version number
+            timestamp: new Date().toISOString(),
+            mapImage: null,
+            gridSettings: {
                 cellSize: this.cellSize,
                 width: this.gridDimensions?.width,
                 height: this.gridDimensions?.height
-              },
-              rooms: this.rooms.map((room) => {
+            },
+            rooms: this.rooms.map((room) => {
                 console.log("Saving room:", {
-                  id: room.id,
-                  shape: room.shape,
-                  bounds: room.bounds
+                    id: room.id,
+                    shape: room.shape,
+                    bounds: room.bounds
                 });
                 return {
-                  id: room.id,
-                  name: room.name,
-                  shape: room.shape,
-                  bounds: { ...room.bounds },
-                  points: room.points ? [...room.points] : null,
-                  thumbnail: room.thumbnail,
-                  type: room.type
+                    id: room.id,
+                    name: room.name,
+                    shape: room.shape,
+                    bounds: { ...room.bounds },
+                    points: room.points ? [...room.points] : null,
+                    thumbnail: room.thumbnail,
+                    type: room.type,
+                    locked: room.locked // Added locked state
                 };
-              }),
-              markers: this.markers.map((marker) => {
+            }),
+            // Add folders to save data
+            folders: this.layersPanel.folders.map(folder => ({
+                id: folder.id,
+                name: folder.name,
+                expanded: folder.expanded,
+                locked: folder.locked,
+                roomIds: folder.rooms.map(room => room.id)
+            })),
+            markers: this.markers.map((marker) => {
                 // Create a clean copy of marker data
                 const markerData = {
-                  id: marker.id,
-                  type: marker.type,
-                  x: marker.x,
-                  y: marker.y,
-                  data: {}
+                    id: marker.id,
+                    type: marker.type,
+                    x: marker.x,
+                    y: marker.y,
+                    data: {}
                 };
 
                 console.log("Saving marker:", {
-                  type: marker.type,
-                  id: marker.id
+                    type: marker.type,
+                    id: marker.id
                 });
 
                 // Copy non-circular data
                 if (marker.data) {
-                  Object.keys(marker.data).forEach((key) => {
-                    // Skip the pairedMarker object reference
-                    if (key !== "pairedMarker") {
-                      markerData.data[key] = marker.data[key];
-                    }
-                  });
+                    Object.keys(marker.data).forEach((key) => {
+                        // Skip the pairedMarker object reference
+                        if (key !== "pairedMarker") {
+                            markerData.data[key] = marker.data[key];
+                        }
+                    });
                 }
 
                 // Special handling for encounter markers
                 if (marker.type === "encounter" && marker.data.monster) {
-                  console.log("Saving monster data:", {
-                    name: marker.data.monster.basic.name,
-                    size: marker.data.monster.basic.size,
-                    stats: marker.data.monster.stats
-                  });
+                    console.log("Saving monster data:", {
+                        name: marker.data.monster.basic.name,
+                        size: marker.data.monster.basic.size,
+                        stats: marker.data.monster.stats
+                    });
 
-                  markerData.data.monster = {
-                    basic: { ...marker.data.monster.basic },
-                    stats: {
-                      ac: marker.data.monster.stats.ac,
-                      hp: { ...marker.data.monster.stats.hp },
-                      speed: marker.data.monster.stats.speed
-                    },
-                    abilities: { ...marker.data.monster.abilities },
-                    traits: { ...marker.data.monster.traits },
-                    token: {
-                      data: marker.data.monster.token.data,
-                      url: marker.data.monster.token.url
-                    }
-                  };
+                    markerData.data.monster = {
+                        basic: { ...marker.data.monster.basic },
+                        stats: {
+                            ac: marker.data.monster.stats.ac,
+                            hp: { ...marker.data.monster.stats.hp },
+                            speed: marker.data.monster.stats.speed
+                        },
+                        abilities: { ...marker.data.monster.abilities },
+                        traits: { ...marker.data.monster.traits },
+                        token: {
+                            data: marker.data.monster.token.data,
+                            url: marker.data.monster.token.url
+                        }
+                    };
                 }
 
                 // Handle teleport markers - store only the ID of the paired marker
                 if (marker.type === "teleport" && marker.data.pairedMarker) {
-                  markerData.data.pairId = marker.data.pairedMarker.id;
-                  markerData.data.isPointA = marker.data.isPointA;
-                  markerData.data.hasPair = true;
+                    markerData.data.pairId = marker.data.pairedMarker.id;
+                    markerData.data.isPointA = marker.data.isPointA;
+                    markerData.data.hasPair = true;
                 }
 
                 return markerData;
-              }),
-              playerStart: this.playerStart
+            }),
+            playerStart: this.playerStart
                 ? {
                     x: this.playerStart.x,
                     y: this.playerStart.y
-                  }
+                }
                 : null,
-              viewSettings: {
+            viewSettings: {
                 scale: this.scale,
                 offset: { ...this.offset }
-              }
-            };
-
-            // Convert main map image to base64
-            if (this.baseImage) {
-              const canvas = document.createElement("canvas");
-              canvas.width = this.baseImage.width;
-              canvas.height = this.baseImage.height;
-              const ctx = canvas.getContext("2d");
-              ctx.drawImage(this.baseImage, 0, 0);
-              saveData.mapImage = canvas.toDataURL("image/webp");
             }
+        };
 
-            console.log("Map data prepared, creating file...");
+        // Convert main map image to base64
+        if (this.baseImage) {
+            const canvas = document.createElement("canvas");
+            canvas.width = this.baseImage.width;
+            canvas.height = this.baseImage.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(this.baseImage, 0, 0);
+            saveData.mapImage = canvas.toDataURL("image/webp");
+        }
 
-            // Create the file
-            const blob = new Blob([JSON.stringify(saveData, null, 2)], {
-              type: "application/json"
-            });
+        console.log("Map data prepared, creating file...");
 
-            // Generate filename based on map name and timestamp
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-    const mapName = this.mapName || 'untitled';
-    const filename = `${mapName}-${timestamp}.json`;
+        // Create the file
+        const blob = new Blob([JSON.stringify(saveData, null, 2)], {
+            type: "application/json"
+        });
 
-            // Trigger download
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(a.href);
+        // Generate filename based on map name and timestamp
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+        const mapName = this.mapName || 'untitled';
+        const filename = `${mapName}-${timestamp}.json`;
 
-            console.log("Map save completed");
+        // Trigger download
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
 
-            // Show success toast
-            toast.style.backgroundColor = "#4CAF50";
-            toast.innerHTML = `
+        console.log("Map save completed");
+
+        // Show success toast
+        toast.style.backgroundColor = "#4CAF50";
+        toast.innerHTML = `
             <span class="material-icons">check_circle</span>
             <span>Map saved successfully!</span>
         `;
-          } catch (error) {
-            console.error("Error saving map:", error);
-            toast.style.backgroundColor = "#f44336";
-            toast.innerHTML = `
+    } catch (error) {
+        console.error("Error saving map:", error);
+        toast.style.backgroundColor = "#f44336";
+        toast.innerHTML = `
             <span class="material-icons">error</span>
             <span>Error saving map!</span>
         `;
-          }
+    }
 
-          // Remove toast after delay
-          setTimeout(() => toast.remove(), 2000);
-        }
+    // Remove toast after delay
+    setTimeout(() => toast.remove(), 2000);
+}
 
-        // Add load function
-        // Add to MapEditor class
-        async loadMap(file) {
-          const toast = document.createElement("div");
-          toast.style.position = "fixed";
-          toast.style.bottom = "20px";
-          toast.style.right = "20px";
-          toast.style.zIndex = "1000";
-          toast.style.backgroundColor = "#333";
-          toast.style.color = "white";
-          toast.style.padding = "10px 20px";
-          toast.style.borderRadius = "4px";
-          toast.style.display = "flex";
-          toast.style.alignItems = "center";
-          toast.style.gap = "10px";
-          toast.innerHTML = `
+
+    //     async loadMap(file) {
+    //       const toast = document.createElement("div");
+    //       toast.style.position = "fixed";
+    //       toast.style.bottom = "20px";
+    //       toast.style.right = "20px";
+    //       toast.style.zIndex = "1000";
+    //       toast.style.backgroundColor = "#333";
+    //       toast.style.color = "white";
+    //       toast.style.padding = "10px 20px";
+    //       toast.style.borderRadius = "4px";
+    //       toast.style.display = "flex";
+    //       toast.style.alignItems = "center";
+    //       toast.style.gap = "10px";
+    //       toast.innerHTML = `
+    //     <span class="material-icons">hourglass_top</span>
+    //     <span>Loading map...</span>
+    // `;
+    //       document.body.appendChild(toast);
+
+    //       try {
+    //         console.log("Starting map load...");
+    //         const text = await file.text();
+    //         const saveData = JSON.parse(text);
+
+    //         // Version check if needed
+    //         if (saveData.version !== "1.0") {
+    //           console.warn(
+    //             "Loading different version map file:",
+    //             saveData.version
+    //           );
+    //         }
+
+    //         // Clear existing rooms and markers first
+    //         this.rooms.forEach((room) => {
+    //           room.element?.remove();
+    //         });
+    //         this.rooms = [];
+
+    //         this.markers.forEach((marker) => {
+    //           marker.element?.remove();
+    //         });
+    //         this.markers = [];
+
+    //         if (this.playerStart?.element) {
+    //           this.playerStart.element.remove();
+    //           this.playerStart = null;
+    //         }
+
+    //         // Load map image first and wait for it to complete
+    //         if (saveData.mapImage) {
+    //           await new Promise((resolve, reject) => {
+    //             const img = new Image();
+    //             img.onload = () => {
+    //               this.baseImage = img;
+    //               this.naturalWidth = img.naturalWidth;
+    //               this.naturalHeight = img.naturalHeight;
+    //               resolve();
+    //             };
+    //             img.onerror = reject;
+    //             img.src = saveData.mapImage;
+    //           });
+    //         }
+
+    //         // Restore grid settings
+    //         this.cellSize = saveData.gridSettings.cellSize;
+    //         this.gridDimensions =
+    //           saveData.gridSettings.width && saveData.gridSettings.height
+    //             ? {
+    //                 width: saveData.gridSettings.width,
+    //                 height: saveData.gridSettings.height
+    //               }
+    //             : null;
+
+    //         console.log("Grid settings restored:", this.gridDimensions);
+
+    //         // Restore rooms
+    //         for (const roomData of saveData.rooms) {
+    //           console.log("Creating room:", {
+    //             id: roomData.id,
+    //             shape: roomData.shape,
+    //             type: roomData.type, // Add type to debug log
+    //             bounds: roomData.bounds
+    //           });
+
+    //           // Create room using the new static method
+    //           const room = Room.createFromSaved(roomData, this);
+    //           this.rooms.push(room);
+    //           document
+    //             .querySelector(".canvas-container")
+    //             .appendChild(room.element);
+    //         }
+
+    //         // Restore markers
+    //         console.log("Starting marker restoration...");
+    //         for (const markerData of saveData.markers) {
+    //           console.log("Loading marker:", {
+    //             type: markerData.type,
+    //             data: markerData.data
+    //           });
+
+    //           const marker = this.addMarker(
+    //             markerData.type,
+    //             markerData.x,
+    //             markerData.y,
+    //             markerData.data
+    //           );
+
+    //             // Special handling for encounter markers
+
+    //           // Add console log after token creation
+    //           if (marker.type === "encounter" && marker.data.monster) {
+    //             this.updateMarkerAppearance(marker);
+    //             const tokenData = this.getMonsterTokenData(marker);
+    //             if (tokenData) {
+    //               if (!this.tokens) this.tokens = [];
+    //               this.tokens.push(tokenData);
+    //               console.log("Added monster token:", tokenData);
+    //             }
+    //           }
+    //         }
+
+    //         // Restore teleport connections
+    //         console.log("Restoring teleport connections...");
+    //         const teleportMarkers = this.markers.filter(
+    //           (m) => m.type === "teleport"
+    //         );
+    //         for (const marker of teleportMarkers) {
+    //           if (marker.data.pairId) {
+    //             const pair = teleportMarkers.find(
+    //               (m) => m.data.pairId === marker.data.pairId && m !== marker
+    //             );
+    //             if (pair) {
+    //               console.log("Connecting teleport pair:", {
+    //                 markerA: marker.id,
+    //                 markerB: pair.id
+    //               });
+
+    //               marker.data.pairedMarker = pair;
+    //               pair.data.pairedMarker = marker;
+    //               marker.data.hasPair = true;
+    //               pair.data.hasPair = true;
+
+    //               // Create and update connection line
+    //               if (marker.data.isPointA) {
+    //                 if (marker.connection) {
+    //                   marker.connection.remove();
+    //                 }
+    //                 marker.connection = this.createTeleportConnection(
+    //                   marker,
+    //                   pair
+    //                 );
+    //                 this.updateTeleportConnection(marker, pair);
+    //               }
+    //             }
+    //           }
+    //         }
+
+    //         // Restore player start
+    //         if (saveData.playerStart) {
+    //           this.playerStart = this.addMarker(
+    //             "player-start",
+    //             saveData.playerStart.x,
+    //             saveData.playerStart.y
+    //           );
+    //         }
+
+    //         // Restore view settings
+    //         this.scale = saveData.viewSettings.scale;
+    //         this.offset = saveData.viewSettings.offset;
+
+    //         // Update all marker positions
+    //         this.markers.forEach((marker) => {
+    //           this.updateMarkerPosition(marker);
+    //         });
+
+    //         // Update display
+    //         this.centerMap();
+    //         this.render();
+    //         this.layersPanel.updateLayersList();
+
+    //         console.log("Map load completed");
+
+    //         // Success notification
+    //         toast.style.backgroundColor = "#4CAF50";
+    //         toast.innerHTML = `
+    //         <span class="material-icons">check_circle</span>
+    //         <span>Map loaded successfully!</span>
+    //     `;
+    //       } catch (error) {
+    //         console.error("Error loading map:", error);
+    //         toast.style.backgroundColor = "#f44336";
+    //         toast.innerHTML = `
+    //         <span class="material-icons">error</span>
+    //         <span>Error loading map!</span>
+    //     `;
+    //       }
+
+    //       // Remove toast after delay
+    //       setTimeout(() => toast.remove(), 2000);
+    //     }
+
+    async loadMap(file) {
+    const toast = document.createElement("div");
+    toast.style.position = "fixed";
+    toast.style.bottom = "20px";
+    toast.style.right = "20px";
+    toast.style.zIndex = "1000";
+    toast.style.backgroundColor = "#333";
+    toast.style.color = "white";
+    toast.style.padding = "10px 20px";
+    toast.style.borderRadius = "4px";
+    toast.style.display = "flex";
+    toast.style.alignItems = "center";
+    toast.style.gap = "10px";
+    toast.innerHTML = `
         <span class="material-icons">hourglass_top</span>
         <span>Loading map...</span>
     `;
-          document.body.appendChild(toast);
+    document.body.appendChild(toast);
 
-          try {
-            console.log("Starting map load...");
-            const text = await file.text();
-            const saveData = JSON.parse(text);
+    try {
+        console.log("Starting map load...");
+        const text = await file.text();
+        const saveData = JSON.parse(text);
 
-            // Version check if needed
-            if (saveData.version !== "1.0") {
-              console.warn(
-                "Loading different version map file:",
-                saveData.version
-              );
-            }
+        // Version check
+        console.log("Loading map version:", saveData.version);
+        
+        // Clear existing rooms and markers first
+        this.rooms.forEach(room => {
+            room.element?.remove();
+        });
+        this.rooms = [];
 
-            // Clear existing rooms and markers first
-            this.rooms.forEach((room) => {
-              room.element?.remove();
-            });
-            this.rooms = [];
+        this.markers.forEach(marker => {
+            marker.element?.remove();
+        });
+        this.markers = [];
 
-            this.markers.forEach((marker) => {
-              marker.element?.remove();
-            });
-            this.markers = [];
+        if (this.playerStart?.element) {
+            this.playerStart.element.remove();
+            this.playerStart = null;
+        }
 
-            if (this.playerStart?.element) {
-              this.playerStart.element.remove();
-              this.playerStart = null;
-            }
+        // Clear existing folders
+        this.layersPanel.folders = [];
 
-            // Load map image first and wait for it to complete
-            if (saveData.mapImage) {
-              await new Promise((resolve, reject) => {
+        // Load map image first and wait for it to complete
+        if (saveData.mapImage) {
+            await new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
-                  this.baseImage = img;
-                  this.naturalWidth = img.naturalWidth;
-                  this.naturalHeight = img.naturalHeight;
-                  resolve();
+                    this.baseImage = img;
+                    this.naturalWidth = img.naturalWidth;
+                    this.naturalHeight = img.naturalHeight;
+                    resolve();
                 };
                 img.onerror = reject;
                 img.src = saveData.mapImage;
-              });
+            });
+        }
+
+        // Restore grid settings
+        this.cellSize = saveData.gridSettings.cellSize;
+        this.gridDimensions = saveData.gridSettings.width && saveData.gridSettings.height
+            ? {
+                width: saveData.gridSettings.width,
+                height: saveData.gridSettings.height
             }
+            : null;
 
-            // Restore grid settings
-            this.cellSize = saveData.gridSettings.cellSize;
-            this.gridDimensions =
-              saveData.gridSettings.width && saveData.gridSettings.height
-                ? {
-                    width: saveData.gridSettings.width,
-                    height: saveData.gridSettings.height
-                  }
-                : null;
+        console.log("Grid settings restored:", this.gridDimensions);
 
-            console.log("Grid settings restored:", this.gridDimensions);
-
-            // Restore rooms
-            for (const roomData of saveData.rooms) {
-              console.log("Creating room:", {
+        // Restore rooms
+        for (const roomData of saveData.rooms) {
+            console.log("Creating room:", {
                 id: roomData.id,
                 shape: roomData.shape,
-                type: roomData.type, // Add type to debug log
+                type: roomData.type,
                 bounds: roomData.bounds
-              });
+            });
 
-              // Create room using the new static method
-              const room = Room.createFromSaved(roomData, this);
-              this.rooms.push(room);
-              document
-                .querySelector(".canvas-container")
-                .appendChild(room.element);
+            const room = Room.createFromSaved(roomData, this);
+            if (roomData.locked) {
+                room.locked = true;
             }
+            this.rooms.push(room);
+            document.querySelector('.canvas-container').appendChild(room.element);
+        }
 
-            // Restore markers
-            console.log("Starting marker restoration...");
-            for (const markerData of saveData.markers) {
-              console.log("Loading marker:", {
+        // If version 1.1 or higher, restore folders
+        if (saveData.version && saveData.version !== "1.0" && saveData.folders) {
+            console.log("Restoring folders...");
+            saveData.folders.forEach(folderData => {
+                const folder = {
+                    id: folderData.id,
+                    name: folderData.name,
+                    expanded: folderData.expanded,
+                    locked: folderData.locked,
+                    rooms: []
+                };
+                
+                // Find and assign rooms to folder
+                folderData.roomIds.forEach(roomId => {
+                    const room = this.rooms.find(r => r.id === roomId);
+                    if (room) {
+                        folder.rooms.push(room);
+                    }
+                });
+
+                this.layersPanel.folders.push(folder);
+            });
+        }
+
+        // Restore markers
+        console.log("Starting marker restoration...");
+        for (const markerData of saveData.markers) {
+            console.log("Loading marker:", {
                 type: markerData.type,
                 data: markerData.data
-              });
+            });
 
-              const marker = this.addMarker(
+            const marker = this.addMarker(
                 markerData.type,
                 markerData.x,
                 markerData.y,
                 markerData.data
-              );
-
-                // Special handling for encounter markers
-
-              // Add console log after token creation
-              if (marker.type === "encounter" && marker.data.monster) {
-                this.updateMarkerAppearance(marker);
-                const tokenData = this.getMonsterTokenData(marker);
-                if (tokenData) {
-                  if (!this.tokens) this.tokens = [];
-                  this.tokens.push(tokenData);
-                  console.log("Added monster token:", tokenData);
-                }
-              }
-            }
-
-            // Restore teleport connections
-            console.log("Restoring teleport connections...");
-            const teleportMarkers = this.markers.filter(
-              (m) => m.type === "teleport"
             );
-            for (const marker of teleportMarkers) {
-              if (marker.data.pairId) {
+
+            if (marker.type === "encounter" && marker.data.monster) {
+                this.updateMarkerAppearance(marker);
+            }
+        }
+
+        // Restore teleport connections
+        console.log("Restoring teleport connections...");
+        const teleportMarkers = this.markers.filter(m => m.type === "teleport");
+        for (const marker of teleportMarkers) {
+            if (marker.data.pairId) {
                 const pair = teleportMarkers.find(
-                  (m) => m.data.pairId === marker.data.pairId && m !== marker
+                    m => m.data.pairId === marker.data.pairId && m !== marker
                 );
                 if (pair) {
-                  console.log("Connecting teleport pair:", {
-                    markerA: marker.id,
-                    markerB: pair.id
-                  });
+                    console.log("Connecting teleport pair:", {
+                        markerA: marker.id,
+                        markerB: pair.id
+                    });
 
-                  marker.data.pairedMarker = pair;
-                  pair.data.pairedMarker = marker;
-                  marker.data.hasPair = true;
-                  pair.data.hasPair = true;
+                    marker.data.pairedMarker = pair;
+                    pair.data.pairedMarker = marker;
+                    marker.data.hasPair = true;
+                    pair.data.hasPair = true;
 
-                  // Create and update connection line
-                  if (marker.data.isPointA) {
-                    if (marker.connection) {
-                      marker.connection.remove();
+                    if (marker.data.isPointA) {
+                        if (marker.connection) {
+                            marker.connection.remove();
+                        }
+                        marker.connection = this.createTeleportConnection(marker, pair);
+                        this.updateTeleportConnection(marker, pair);
                     }
-                    marker.connection = this.createTeleportConnection(
-                      marker,
-                      pair
-                    );
-                    this.updateTeleportConnection(marker, pair);
-                  }
                 }
-              }
             }
+        }
 
-            // Restore player start
-            if (saveData.playerStart) {
-              this.playerStart = this.addMarker(
+        // Restore player start
+        if (saveData.playerStart) {
+            this.playerStart = this.addMarker(
                 "player-start",
                 saveData.playerStart.x,
                 saveData.playerStart.y
-              );
-            }
+            );
+        }
 
-            // Restore view settings
-            this.scale = saveData.viewSettings.scale;
-            this.offset = saveData.viewSettings.offset;
+        // Restore view settings
+        this.scale = saveData.viewSettings.scale;
+        this.offset = saveData.viewSettings.offset;
 
-            // Update all marker positions
-            this.markers.forEach((marker) => {
-              this.updateMarkerPosition(marker);
-            });
+        // Update all marker positions
+        this.markers.forEach(marker => {
+            this.updateMarkerPosition(marker);
+        });
 
-            // Update display
-            this.centerMap();
-            this.render();
-            this.layersPanel.updateLayersList();
+        // Update display
+        this.centerMap();
+        this.render();
+        this.layersPanel.updateLayersList();
 
-            console.log("Map load completed");
+        console.log("Map load completed");
 
-            // Success notification
-            toast.style.backgroundColor = "#4CAF50";
-            toast.innerHTML = `
+        // Success notification
+        toast.style.backgroundColor = "#4CAF50";
+        toast.innerHTML = `
             <span class="material-icons">check_circle</span>
             <span>Map loaded successfully!</span>
         `;
-          } catch (error) {
-            console.error("Error loading map:", error);
-            toast.style.backgroundColor = "#f44336";
-            toast.innerHTML = `
+    } catch (error) {
+        console.error("Error loading map:", error);
+        toast.style.backgroundColor = "#f44336";
+        toast.innerHTML = `
             <span class="material-icons">error</span>
             <span>Error loading map!</span>
         `;
-          }
+    }
 
-          // Remove toast after delay
-          setTimeout(() => toast.remove(), 2000);
-        }
+    // Remove toast after delay
+    setTimeout(() => toast.remove(), 2000);
+}
 
         clearMap() {
           // Clear all rooms
@@ -5180,6 +5672,10 @@ toggleFolderVisibility(folder) {
         }
 
         startDragging(room, e) {
+            if (room.locked) {
+        this.showLockedMessage();
+        return;
+    }
           // Check if the currentTool is not 'rectangle', 'circle', or 'poly', and return if so
           if (!["rectangle", "circle", "poly"].includes(this.currentTool))
             return;
@@ -5208,6 +5704,10 @@ toggleFolderVisibility(folder) {
         }
 
         startResizing(room, handle, e) {
+            if (room.locked) {
+        this.showLockedMessage();
+        return;
+    }
           const startX = e.clientX;
           const startY = e.clientY;
           const startBounds = { ...room.bounds };
@@ -5465,6 +5965,10 @@ this.markers.forEach(marker => {
         }
 
         editRoom(room) {
+            if (room.locked) {
+        this.showLockedMessage();
+        return;
+    }
           this.rooms.forEach((r) => {
             if (r !== room) {
               r.updateEditState(false);
@@ -5483,6 +5987,10 @@ this.markers.forEach(marker => {
         }
 
         deleteRoom(room) {
+            if (room.locked) {
+        this.showLockedMessage();
+        return;
+    }
           const index = this.rooms.indexOf(room);
           if (index > -1) {
             this.rooms.splice(index, 1);
