@@ -99,11 +99,20 @@
       src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/option/option.js"
     ></script>
 
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
-    <script src="three-csg.js"></script>
-    
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+    // Add global THREE classes for CSG
+    window.Vector3 = THREE.Vector3;
+    window.Vector2 = THREE.Vector2;
+    window.Face3 = THREE.Face3;
+    window.Geometry = THREE.Geometry;
+    window.Mesh = THREE.Mesh;
+</script>
+<script src="three-csg.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+
+
     <style>
       :root {
         --app-height: 100vh;
@@ -1602,6 +1611,13 @@
     </div>
 
     <script>
+
+      // Add this after your CSG script loading
+console.log("CSG availability check:", {
+  CSGExists: typeof CSG !== 'undefined',
+  CSGMethods: CSG ? Object.keys(CSG) : 'Not loaded'
+});
+
       function parseMapDimensions(filename) {
         const dimensionMatch = filename.match(/(\d+)x(\d+)/i);
         if (dimensionMatch) {
@@ -7304,11 +7320,40 @@
           const boxHeight = 4; // Wall height
           const boxDepth = this.baseImage.height / 50;
 
+          // const createRoomGeometry = (room) => {
+          //   const positions = [];
+          //   const normals = [];
+          //   const uvs = [];
+          //   const indices = [];
+
           const createRoomGeometry = (room) => {
-            const positions = [];
-            const normals = [];
-            const uvs = [];
-            const indices = [];
+  let positions = [];
+  let normals = [];
+  let uvs = [];
+  let indices = [];
+
+            const material = room.type === "wall"
+  ? new THREE.MeshStandardMaterial({
+      color: wallTexture ? 0xffffff : 0x505050,
+      map: wallTexture,
+      roughness: 0.8,
+      metalness: 0.1,
+      transparent: false,
+      opacity: 1.0,
+      side: THREE.DoubleSide,
+      depthWrite: true,
+      // Add these lines:
+      clipIntersection: true,
+      clipShadows: true
+    })
+                : new THREE.MeshStandardMaterial({
+                    color: roomTexture ? 0xffffff : 0x808080,
+                    map: roomTexture,
+                    roughness: 0.7,
+                    transparent: false,
+                    opacity: 1.0,
+                    side: THREE.DoubleSide,
+                  });
 
             const isWall = room.type === "wall";
             console.log("Room geometry creation:", {
@@ -7789,57 +7834,30 @@ const wallDoors = this.markers.filter(marker =>
 //     normals = Array.from(modifiedMesh.geometry.attributes.normal.array);
 //     uvs = Array.from(modifiedMesh.geometry.attributes.uv.array);
 //     indices = Array.from(modifiedMesh.geometry.index.array);
-// }
 
 if (wallDoors.length > 0) {
-    // Clear existing positions/normals/uvs arrays
-    positions.length = 0;
-    normals.length = 0;
-    uvs.length = 0;
-    indices.length = 0;
+    const tempGeometry = new THREE.BufferGeometry();
+    tempGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    tempGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    tempGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    tempGeometry.setIndex(indices);
 
-    // For each wall segment
-    wallDoors.forEach(doorMarker => {
-        const doorWidth = this.cellSize / 50;
-        const doorHeight = 2;
-        const doorX = doorMarker.data.door.position.x / 50 - boxWidth/2;
-        const doorZ = doorMarker.data.door.position.y / 50 - boxDepth/2;
+    // Convert BufferGeometry to Geometry for CSG
+    const geometry = new THREE.Geometry().fromBufferGeometry(tempGeometry);
+    geometry.computeFaceNormals();
+    geometry.computeVertexNormals();
+    
+    let wallMesh = new THREE.Mesh(geometry, material);
+    wallMesh.updateMatrix();
+    // Update the buffers with the modified geometry
+    positions = Array.from(modifiedMesh.geometry.attributes.position.array);
+    normals = Array.from(modifiedMesh.geometry.attributes.normal.array);
+    uvs = Array.from(modifiedMesh.geometry.attributes.uv.array);
+    indices = Array.from(modifiedMesh.geometry.index.array);
 
-        // Create wall segments around door
-        // Bottom segment
-        this.addWallSegment(positions, normals, uvs, indices,
-            x1, 0, z1,                 // start
-            x2, 0, z2,                 // end
-            doorX - doorWidth/2, 0,    // door left
-            doorX + doorWidth/2, 0     // door right
-        );
-
-        // Top segment
-        this.addWallSegment(positions, normals, uvs, indices,
-            x1, doorHeight, z1,
-            x2, doorHeight, z2,
-            doorX - doorWidth/2, doorHeight,
-            doorX + doorWidth/2, doorHeight
-        );
-
-        // Side segments
-        this.addWallSegment(positions, normals, uvs, indices,
-            x1, 0, z1,
-            x1, doorHeight, z1,
-            doorX - doorWidth/2, 0,
-            doorX - doorWidth/2, doorHeight
-        );
-
-        this.addWallSegment(positions, normals, uvs, indices,
-            x2, 0, z2,
-            x2, doorHeight, z2,
-            doorX + doorWidth/2, 0,
-            doorX + doorWidth/2, doorHeight
-        );
-    });
 }
 
-}else {
+
   // Original hollow room code
   const wallVertices = [
                     x1,
@@ -7929,28 +7947,28 @@ if (wallDoors.length > 0) {
             );
             geometry.setIndex(indices);
 
-            const material = room.type === "wall"
-  ? new THREE.MeshStandardMaterial({
-      color: wallTexture ? 0xffffff : 0x505050,
-      map: wallTexture,
-      roughness: 0.8,
-      metalness: 0.1,
-      transparent: false,
-      opacity: 1.0,
-      side: THREE.DoubleSide,
-      depthWrite: true,
-      // Add these lines:
-      clipIntersection: true,
-      clipShadows: true
-    })
-                : new THREE.MeshStandardMaterial({
-                    color: roomTexture ? 0xffffff : 0x808080,
-                    map: roomTexture,
-                    roughness: 0.7,
-                    transparent: false,
-                    opacity: 1.0,
-                    side: THREE.DoubleSide,
-                  });
+  //           const material = room.type === "wall"
+  // ? new THREE.MeshStandardMaterial({
+  //     color: wallTexture ? 0xffffff : 0x505050,
+  //     map: wallTexture,
+  //     roughness: 0.8,
+  //     metalness: 0.1,
+  //     transparent: false,
+  //     opacity: 1.0,
+  //     side: THREE.DoubleSide,
+  //     depthWrite: true,
+  //     // Add these lines:
+  //     clipIntersection: true,
+  //     clipShadows: true
+  //   })
+  //               : new THREE.MeshStandardMaterial({
+  //                   color: roomTexture ? 0xffffff : 0x808080,
+  //                   map: roomTexture,
+  //                   roughness: 0.7,
+  //                   transparent: false,
+  //                   opacity: 1.0,
+  //                   side: THREE.DoubleSide,
+  //                 });
 
             return new THREE.Mesh(geometry, material);
           };
@@ -8594,79 +8612,162 @@ snapToWall(x, y, wall) {
 }
 
         // Add method to cut door holes in walls
-        cutDoorHole(wallMesh, door) {
+//         cutDoorHole(wallMesh, door) {
+//   console.log("Starting door cut operation:", {
+//     wallMesh,
+//     door,
+//     material: wallMesh.material
+//   });
+
+//   // Create a door hole slightly larger than the door frame
+//   const doorWidth = this.cellSize / 50;
+//   const doorHeight = 2.1;  // Slightly higher than door frame
+//   const wallDepth = 0.3;   // Match wall thickness
+
+//   const doorHoleGeometry = new THREE.BoxGeometry(
+//     doorWidth + 0.1,    // Slightly wider for clean cut
+//     doorHeight,
+//     wallDepth + 0.1     // Slightly deeper for clean cut
+//   );
+
+//   // Create door hole mesh and position it
+//   const doorHole = new THREE.Mesh(doorHoleGeometry);
+//   // Ensure door hole is positioned relative to wall's local space
+//   doorHole.position.set(
+//     (door.position.x / 50) - (wallMesh.position.x || 0),
+//     doorHeight / 2,
+//     (door.position.y / 50) - (wallMesh.position.z || 0)
+//   );
+
+//   // Perform CSG operation
+//   const wallCSG = CSG.fromMesh(wallMesh);
+//   const holeCSG = CSG.fromMesh(doorHole);
+//   const resultCSG = wallCSG.subtract(holeCSG);
+  
+//   // Convert back to mesh, preserving materials and textures
+//   const resultMesh = CSG.toMesh(
+//     resultCSG, 
+//     wallMesh.matrix,
+//     wallMesh.material
+//   );
+
+//   // Handle texture preservation
+//   if (wallMesh.material.map) {
+//     resultMesh.material.map = wallMesh.material.map;
+//     resultMesh.material.needsUpdate = true;
+//   }
+
+//   // Add door frame
+//   const doorFrame = this.createDoorFrame(door, boxWidth, boxDepth);
+//   resultMesh.add(doorFrame);
+
+//   return resultMesh;
+// }
+
+cutDoorHole(wallMesh, door) {
   console.log("Starting door cut operation:", {
     wallMesh,
     door,
     material: wallMesh.material
   });
 
+  // Create a door hole slightly larger than the door frame
   const doorWidth = this.cellSize / 50;
-  const doorHeight = 2.2;
-  const wallDepth = 0.3;
+  const doorHeight = 2.1;  // Slightly higher than door frame
+  const wallDepth = 0.3;   // Match wall thickness
+
+  // Ensure wall geometry is properly set up for CSG
+  wallMesh.updateMatrix();
+  wallMesh.geometry.computeVertexNormals();
+  wallMesh.geometry.computeBoundingSphere();
 
   const doorHoleGeometry = new THREE.BoxGeometry(
-    doorWidth + 0.1,
+    doorWidth + 0.1,    // Slightly wider for clean cut
     doorHeight,
-    wallDepth + 0.1
+    wallDepth + 0.1     // Slightly deeper for clean cut
   );
 
+  // Create and prepare door hole mesh
   const doorHole = new THREE.Mesh(doorHoleGeometry);
   doorHole.position.set(
-    door.position.x / 50 - boxWidth / 2,
+    (door.position.x / 50) - (wallMesh.position.x || 0),
     doorHeight / 2,
-    door.position.y / 50 - boxDepth / 2
+    (door.position.y / 50) - (wallMesh.position.z || 0)
   );
+  doorHole.updateMatrix();
 
-  console.log("Before CSG:", {
-    holePosition: doorHole.position,
-    wallPosition: wallMesh.position
-  });
+  try {
+    // Convert to BufferGeometry if needed
+    if (!wallMesh.geometry.isBufferGeometry) {
+      wallMesh.geometry = new THREE.BufferGeometry().fromGeometry(wallMesh.geometry);
+    }
+    if (!doorHole.geometry.isBufferGeometry) {
+      doorHole.geometry = new THREE.BufferGeometry().fromGeometry(doorHole.geometry);
+    }
 
-  const wallCSG = CSG.fromMesh(wallMesh);
-  const holeCSG = CSG.fromMesh(doorHole);
-  const resultCSG = wallCSG.subtract(holeCSG);
-  
-  const resultMesh = CSG.toMesh(
-    resultCSG, 
-    wallMesh.matrix,
-    Array.isArray(wallMesh.material) ? wallMesh.material : [wallMesh.material]
-  );
+    // Perform CSG operation
+    const wallCSG = CSG.fromMesh(wallMesh);
+    if (!wallCSG) {
+      console.error("Failed to create wall CSG");
+      return wallMesh;
+    }
 
-  // Add the texture handling here
-  if (wallMesh.material.map) {
-    resultMesh.material.map = wallMesh.material.map;
-    resultMesh.material.needsUpdate = true;
+    const holeCSG = CSG.fromMesh(doorHole);
+    if (!holeCSG) {
+      console.error("Failed to create hole CSG");
+      return wallMesh;
+    }
+
+    const resultCSG = wallCSG.subtract(holeCSG);
+    if (!resultCSG) {
+      console.error("Failed to perform CSG subtraction");
+      return wallMesh;
+    }
+
+    // Convert back to mesh
+    const resultMesh = CSG.toMesh(
+      resultCSG,
+      wallMesh.matrix,
+      wallMesh.material
+    );
+
+    // Ensure geometry is valid
+    resultMesh.geometry.computeVertexNormals();
+    resultMesh.geometry.computeBoundingSphere();
+
+    // Handle texture preservation
+    if (wallMesh.material.map) {
+      resultMesh.material.map = wallMesh.material.map;
+      resultMesh.material.needsUpdate = true;
+    }
+
+    // Add door frame
+    const doorFrame = this.createDoorFrame(door, boxWidth, boxDepth);
+    resultMesh.add(doorFrame);
+
+    return resultMesh;
+  } catch (error) {
+    console.error("Error in cutDoorHole:", error);
+    return wallMesh; // Return original mesh if operation fails
   }
-
-  console.log("After CSG:", {
-    resultMesh,
-    material: resultMesh.material
-  });
-
-  const frame = this.createDoorFrame(door, boxWidth, boxDepth);
-  resultMesh.add(frame);
-
-  return resultMesh;
 }
 
 createDoorFrame(door, boxWidth, boxDepth) {
   const doorWidth = this.cellSize / 50;
-  const doorHeight = 2;
-  const frameThickness = 0.05;
-  const frameDepth = 0.3;  // Match wall thickness
+  const doorHeight = 2.0;  // Match door height exactly
+  const frameThickness = 0.04;  // Slightly thinner frame
+  const frameDepth = 0.28;  // Slightly less than wall depth
 
-  // Create frame group
   const frameGroup = new THREE.Group();
-
-  // Frame material
   const frameMaterial = new THREE.MeshStandardMaterial({
     color: 0x4a4a4a,
     metalness: 0.3,
-    roughness: 0.7
+    roughness: 0.7,
+    side: THREE.DoubleSide,  // Ensure frame is visible from both sides
+    depthWrite: true
   });
 
-  // Create frame pieces
+  // Create frame pieces with precise positioning
   const pieces = [
     // Top
     { size: [doorWidth + frameThickness*2, frameThickness, frameDepth], 
@@ -8689,11 +8790,11 @@ createDoorFrame(door, boxWidth, boxDepth) {
     frameGroup.add(mesh);
   });
 
-  // Position entire frame
+  // Position frame relative to door position
   frameGroup.position.set(
-    door.position.x / 50 - boxWidth / 2,
+    door.position.x / 50 - boxWidth/2,
     0,
-    door.position.y / 50 - boxDepth / 2
+    door.position.y / 50 - boxDepth/2
   );
 
   return frameGroup;
