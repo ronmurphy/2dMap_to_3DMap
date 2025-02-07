@@ -1,9 +1,22 @@
-// Import Three.js and required components
-import * as THREE from 'three';
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
-import { CSG } from './three-csg.js';  // Local import for CSG
+/* eslint-disable no-undef */
+/* eslint-disable no-unused-vars */
+// // Import Three.js and required components
+// import * as THREE from 'three';
+// import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
+// import { CSG } from './three-csg.js';  // Local import for CSG
 
-export class Scene3DController {
+class Token {
+    constructor(x, y, size, image, type = "monster") {
+      this.x = x;
+      this.y = y;
+      this.size = size || 1;
+      this.image = image;
+      this.type = type;
+      this.height = 2; // Height above ground
+    }
+  }
+
+class Scene3DController {
     constructor(mapEditor) {
         this.mapEditor = mapEditor;
         this.wallTexture = null;
@@ -41,6 +54,13 @@ export class Scene3DController {
     }
 
     initialize(container, width, height) {
+
+        window.Vector3 = THREE.Vector3;
+window.Vector2 = THREE.Vector2;
+window.Face3 = THREE.Face3;
+window.Geometry = THREE.Geometry;
+window.Mesh = THREE.Mesh;
+
         // Scene setup
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x222222);
@@ -360,70 +380,69 @@ createMaterial(isWall, room) {
     }
 
     // Add these methods to Scene3DController
-createRoomGeometry(room) {
-    const positions = [];
-    const normals = [];
-    const uvs = [];
-    const indices = [];
-
-    const isWall = room.type === "wall";
+    createRoomGeometry(room) {
+        let positions = [];
+        let normals = [];
+        let uvs = [];
+        let indices = [];
     
-    // Create the material first
-    // Create material using the new method
-    const material = this.createMaterial(isWall, room);
-
-    // Box dimensions
-    const x1 = room.bounds.x / 50 - this.boxWidth / 2;
-    const x2 = x1 + room.bounds.width / 50;
-    const z1 = room.bounds.y / 50 - this.boxDepth / 2;
-    const z2 = z1 + room.bounds.height / 50;
-    const boxHeight = 4; // Wall height
-
-    // Create geometry based on shape
-    switch(room.shape) {
-        case "circle": {
-            this.createCircleGeometry(room, positions, normals, uvs, indices);
-            break;
+        const isWall = room.type === "wall";
+        
+        // Box dimensions
+        const x1 = room.bounds.x / 50 - this.boxWidth / 2;
+        const x2 = x1 + room.bounds.width / 50;
+        const z1 = room.bounds.y / 50 - this.boxDepth / 2;
+        const z2 = z1 + room.bounds.height / 50;
+    
+        // Create geometry based on shape
+        switch(room.shape) {
+            case "circle": {
+                // Pass null for material initially
+                this.createCircleGeometry(room, positions, normals, uvs, indices, null);
+                break;
+            }
+            case "polygon": {
+                // Pass null for material initially
+                this.createPolygonGeometry(room, positions, normals, uvs, indices, null);
+                break;
+            }
+            default: {
+                // Pass null for material initially
+                this.createBoxGeometry(room, x1, x2, z1, z2, this.boxHeight, positions, normals, uvs, indices, null);
+            }
         }
-        case "polygon": {
-            this.createPolygonGeometry(room, positions, normals, uvs, indices);
-            break;
+    
+        // Create final geometry
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+        geometry.setIndex(indices);
+    
+        // Create material after geometry is created
+        const material = this.createMaterial(isWall, room);
+    
+        const mesh = new THREE.Mesh(geometry, material);
+    
+        // Handle doors if this is a wall
+        if (isWall) {
+            const doors = this.mapEditor.markers.filter(marker => 
+                marker.type === 'door' && 
+                marker.data.parentWall && 
+                marker.data.parentWall.id === room.id
+            );
+    
+            if (doors.length > 0) {
+                return this.addDoorsToWall(mesh, doors);
+            }
         }
-        default: {
-            // Rectangle
-            this.createBoxGeometry(room, x1, x2, z1, z2, boxHeight, positions, normals, uvs, indices);
-        }
+    
+        return mesh;
     }
-
-    // Create BufferGeometry
-    // Create final geometry
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    geometry.setIndex(indices);
-
-    const mesh = new THREE.Mesh(geometry, material);
-
-    // Handle doors if this is a wall
-    if (isWall) {
-        const doors = this.mapEditor.markers.filter(marker => 
-            marker.type === 'door' && 
-            marker.data.parentWall && 
-            marker.data.parentWall.id === room.id
-        );
-
-        if (doors.length > 0) {
-            return this.addDoorsToWall(mesh, doors);
-        }
-    }
-
-    return mesh;
-}
 
 createBoxGeometry(room, x1, x2, z1, z2, height, positions, normals, uvs, indices, material) {
-    const textureRepeatsU = material.map ? material.map.repeat.x : 1;
-    const textureRepeatsV = material.map ? material.map.repeat.y : 1;
+    const textureRepeatsU = material?.map?.repeat.x || 1;
+    const textureRepeatsV = material?.map?.repeat.y || 1;
 
     // Add vertices
     positions.push(
@@ -481,8 +500,9 @@ createBoxGeometry(room, x1, x2, z1, z2, height, positions, normals, uvs, indices
 createCircleGeometry(room, positions, normals, uvs, indices, material) {
     const segments = 32;
     const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
-    const textureRepeatsU = material.map ? material.map.repeat.x : 1;
-    const textureRepeatsV = material.map ? material.map.repeat.y : 1;
+    // Safe access to texture repeats with nullish coalescing
+    const textureRepeatsU = material?.map?.repeat?.x ?? 1;
+    const textureRepeatsV = material?.map?.repeat?.y ?? 1;
     
     // Calculate grid-aligned position
     const gridX = room.bounds.x / 50 - this.boxWidth / 2;
@@ -552,8 +572,9 @@ createPolygonGeometry(room, positions, normals, uvs, indices, material) {
 
     const baseX = room.bounds.x / 50 - this.boxWidth / 2;
     const baseZ = room.bounds.y / 50 - this.boxDepth / 2;
-    const textureRepeatsU = material.map ? material.map.repeat.x : 1;
-    const textureRepeatsV = material.map ? material.map.repeat.y : 1;
+    // Safe access to texture repeats with nullish coalescing
+    const textureRepeatsU = material?.map?.repeat?.x ?? 1;
+    const textureRepeatsV = material?.map?.repeat?.y ?? 1;
 
     // Create vertices for walls
     room.points.forEach((point, i) => {
@@ -801,6 +822,62 @@ createFloor(baseImage) {
     this.scene.add(floor);
 }
 
+getMonsterSizeInSquares(size) {
+    // Add debug logging
+    console.log("Getting monster size for:", size);
+
+    // Handle undefined/null size
+    if (!size) {
+      console.log("Size undefined, defaulting to medium");
+      return 1; // Default to medium size
+    }
+
+    const sizeMap = {
+      tiny: 0.5, // 2.5ft
+      small: 1, // 5ft
+      medium: 1, // 5ft
+      large: 2, // 10ft (2x2)
+      huge: 3, // 15ft (3x3)
+      gargantuan: 4, // 20ft (4x4)
+    };
+
+    const calculatedSize = sizeMap[size.toLowerCase()] || 1;
+    console.log("Calculated size:", calculatedSize);
+    return calculatedSize;
+  }
+
+getMonsterTokenData(marker) {
+    console.log("Processing marker:", marker);
+
+    if (!marker || !marker.data || !marker.data.monster) {
+      console.log("Invalid marker data");
+      return null;
+    }
+
+    // Get correct token image source
+    const tokenSource =
+      marker.data.monster.token.data || marker.data.monster.token.url;
+    console.log("Token image source:", tokenSource);
+
+    const monsterSize = this.getMonsterSizeInSquares(
+      marker.data.monster.basic.size || "medium"
+    );
+
+    const tokenData = {
+      x: marker.x,
+      y: marker.y,
+      size: monsterSize,
+      image: tokenSource,
+      type: "monster",
+      name: marker.data.monster.name || "Unknown Monster",
+      height: 2 * monsterSize,
+    };
+
+    console.log("Created token data:", tokenData);
+    return tokenData;
+  }
+
+
 createToken(tokenData) {
     const { x, y, size, image, type } = tokenData;
     
@@ -961,5 +1038,28 @@ loadFromJSON(jsonData) {
         });
     }
 }
+
+setupDrawer() {
+    const drawer = document.createElement("sl-drawer");
+    drawer.label = "3D View";
+    drawer.placement = "end";
+    drawer.classList.add("drawer-3d-view");
+    // Use CSS custom property for width
+    drawer.style.setProperty("--size", "85vw");
+
+    // Container for Three.js
+    const container = document.createElement("div");
+    container.style.width = "100%";
+    container.style.height = "100%";
+    drawer.appendChild(container);
+
+    // Progress indicator
+    const progress = document.createElement("sl-progress-bar");
+    progress.style.display = "none";
+    drawer.appendChild(progress);
+
+    document.body.appendChild(drawer);
+    return { drawer, container, progress };
+  }
 
 }
