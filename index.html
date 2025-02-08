@@ -7448,41 +7448,74 @@ this.markers.forEach(marker => {
 
 
 
-          if (this.tokens && this.tokens.length > 0) {
-            console.log("Creating 3D tokens:", this.tokens);
-            this.tokens.forEach((token) => {
-              const textureLoader = new THREE.TextureLoader();
-              textureLoader.load(
-                token.image,
-                (texture) => {
-                  console.log("Token texture loaded:", texture);
+        //   if (this.tokens && this.tokens.length > 0) {
+        //     console.log("Creating 3D tokens:", this.tokens);
+        //     this.tokens.forEach((token) => {
+        //       const textureLoader = new THREE.TextureLoader();
+        //       textureLoader.load(
+        //         token.image,
+        //         (texture) => {
+        //           console.log("Token texture loaded:", texture);
 
-                  const spriteMaterial = new THREE.SpriteMaterial({
-                    map: texture,
-                    transparent: true,
-                    depthWrite: false,
+        //           const spriteMaterial = new THREE.SpriteMaterial({
+        //             map: texture,
+        //             transparent: true,
+        //             depthWrite: false,
+        //             sizeAttenuation: true
+        //           });
+
+        //           const sprite = new THREE.Sprite(spriteMaterial);
+        //           const scale = token.size * (this.cellSize / 25);
+        //           const aspectRatio =
+        //             texture.image.width / texture.image.height;
+        //           sprite.scale.set(scale * aspectRatio, scale, 1);
+
+        //           // Position at grid location
+        //           const x = token.x / 50 - boxWidth / 2;
+        //           const z = token.y / 50 - boxDepth / 2;
+        //           const y = token.size; // Height above ground based on size
+
+        //           sprite.position.set(x, y, z);
+        //           scene.add(sprite);
+        //         },
+        //         undefined, // onProgress
+        //         (error) => {
+        //           console.error("Error loading token texture:", error);
+        //         }
+        //       );
+
+        if (this.tokens && this.tokens.length > 0) {
+    console.log("Creating 3D tokens:", this.tokens);
+    this.tokens.forEach((token) => {
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(
+            token.image,
+            (texture) => {
+                console.log("Token texture loaded:", texture);
+
+                const spriteMaterial = new THREE.SpriteMaterial({
+                    map: texture,  // Add this line - it was missing
                     sizeAttenuation: true
-                  });
+                });
 
-                  const sprite = new THREE.Sprite(spriteMaterial);
-                  const scale = token.size * (this.cellSize / 25);
-                  const aspectRatio =
-                    texture.image.width / texture.image.height;
-                  sprite.scale.set(scale * aspectRatio, scale, 1);
+                const sprite = new THREE.Sprite(spriteMaterial);
+                const scale = token.size * (this.cellSize / 25);
+                const aspectRatio = texture.image.width / texture.image.height;
+                sprite.scale.set(scale * aspectRatio, scale, 1);
 
-                  // Position at grid location
-                  const x = token.x / 50 - boxWidth / 2;
-                  const z = token.y / 50 - boxDepth / 2;
-                  const y = token.size; // Height above ground based on size
+                // Position at grid location - FIXED HEIGHT CALCULATION
+                const x = token.x / 50 - boxWidth / 2;
+                const z = token.y / 50 - boxDepth / 2;
+                const y = token.size * (this.cellSize / 50); // This is the key change
 
-                  sprite.position.set(x, y, z);
-                  scene.add(sprite);
-                },
-                undefined, // onProgress
-                (error) => {
-                  console.error("Error loading token texture:", error);
-                }
-              );
+                sprite.position.set(x, y, z);
+                scene.add(sprite);
+            },
+            undefined,
+            (error) => {
+                console.error("Error loading token texture:", error);
+            }
+        );
 
               // Keep debug box for reference
               const debugGeometry = new THREE.BoxGeometry(
