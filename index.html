@@ -1434,6 +1434,7 @@
 
 
 
+
     </style>
   </head>
 
@@ -2596,7 +2597,10 @@ if (currentMonsterData.token && (currentMonsterData.token.data || currentMonster
             svg.style.position = "absolute";
             svg.style.top = "0";
             svg.style.left = "0";
-            svg.style.pointerEvents = "all";
+            // svg.style.pointerEvents = "all";
+            svg.style.zIndex = "1"; // Ensure SVG is below controls
+    svg.style.pointerEvents = "none"; // Allow clicks to pass through
+
 
             // Create polygon path using absolute coordinates
             const path = document.createElementNS(
@@ -2655,6 +2659,11 @@ if (currentMonsterData.token && (currentMonsterData.token.data || currentMonster
           // Add control buttons
           const controls = document.createElement("div");
           controls.className = "room-controls";
+
+          controls.style.position = "absolute";
+    controls.style.zIndex = "2"; // Place controls above SVG
+    controls.style.pointerEvents = "auto";
+
           controls.innerHTML = `
         <span class="material-icons confirm-btn"
               style="padding: 4px; background: #4CAF50; color: white; border-radius: 4px; cursor: pointer;">
@@ -2676,9 +2685,6 @@ if (currentMonsterData.token && (currentMonsterData.token.data || currentMonster
               editor.finalizeRoom(this);
             });
 
-          //   controls.querySelector('.edit-btn').addEventListener('click', () => {
-          //     editor.layersPanel.showRenameDialog(this)
-          //   })
 
           controls.querySelector(".edit-btn").addEventListener("click", () => {
             editor.layersPanel.showRenameDialog(this);
@@ -2751,18 +2757,32 @@ if (currentMonsterData.token && (currentMonsterData.token.data || currentMonster
           return room;
         }
 
-        // Update element pointer-events based on edit state
-        updateEditState(isEditing) {
-          this.isEditing = isEditing;
-          if (this.element) {
-            if (isEditing) {
-              this.element.classList.add("editing");
-              this.element.style.pointerEvents = "auto";
-            } else {
-              this.element.classList.remove("editing");
-              this.element.style.pointerEvents = "none";
+
+
+                updateEditState(isEditing) {
+            this.isEditing = isEditing;
+            if (this.element) {
+                if (isEditing) {
+                    this.element.classList.add('editing');
+                    this.element.style.pointerEvents = 'auto';
+                    // Make sure resize handles are enabled
+                    this.element.querySelectorAll('.resize-handle').forEach(handle => {
+                        handle.style.pointerEvents = 'auto';
+                    });
+                } else {
+                    this.element.classList.remove('editing');
+                    this.element.style.pointerEvents = 'none';
+                    // Disable resize handles
+                    this.element.querySelectorAll('.resize-handle').forEach(handle => {
+                        handle.style.pointerEvents = 'none';
+                    });
+                    // But keep controls interactive
+                    const controls = this.element.querySelector('.room-controls');
+                    if (controls) {
+                        controls.style.pointerEvents = 'auto';
+                    }
+                }
             }
-          }
         }
 
         updateElement() {
@@ -3665,10 +3685,39 @@ createLayerItem(room) {
             ` : ''}
         </div>
         <div slot="footer">
+                <sl-button class="edit-room-btn" variant="neutral">
+                    <span class="material-icons" style="margin-right: 4px;">edit</span>
+                    Edit Room
+                </sl-button>
             <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
             <sl-button variant="primary" class="save-btn">Save</sl-button>
         </div>
     `;
+
+        // Add Edit Room button handler
+        const editBtn = dialog.querySelector('.edit-room-btn');
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            if (room.locked) {
+                this.editor.showLockedMessage();
+                return;
+            }
+            // Re-enable editing for the room
+            room.finalized = false;
+            room.updateEditState(true);
+            
+            // Update room element
+            const roomElement = document.getElementById(`room-${room.id}`);
+            if (roomElement) {
+                roomElement.style.pointerEvents = 'auto';
+                roomElement.classList.add('editing');
+            }
+            
+            // Update layers panel
+            this.updateLayersList();
+            dialog.hide();
+        });
+    }
 
           document.body.appendChild(dialog);
 
@@ -3811,6 +3860,7 @@ createLayerItem(room) {
           });
         }
       }
+
 
       class MapEditor {
         constructor() {
@@ -5410,50 +5460,82 @@ createLayerItem(room) {
     document.addEventListener("mousemove", moveHandler);
     document.addEventListener("mouseup", upHandler);
 }
+        
 
-        startResizing(room, handle, e) {
-            if (room.locked) {
+startResizing(room, handle, e) {
+    if (room.locked) {
         this.showLockedMessage();
         return;
     }
-          const startX = e.clientX;
-          const startY = e.clientY;
-          const startBounds = { ...room.bounds };
+    
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startBounds = { ...room.bounds };
+    // Store initial points with their absolute positions
+    const startPoints = room.points ? room.points.map(p => ({
+        x: p.x + startBounds.x, // Store absolute coordinates
+        y: p.y + startBounds.y
+    })) : null;
 
-          const moveHandler = (e) => {
-            const dx = (e.clientX - startX) / this.scale;
-            const dy = (e.clientY - startY) / this.scale;
+    const moveHandler = (e) => {
+        const dx = (e.clientX - startX) / this.scale;
+        const dy = (e.clientY - startY) / this.scale;
 
-            if (handle.includes("e")) {
-              room.bounds.width = Math.max(50, startBounds.width + dx);
-            }
-            if (handle.includes("w")) {
-              const newWidth = Math.max(50, startBounds.width - dx);
-              room.bounds.x = startBounds.x + (startBounds.width - newWidth);
-              room.bounds.width = newWidth;
-            }
-            if (handle.includes("s")) {
-              room.bounds.height = Math.max(50, startBounds.height + dy);
-            }
-            if (handle.includes("n")) {
-              const newHeight = Math.max(50, startBounds.height - dy);
-              room.bounds.y = startBounds.y + (startBounds.height - newHeight);
-              room.bounds.height = newHeight;
-            }
+        // Calculate new bounds
+        let newX = startBounds.x;
+        let newY = startBounds.y;
+        let newWidth = startBounds.width;
+        let newHeight = startBounds.height;
 
-            room.updateElement();
-          };
-
-          const upHandler = () => {
-            document.removeEventListener("mousemove", moveHandler);
-            document.removeEventListener("mouseup", upHandler);
-          };
-
-          document.addEventListener("mousemove", moveHandler);
-          document.addEventListener("mouseup", upHandler);
+        if (handle.includes('e')) {
+            newWidth = this.snapToGrid(startBounds.width + dx, this.cellSize);
+        }
+        if (handle.includes('w')) {
+            const snappedDx = this.snapToGrid(dx, this.cellSize);
+            newX = startBounds.x + snappedDx;
+            newWidth = startBounds.width - snappedDx;
+        }
+        if (handle.includes('s')) {
+            newHeight = this.snapToGrid(startBounds.height + dy, this.cellSize);
+        }
+        if (handle.includes('n')) {
+            const snappedDy = this.snapToGrid(dy, this.cellSize);
+            newY = startBounds.y + snappedDy;
+            newHeight = startBounds.height - snappedDy;
         }
 
-        handleMouseDown(e) {
+        // Update room bounds
+        room.bounds.x = newX;
+        room.bounds.y = newY;
+        room.bounds.width = Math.max(newWidth, this.cellSize || 20);
+        room.bounds.height = Math.max(newHeight, this.cellSize || 20);
+
+        // Update polygon points if this is a polygon room
+        if (room.shape === 'polygon' && startPoints) {
+            // Calculate scale factors
+            const scaleX = room.bounds.width / startBounds.width;
+            const scaleY = room.bounds.height / startBounds.height;
+
+            // Update points while maintaining relative positions
+            room.points = startPoints.map(p => ({
+                x: ((p.x - startBounds.x) * scaleX) + (room.bounds.x - startBounds.x),
+                y: ((p.y - startBounds.y) * scaleY) + (room.bounds.y - startBounds.y)
+            }));
+        }
+
+        room.updateElement();
+    };
+
+    const upHandler = () => {
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
+    };
+
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('mouseup', upHandler);
+}
+
+handleMouseDown(e) {
           // Middle mouse button (wheel) press for panning
           if (e.button === 1) {
             // 1 is middle mouse button
@@ -6582,31 +6664,24 @@ removeMarker(marker) {
           });
         }
 
-        finalizeRoom(room) {
-          room.finalized = true;
-          room.updateEditState(false);
-          room.createThumbnail(this.canvas);
-          // this.layersPanel.updateLayersList();
 
-          // Update room appearance
-          const roomElement = document.getElementById(`room-${room.id}`);
-          if (roomElement) {
-            // Only disable pointer events on specific elements, not the whole room
-            roomElement
-              .querySelectorAll(".resize-handle, .room-controls")
-              .forEach((el) => {
-                el.style.pointerEvents = "none";
-              });
-            roomElement.style.opacity = "0.7";
 
-            // Ensure the SVG path can still receive hover events
-            const svgContainer = roomElement.querySelector("svg");
-            if (svgContainer) {
-              svgContainer.style.pointerEvents = "auto";
+                finalizeRoom(room) {
+            room.finalized = true;
+            room.updateEditState(false);
+            
+            // Ensure room controls stay interactive
+            const controls = room.element.querySelector('.room-controls');
+            if (controls) {
+                controls.style.pointerEvents = 'auto';
+                controls.querySelectorAll('.material-icons').forEach(icon => {
+                    icon.style.pointerEvents = 'auto';
+                    icon.style.cursor = 'pointer';
+                });
             }
-          }
-
-          this.layersPanel.updateLayersList();
+            
+            this.selectedRoomId = null;
+            this.layersPanel.updateLayersList();
         }
 
         createTokenMesh(token) {
