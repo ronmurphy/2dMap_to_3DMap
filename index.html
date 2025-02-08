@@ -102,8 +102,10 @@
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/three-js-csg@72.0.0/index.min.js"></script> -->
-    <style>
+<!-- Resource Manager-->
+    <script src="resource-manager.js"></script>
+
+<style>
       :root {
         --app-height: 100vh;
         --header-height: 48px;
@@ -1432,7 +1434,50 @@
 	border-color: rgb(255, 255, 255);
 }
 
+.header {
+    grid-column: 1 / -1;
+    background: var(--secondary-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 1000;
+    position: relative;
+    height: var(--header-height);
+}
 
+/* Add minimum width for button group */
+.header sl-button-group {
+    min-width: 300px;  /* Adjust as needed */
+    display: flex;
+    gap: 4px;
+}
+
+/* Style for header title/filename */
+.header-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-right: auto;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-title:hover {
+    color: var(--sl-color-primary-500);
+}
+
+/* Add edit icon next to title */
+.header-title-edit {
+    opacity: 0.5;
+    font-size: 16px;
+}
+
+.header-title:hover .header-title-edit {
+    opacity: 1;
+}
 
 
     </style>
@@ -1440,25 +1485,56 @@
 
   <body>
     <div class="app-container">
-      <header class="header">
-        <sl-button-group>
-          <sl-button size="medium" variant="default" id="openMapBtn">
-            <span class="material-icons">folder_open</span>
-            Open
-          </sl-button>
-          <sl-button size="medium" variant="default" id="saveProjectBtn">
-            <span class="material-icons">save</span>
-            Save
-          </sl-button>
-        </sl-button-group>
+      <!-- <header class="header">
 
+<sl-button-group>
+  <sl-button size="medium" variant="default" id="openMapBtn">
+      <span class="material-icons">folder_open</span>
+      Open
+  </sl-button>
+  <sl-button size="medium" variant="default" id="saveProjectBtn">
+      <span class="material-icons">save</span>
+      Save
+  </sl-button>
+  <sl-button size="medium" variant="default" id="resourceManagerBtn" style="display: none;">
+      <span class="material-icons">palette</span>
+      Resources
+  </sl-button>
+</sl-button-group>
         <div class="header-title">DnD Map Editor</div>
 
         <sl-button size="medium" variant="primary" id="create3d">
           <span class="material-icons">view_in_ar</span>
           View 3D
         </sl-button>
-      </header>
+      </header> -->
+
+      <header class="header">
+        <sl-button-group>
+            <sl-button size="medium" variant="default" id="openMapBtn">
+                <span class="material-icons">folder_open</span>
+                Open
+            </sl-button>
+            <sl-button size="medium" variant="default" id="saveProjectBtn">
+                <span class="material-icons">save</span>
+                Save
+            </sl-button>
+            <sl-button size="medium" variant="default" id="resourceManagerBtn" style="display: none;">
+                <span class="material-icons">palette</span>
+                Resources
+            </sl-button>
+        </sl-button-group>
+    
+        <div class="header-title" id="mapTitle">
+            <span id="mapTitleText">D&D Map Editor</span>
+            <span class="material-icons header-title-edit">edit</span>
+        </div>
+    
+        <sl-button size="medium" variant="primary" id="create3d">
+            <span class="material-icons">view_in_ar</span>
+            View 3D
+        </sl-button>
+    </header>
 
       <aside class="sidebar">
         <div class="sidebar-content">
@@ -3887,7 +3963,10 @@ createLayerItem(room) {
           this.mapName = null;
           this.layersPanel = new LayersPanel(this);
           this.originalMapName = null;
-                    this.monsterManager = new MonsterManager(this);
+          this.monsterManager = new MonsterManager(this);
+          this.setupTitleHandlers();
+          this.updateMapTitle();
+          this.checkResourceManager();
           this.setupEventListeners();
           this.setupCanvas();
 
@@ -3905,6 +3984,29 @@ createLayerItem(room) {
           window.addEventListener("resize", this.calculateLayersListHeight);
         }
 
+        checkResourceManager() {
+    const resourceManagerBtn = document.getElementById('resourceManagerBtn');
+    
+    // Create a temporary script element to test loading
+    const script = document.createElement('script');
+    script.src = 'resource-manager.js';
+    script.onload = () => {
+        // Resource manager loaded successfully
+        this.resourceManager = new ResourceManager();
+        resourceManagerBtn.style.display = 'flex';
+        
+        // Add click handler
+        resourceManagerBtn.addEventListener('click', () => {
+            const drawer = this.resourceManager.createResourceManagerUI();
+            drawer.show();
+        });
+    };
+    script.onerror = () => {
+        console.warn('Resource manager not available');
+        resourceManagerBtn.style.display = 'none';
+    };
+    document.head.appendChild(script);
+}
 
                 snapToGrid(value, gridSize, snapThreshold = 0.25) {
             if (!gridSize) return value;
@@ -3941,39 +4043,117 @@ createLayerItem(room) {
     toast.show();
 }
 
+// updateMapTitle() {
+//     const titleElement = document.getElementById('mapTitleText');
+//     if (this.mapName) {
+//         titleElement.textContent = this.mapName;
+//     } else {
+//         titleElement.textContent = 'Untitled Map';
+//     }
+// }
 
+// setupTitleHandlers() {
+//     const titleContainer = document.getElementById('mapTitle');
+//     titleContainer.addEventListener('click', async () => {
+//         const result = await this.showMapNameDialog();
+//         if (result) {
+//             this.updateMapTitle();
+//         }
+//     });
+// }
 
-        parseMapFilename(filename) {
-  // Remove file extension
-  const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
+//         parseMapFilename(filename) {
+//   // Remove file extension
+//   const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
   
-  // Try to find grid dimensions (like 32x20)
-  const gridMatch = nameWithoutExt.match(/(\d+)x(\d+)/i);
+//   // Try to find grid dimensions (like 32x20)
+//   const gridMatch = nameWithoutExt.match(/(\d+)x(\d+)/i);
   
-  // Try to find a map name
-  // Look for patterns like:
-  // - "01-01 Audience Chamber 32x20"
-  // - "Map Name 32x20"
-  // - "01_Dungeon_32x20"
-  let mapName = nameWithoutExt;
+//   // Try to find a map name
+//   // Look for patterns like:
+//   // - "01-01 Audience Chamber 32x20"
+//   // - "Map Name 32x20"
+//   // - "01_Dungeon_32x20"
+//   let mapName = nameWithoutExt;
   
-  // Remove any leading numbers and separators
-  mapName = mapName.replace(/^[\d-_\s]+/, '');
+//   // Remove any leading numbers and separators
+//   mapName = mapName.replace(/^[\d-_\s]+/, '');
   
-  // Remove the grid dimensions if present
-  mapName = mapName.replace(/\s*\d+x\d+\s*$/, '');
+//   // Remove the grid dimensions if present
+//   mapName = mapName.replace(/\s*\d+x\d+\s*$/, '');
   
-  // Clean up any remaining underscores or extra spaces
-  mapName = mapName.replace(/_/g, ' ').trim();
+//   // Clean up any remaining underscores or extra spaces
+//   mapName = mapName.replace(/_/g, ' ').trim();
   
-  return {
-    success: true,
-    gridDimensions: gridMatch ? {
-      width: parseInt(gridMatch[1]),
-      height: parseInt(gridMatch[2])
-    } : null,
-    mapName: mapName || null
-  };
+//   return {
+//     success: true,
+//     gridDimensions: gridMatch ? {
+//       width: parseInt(gridMatch[1]),
+//       height: parseInt(gridMatch[2])
+//     } : null,
+//     mapName: mapName || null
+//   };
+// }
+
+parseMapFilename(filename) {
+    // Remove file extension
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
+    
+    // Try to find grid dimensions (like 32x20)
+    const gridMatch = nameWithoutExt.match(/(\d+)x(\d+)/i);
+    
+    // Try to find a map name
+    let mapName = nameWithoutExt;
+    
+    // Remove any leading numbers and separators
+    mapName = mapName.replace(/^[\d-_\s]+/, '');
+    
+    // Remove the grid dimensions if present
+    mapName = mapName.replace(/\s*\d+x\d+\s*$/, '');
+    
+    // Clean up any remaining underscores or extra spaces
+    mapName = mapName.replace(/_/g, ' ').trim();
+
+    const result = {
+        success: true,
+        gridDimensions: gridMatch ? {
+            width: parseInt(gridMatch[1]),
+            height: parseInt(gridMatch[2])
+        } : null,
+        mapName: mapName || null
+    };
+
+    // Update the title if we have a valid map name
+    if (result.success && result.mapName) {
+        this.mapName = result.mapName;
+        this.updateMapTitle();
+    }
+
+    return result;
+}
+
+// Add these new methods
+updateMapTitle() {
+    const titleElement = document.getElementById('mapTitleText');
+    if (titleElement) {
+        if (this.mapName) {
+            titleElement.textContent = this.mapName;
+        } else {
+            titleElement.textContent = 'Untitled Map';
+        }
+    }
+}
+
+setupTitleHandlers() {
+    const titleContainer = document.getElementById('mapTitle');
+    if (titleContainer) {
+        titleContainer.addEventListener('click', async () => {
+            const result = await this.showMapNameDialog();
+            if (result) {
+                this.updateMapTitle();
+            }
+        });
+    }
 }
 
         async showMapNameDialog() {
