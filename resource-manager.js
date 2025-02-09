@@ -584,22 +584,188 @@ getSelectedTexture(category) {
     }
     
     // Preview method
-    showResourcePreview(resource) {
+    // showResourcePreview(resource) {
+    //     const dialog = document.createElement('sl-dialog');
+    //     dialog.label = resource.name;
+    //     dialog.innerHTML = `
+    //         <div style="text-align: center;">
+    //             <img 
+    //                 src="${resource.data}" 
+    //                 alt="${resource.name}"
+    //                 style="max-width: 100%; max-height: 70vh;"
+    //             />
+    //         </div>
+    //     `;
+    //     document.body.appendChild(dialog);
+    //     dialog.show();
+        
+    //     dialog.addEventListener('sl-after-hide', () => dialog.remove());
+    // }
+    async showResourcePreview(resource) {
         const dialog = document.createElement('sl-dialog');
         dialog.label = resource.name;
+    
+        let cropActive = false;
+        let cropStart = { x: 0, y: 0 };
+        let currentCrop = null;
+    
         dialog.innerHTML = `
-            <div style="text-align: center;">
-                <img 
-                    src="${resource.data}" 
-                    alt="${resource.name}"
-                    style="max-width: 100%; max-height: 70vh;"
-                />
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="image-container" style="position: relative; overflow: hidden; background: #333;">
+                    <img src="${resource.data}" 
+                         alt="${resource.name}"
+                         style="max-width: 100%; max-height: 70vh; display: block; margin: auto;">
+                    <div class="crop-overlay" style="display: none; position: absolute; 
+                         border: 2px solid #4CAF50; background: rgba(76, 175, 80, 0.2);
+                         pointer-events: none;">
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <sl-button class="crop-btn" variant="primary">
+                        <span class="material-icons">crop</span>
+                        Start Crop
+                    </sl-button>
+                    <sl-button class="apply-crop-btn" variant="success" disabled>
+                        <span class="material-icons">save</span>
+                        Apply Crop
+                    </sl-button>
+                    <sl-button class="reset-crop-btn" variant="neutral" disabled>
+                        <span class="material-icons">restart_alt</span>
+                        Reset
+                    </sl-button>
+                </div>
+    
+                <div class="crop-instructions" style="display: none; color: #666; text-align: center;">
+                    Click and drag to select crop area
+                </div>
             </div>
         `;
+    
+        const container = dialog.querySelector('.image-container');
+        const img = dialog.querySelector('img');
+        const overlay = dialog.querySelector('.crop-overlay');
+        const cropBtn = dialog.querySelector('.crop-btn');
+        const applyCropBtn = dialog.querySelector('.apply-crop-btn');
+        const resetCropBtn = dialog.querySelector('.reset-crop-btn');
+        const instructions = dialog.querySelector('.crop-instructions');
+    
+        // Enable cropping
+        cropBtn.addEventListener('click', () => {
+            cropActive = !cropActive;
+            if (cropActive) {
+                cropBtn.variant = 'primary';
+                container.style.cursor = 'crosshair';
+                instructions.style.display = 'block';
+            } else {
+                cropBtn.variant = 'default';
+                container.style.cursor = 'default';
+                instructions.style.display = 'none';
+            }
+        });
+    
+        // Handle crop selection
+        container.addEventListener('mousedown', (e) => {
+            if (!cropActive) return;
+            
+            const rect = container.getBoundingClientRect();
+            cropStart = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            overlay.style.display = 'block';
+            overlay.style.left = `${cropStart.x}px`;
+            overlay.style.top = `${cropStart.y}px`;
+            overlay.style.width = '0px';
+            overlay.style.height = '0px';
+    
+            const moveHandler = (e) => {
+                const currentX = e.clientX - rect.left;
+                const currentY = e.clientY - rect.top;
+    
+                const width = currentX - cropStart.x;
+                const height = currentY - cropStart.y;
+    
+                overlay.style.width = `${Math.abs(width)}px`;
+                overlay.style.height = `${Math.abs(height)}px`;
+                overlay.style.left = `${width < 0 ? currentX : cropStart.x}px`;
+                overlay.style.top = `${height < 0 ? currentY : cropStart.y}px`;
+            };
+    
+            const upHandler = () => {
+                document.removeEventListener('mousemove', moveHandler);
+                document.removeEventListener('mouseup', upHandler);
+                
+                // Store crop data
+                const overlayRect = overlay.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                
+                currentCrop = {
+                    x: (overlayRect.left - containerRect.left) / img.offsetWidth,
+                    y: (overlayRect.top - containerRect.top) / img.offsetHeight,
+                    width: overlayRect.width / img.offsetWidth,
+                    height: overlayRect.height / img.offsetHeight
+                };
+    
+                applyCropBtn.disabled = false;
+                resetCropBtn.disabled = false;
+            };
+    
+            document.addEventListener('mousemove', moveHandler);
+            document.addEventListener('mouseup', upHandler);
+        });
+    
+        // Apply crop
+        applyCropBtn.addEventListener('click', async () => {
+            if (!currentCrop) return;
+    
+            // Create canvas for cropping
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Load image
+            const tempImg = new Image();
+            tempImg.src = resource.data;
+            
+            await new Promise(resolve => {
+                tempImg.onload = () => {
+                    // Set canvas size to crop size
+                    canvas.width = tempImg.width * currentCrop.width;
+                    canvas.height = tempImg.height * currentCrop.height;
+    
+                    // Draw cropped portion
+                    ctx.drawImage(
+                        tempImg,
+                        tempImg.width * currentCrop.x,
+                        tempImg.height * currentCrop.y,
+                        tempImg.width * currentCrop.width,
+                        tempImg.height * currentCrop.height,
+                        0, 0, canvas.width, canvas.height
+                    );
+    
+                    // Update resource with cropped image
+                    resource.data = canvas.toDataURL();
+                    
+                    // Update thumbnail
+                    this.createThumbnail(resource);
+                    
+                    dialog.hide();
+                    resolve();
+                };
+            });
+        });
+    
+        // Reset crop
+        resetCropBtn.addEventListener('click', () => {
+            overlay.style.display = 'none';
+            currentCrop = null;
+            applyCropBtn.disabled = true;
+            resetCropBtn.disabled = true;
+        });
+    
         document.body.appendChild(dialog);
         dialog.show();
-        
-        dialog.addEventListener('sl-after-hide', () => dialog.remove());
     }
     
     // Delete method
