@@ -224,6 +224,164 @@ getResourceFromPack(resourceId, packId = null) {
     //     }
     // }
 
+    // Add after your other ResourceManager methods, before the final class closing bracket
+async showTextureSelectionDialog(structure) {
+    // Create dialog
+    const dialog = document.createElement('sl-dialog');
+    dialog.label = `Assign Texture to ${structure.type === 'wall' ? 'Wall' : 'Room'}`;
+
+    // Get appropriate textures based on structure type
+    const categories = structure.type === 'wall' ? ['walls', 'doors'] : ['floors'];
+
+    // Create the dialog content
+    dialog.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Category Selection -->
+            <sl-select label="Texture Type" id="textureCategory">
+                ${categories.map(cat => `
+                    <sl-option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)}</sl-option>
+                `).join('')}
+            </sl-select>
+
+            <!-- Texture Gallery -->
+            <div class="texture-selection-gallery" style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 8px;
+                max-height: 300px;
+                overflow-y: auto;
+                padding: 8px;
+                background: var(--sl-color-neutral-50);
+                border-radius: var(--sl-border-radius-medium);
+            ">
+                <!-- Textures will be loaded here -->
+            </div>
+
+            <!-- Preview Area -->
+            <div class="texture-preview" style="
+                display: none;
+                padding: 16px;
+                background: var(--sl-color-neutral-50);
+                border-radius: var(--sl-border-radius-medium);
+                text-align: center;
+            ">
+                <img style="max-width: 200px; max-height: 200px; object-fit: contain;">
+                <div class="preview-name" style="margin-top: 8px; font-weight: 500;"></div>
+            </div>
+        </div>
+
+        <div slot="footer">
+            <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+            <sl-button variant="primary" class="apply-btn" disabled>Apply</sl-button>
+        </div>
+    `;
+
+    // Add to document
+    document.body.appendChild(dialog);
+
+    // Get references to elements
+    const categorySelect = dialog.querySelector('#textureCategory');
+    const gallery = dialog.querySelector('.texture-selection-gallery');
+    const preview = dialog.querySelector('.texture-preview');
+    const applyBtn = dialog.querySelector('.apply-btn');
+    let selectedTextureId = null;
+
+    // Function to update gallery based on category
+    const updateGallery = (category) => {
+        gallery.innerHTML = '';
+        const textures = this.resources?.textures[category];
+        
+        if (!textures || textures.size === 0) {
+            gallery.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 16px; color: var(--sl-color-neutral-500);">
+                    No ${category} textures available
+                </div>
+            `;
+            return;
+        }
+
+        textures.forEach((texture, id) => {
+            const item = document.createElement('div');
+            item.className = 'texture-item';
+            item.style.cssText = `
+                cursor: pointer;
+                padding: 4px;
+                border: 2px solid transparent;
+                border-radius: var(--sl-border-radius-medium);
+                transition: all 0.2s ease;
+            `;
+            item.innerHTML = `
+                <img src="${texture.thumbnail}" 
+                     alt="${texture.name}"
+                     style="width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px;">
+            `;
+
+            item.addEventListener('click', () => {
+                // Update selection
+                gallery.querySelectorAll('.texture-item').forEach(i => 
+                    i.style.borderColor = 'transparent');
+                item.style.borderColor = 'var(--sl-color-primary-500)';
+                selectedTextureId = id;
+                applyBtn.disabled = false;
+
+                // Update preview
+                preview.style.display = 'block';
+                preview.querySelector('img').src = texture.data;
+                preview.querySelector('.preview-name').textContent = texture.name;
+            });
+
+            gallery.appendChild(item);
+        });
+    };
+
+    // Handle category changes
+    categorySelect.addEventListener('sl-change', () => {
+        updateGallery(categorySelect.value);
+        selectedTextureId = null;
+        applyBtn.disabled = true;
+        preview.style.display = 'none';
+    });
+
+    // Initial gallery load
+    updateGallery(categorySelect.value);
+
+    // Return a promise that resolves with the selected texture or null if canceled
+    return new Promise((resolve) => {
+        dialog.querySelector('.cancel-btn').addEventListener('click', () => {
+            dialog.hide();
+            resolve(null);
+        });
+
+        dialog.querySelector('.apply-btn').addEventListener('click', () => {
+            const category = categorySelect.value;
+            const texture = this.resources?.textures[category]?.get(selectedTextureId);
+            dialog.hide();
+            resolve(texture);
+        });
+
+        dialog.addEventListener('sl-after-hide', () => {
+            dialog.remove();
+        });
+
+        dialog.show();
+    });
+}
+
+getSelectedTexture(category) {
+    console.log('Getting selected texture for category:', category);
+    if (!this.resources?.textures[category]) {
+        console.warn(`No textures found for category: ${category}`);
+        return null;
+    }
+
+    const textures = this.resources.textures[category];
+    const firstTexture = textures.values().next().value;
+    
+    console.log('Found texture:', firstTexture);
+    return firstTexture;
+}
+
+
     async addTexture(file, category, subcategory) {
         if (!file || !category) {
             console.warn('Missing required parameters:', { file, category });
@@ -333,127 +491,6 @@ getResourceFromPack(resourceId, packId = null) {
         }
     }
 
-    // updateGallery(drawer, category, view = 'grid') {
-    //     const container = drawer.querySelector('#textureGallery');
-    //     if (!container) return;
-    
-    //     // Update container class based on view
-    //     container.className = view === 'grid' ? 'gallery-grid' : 'gallery-list';
-    
-    //     // Clear existing content
-    //     container.innerHTML = '';
-    
-    //     // Get resources for the selected category
-    //     const resources = this.resources.textures[category];
-    //     if (!resources || resources.size === 0) {
-    //         container.innerHTML = `
-    //             <sl-card class="empty-gallery">
-    //                 <div style="text-align: center; padding: 2rem;">
-    //                     <span class="material-icons" style="font-size: 3rem; opacity: 0.5;">image_not_supported</span>
-    //                     <p>No ${category} added yet</p>
-    //                 </div>
-    //             </sl-card>
-    //         `;
-    //         return;
-    //     }
-    
-    //     // Create preview tooltip element for list view
-    //     let previewTooltip = document.querySelector('.resource-preview-tooltip');
-    //     if (!previewTooltip) {
-    //         previewTooltip = document.createElement('div');
-    //         previewTooltip.className = 'resource-preview-tooltip';
-    //         document.body.appendChild(previewTooltip);
-    //     }
-    
-    //     // Create cards for each resource
-    //     resources.forEach((resource, id) => {
-    //         const card = document.createElement('sl-card');
-    //         card.className = 'resource-item';
-    
-    //         // Create content based on view type
-    //         const content = view === 'grid' ? `
-    //             <img 
-    //                 src="${resource.thumbnail}" 
-    //                 alt="${resource.name}"
-    //                 class="resource-thumbnail"
-    //             />
-    //             <div class="resource-info">
-    //                 <div class="resource-name">${resource.name}</div>
-    //                 <div class="resource-meta">${this.formatDate(resource.dateAdded)}</div>
-    //             </div>
-    //         ` : `
-    //             <div style="display: flex; align-items: center; gap: 1rem;">
-    //                 <img 
-    //                     src="${resource.thumbnail}" 
-    //                     alt="${resource.name}"
-    //                     class="resource-thumbnail"
-    //                     style="width: 50px; height: 50px;"
-    //                 />
-    //                 <div class="resource-info">
-    //                     <div class="resource-name">${resource.name}</div>
-    //                     <div class="resource-meta">${this.formatDate(resource.dateAdded)}</div>
-    //                 </div>
-    //             </div>
-    //         `;
-    
-    //         card.innerHTML = `
-    //             ${content}
-    //             <div slot="footer" class="resource-actions">
-    //                 <sl-button-group>
-    //                     <sl-button size="small" class="preview-btn">
-    //                         <span class="material-icons">visibility</span>
-    //                     </sl-button>
-    //                     <sl-button size="small" class="delete-btn" variant="danger">
-    //                         <span class="material-icons">delete</span>
-    //                     </sl-button>
-    //                 </sl-button-group>
-    //             </div>
-    //         `;
-    
-    //         // Add hover preview for list view
-    //         if (view === 'list') {
-    //             card.addEventListener('mouseenter', (e) => {
-    //                 previewTooltip.innerHTML = `<img src="${resource.data}" alt="${resource.name}"/>`;
-    //                 previewTooltip.style.display = 'block';
-    //                 previewTooltip.style.left = `${e.pageX + 20}px`;
-    //                 previewTooltip.style.top = `${e.pageY + 20}px`;
-    //             });
-    
-    //             card.addEventListener('mousemove', (e) => {
-    //                 previewTooltip.style.left = `${e.pageX + 20}px`;
-    //                 previewTooltip.style.top = `${e.pageY + 20}px`;
-    //             });
-    
-    //             card.addEventListener('mouseleave', () => {
-    //                 previewTooltip.style.display = 'none';
-    //             });
-    //         }
-    
-    //         // Add existing event listeners
-    //         card.querySelector('.preview-btn').addEventListener('click', () => {
-    //             this.showResourcePreview(resource);
-    //         });
-    
-    //         card.querySelector('.delete-btn').addEventListener('click', () => {
-    //             this.deleteResource(category, id);
-    //             this.updateGallery(drawer, category, view);
-    //         });
-    
-    //         // Add drag and drop functionality
-    //         card.draggable = true;
-    //         card.addEventListener('dragstart', (e) => {
-    //             e.dataTransfer.setData('text/plain', JSON.stringify({
-    //                 type: 'resource',
-    //                 category,
-    //                 id
-    //             }));
-    //         });
-    
-    //         container.appendChild(card);
-    //     });
-    // }
-    
-    // Helper method for formatting dates
 
     updateGallery(drawer, category, view = 'grid') {
         console.log('Updating gallery:', { category, view });
