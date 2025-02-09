@@ -106,1146 +106,158 @@
     <script src="resource-manager.js"></script>
 
 <style>
-      :root {
-        --app-height: 100vh;
-        --header-height: 48px;
-        --sidebar-width: 280px;
-        --primary-bg: #1a1a1a;
-        --secondary-bg: #2a2a2a;
-        --border-color: #3a3a3a;
-        --hover-bg: #3a3a3a;
-      }
-
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI";
-        background: var(--primary-bg);
-        color: #ffffff;
-      }
-
-      .app-container {
-        display: grid;
-        grid-template-columns: var(--sidebar-width) 1fr;
-        grid-template-rows: var(--header-height) 1fr;
-        height: var(--app-height);
-      }
-
-      .header {
-        grid-column: 1 / -1;
-        background: var(--secondary-bg);
-        border-bottom: 1px solid var(--border-color);
-        padding: 0 16px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        z-index: 1000;
-        position: relative;
-      }
-
-      .header-title {
-        font-size: 1.1rem;
-        font-weight: 500;
-        margin-right: auto;
-      }
-
-      .sidebar {
-        background: var(--secondary-bg);
-        border-right: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        z-index: 1000;
-        position: relative;
-        height: 100%;
-      }
-
-      .sidebar-content {
-        flex: 0 0 auto;
-        overflow-y: auto;
-        padding: 16px;
-        flex-shrink: 0;
-        overflow: hidden;
-      }
-
-      .tool-section {
-        margin-bottom: 16px;
-        flex-shrink: 0;
-      }
-
-      .tool-section-title {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        color: #888;
-        margin-bottom: 4px;
-        padding: 0 8px;
-      }
-
-      .tool-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 4px;
-        padding: 0 8px;
-      }
-
-      .tool-button {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        background: var(--primary-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        padding: 6px 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        height: 32px;
-        user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-      }
-
-      .tool-button:hover {
-        background: var(--hover-bg);
-      }
-
-      .tool-button.active {
-        background: var(--sl-color-primary-600);
-        border-color: var(--sl-color-primary-400);
-      }
-
-      .tool-button sl-icon {
-        font-size: 24px;
-        margin-bottom: 4px;
-      }
-
-      .tool-button-label {
-        font-size: 0.8rem;
-        text-align: center;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-      }
-
-      .layers-header {
-        padding: 16px;
-        border-bottom: 1px solid var(--border-color);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-shrink: 0;
-        background: var(--secondary-bg);
-        flex: 0 0 auto;
-      }
-
-      .layers-panel {
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        overflow-y: auto;
-        border-right: 1px solid #444;
-        height: 100%;
-        position: relative;
-        flex: 1;
-        min-height: 0;
-        background: var(--secondary-bg);
-      }
-
-      .layer-item {
-        background: #3d3d3d;
-        border-radius: 4px;
-        padding: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
-        margin-bottom: 8px;
-      }
-
-      .layer-item:hover {
-        background: #afafaf;
-      }
-
-      .layer-item.selected {
-        background: #505050;
-        border: 1px solid #666;
-      }
-
-      .layer-item.editing {
-        background: #ffffff44;
-      }
-
-      .layer-content {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .layer-thumbnail {
-        width: 40px;
-        height: 40px;
-        background: #555;
-        border-radius: 2px;
-        overflow: hidden;
-      }
-
-      .layer-thumbnail img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      .layer-info {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .layer-name {
-        font-weight: 500;
-        margin-bottom: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .layer-dimensions {
-        font-size: 0.8em;
-        color: #aaa;
-      }
-
-      .layer-controls {
-        display: flex;
-        gap: 4px;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-      }
-
-      .layer-item:hover .layer-controls {
-        opacity: 1;
-      }
-
-      .canvas-container {
-        position: relative;
-        overflow: hidden;
-        background: var(--primary-bg);
-        z-index: 1;
-      }
-
-      #mainCanvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
-
-      .room-block {
-        position: absolute;
-        background: rgba(128, 128, 128, 0.3);
-        border: 2px solid rgba(255, 255, 255, 0.7);
-        transition: all 0.2s ease;
-      }
-
-      .room-block.highlighted {
-        background: rgba(128, 128, 255, 0.4);
-        border-color: rgba(255, 255, 255, 0.9);
-      }
-
-      .room-block.editing {
-        background: rgba(0, 255, 0, 0.2);
-        border-color: #4caf50;
-      }
-
-      .room-block .resize-handle {
-        position: absolute;
-        width: 12px;
-        height: 12px;
-        background: white;
-        border: 1px solid #333;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        cursor: pointer;
-      }
-
-      .tool-button .material-icons {
-        font-size: 20px;
-        margin-bottom: 0;
-        color: #fff;
-        margin-right: 8px;
-      }
-
-      .tool-button:hover .material-icons {
-        color: var(--sl-color-primary-400);
-      }
-
-      .tool-button.active .material-icons {
-        color: var(--sl-color-primary-500);
-      }
-
-      .tool-button.active .tool-button-label {
-        color: white;
-      }
-
-      .room-block.circle-room {
-        border-radius: 50%;
-      }
-
-      .room-block .resize-handle.nw {
-        top: 0;
-        left: 0;
-        cursor: nw-resize;
-      }
-
-      .room-block .resize-handle.ne {
-        top: 0;
-        left: 100%;
-        cursor: ne-resize;
-      }
-
-      .room-block .resize-handle.sw {
-        top: 100%;
-        left: 0;
-        cursor: sw-resize;
-      }
-
-      .room-block .resize-handle.se {
-        top: 100%;
-        left: 100%;
-        cursor: se-resize;
-      }
-
-      .room-controls {
-        opacity: 0.8;
-        transition: opacity 0.2s ease;
-      }
-
-      .room-block:hover .room-controls {
-        opacity: 1;
-      }
-
-      .room-controls .material-icons {
-        user-select: none;
-        transition: transform 0.2s ease;
-      }
-
-      .room-controls .material-icons:hover {
-        transform: scale(1.1);
-      }
-
-      sl-dialog::part(base) {
-        --sl-panel-background-color: white;
-        color: black;
-      }
-
-      sl-input::part(form-control-label) {
-        color: black;
-      }
-
-      .polygon-preview {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 1000;
-      }
-
-      .polygon-point {
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        background: white;
-        border: 1px solid #333;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        pointer-events: none;
-      }
-
-      .polygon-point:first-child {
-        background: #4caf50;
-        width: 10px;
-        height: 10px;
-      }
-
-      .room-block.polygon-room {
-        background: none !important;
-        border: none !important;
-        position: absolute;
-        overflow: visible !important;
-      }
-
-      .room-block.polygon-room svg path {
-        transition: all 0.2s ease;
-      }
-
-      .room-block.polygon-room:hover svg path {
-        fill: rgba(128, 128, 255, 0.4);
-        stroke: rgba(255, 255, 255, 0.9);
-      }
-
-      .room-block.polygon-room .polygon-fill {
-        transition: all 0.2s ease;
-      }
-
-      .room-block.polygon-room .polygon-hover {
-        transition: opacity 0.2s ease;
-      }
-
-      .room-block.polygon-room.highlighted .polygon-hover {
-        opacity: 1 !important;
-      }
-
-      .room-block.polygon-room.editing .polygon-fill {
-        fill: rgba(0, 255, 0, 0.2);
-        stroke: #4caf50;
-      }
-
-      .polygon-vertex {
-        opacity: 0.7;
-        transition: opacity 0.2s ease;
-        pointer-events: none;
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        background: white;
-        border: 1px solid #333;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 2;
-      }
-
-      .room-block.polygon-room.highlighted .polygon-vertex {
-        opacity: 1;
-      }
-
-      .room-block.polygon-room .polygon-base {
-        transition: all 0.2s ease;
-        vector-effect: non-scaling-stroke;
-      }
-
-      .room-block.polygon-room .polygon-highlight {
-        transition: opacity 0.2s ease;
-      }
-
-      .room-block.polygon-room.highlighted .polygon-highlight {
-        opacity: 1 !important;
-      }
-
-      .room-block.polygon-room.editing .polygon-base {
-        fill: rgba(0, 255, 0, 0.2);
-        stroke: #4caf50;
-      }
-
-      .room-block.polygon-room .polygon-vertex {
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        background: white;
-        border: 1px solid #333;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        opacity: 0.7;
-        transition: opacity 0.2s ease;
-        pointer-events: none;
-      }
-
-      .room-block.polygon-room:hover .polygon-base {
-        fill: rgba(128, 128, 255, 0.4);
-        stroke: rgba(255, 255, 255, 0.9);
-      }
-
-      .room-block.polygon-room.highlighted .polygon-base {
-        fill: rgba(128, 128, 255, 0.4);
-        stroke: rgba(255, 255, 255, 0.9);
-      }
-
-      .room-block .room-background {
-        transition: all 0.2s ease;
-      }
-
-      .room-block.highlighted .room-background {
-        background: rgba(128, 128, 255, 0.4) !important;
-        border-color: rgba(255, 255, 255, 0.9) !important;
-      }
-
-      .room-block.circle-room .room-background {
-        border-radius: 50%;
-      }
-
-      .room-block.editing .room-background {
-        background: rgba(0, 255, 0, 0.2) !important;
-        border-color: #4caf50 !important;
-      }
-
-      .map-marker {
-        position: absolute;
-        width: 32px;
-        height: 32px;
-        transform: translate(-50%, -50%);
-        cursor: pointer;
-        z-index: 100;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        pointer-events: all !important;
-      }
-
-      .map-marker .material-icons {
-        font-size: 32px;
-        filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
-      }
-
-      .map-marker:hover {
-        transform: translate(-50%, -50%) scale(1.1);
-      }
-
-      .marker-player-start .material-icons {
-        color: #4caf50;
-      }
-
-      .marker-encounter .material-icons {
-        color: #f44336;
-      }
-
-      .marker-treasure .material-icons {
-        color: #ffd700;
-      }
-
-      .marker-trap .material-icons {
-        color: #ff5722;
-      }
-
-      .marker-tooltip {
-        position: fixed;
-        background: rgba(0, 0, 0, 0.9);
-        color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        pointer-events: none;
-        z-index: 10000;
-        white-space: pre-line;
-        transform: translate(-50%, -100%);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        min-width: 150px;
-        text-align: center;
-      }
-
-      .map-marker.marker-teleport .material-icons {
-        color: #9c27b0;
-      }
-
-      .map-marker.highlighted {
-        transform: translate(-50%, -50%) scale(1.2);
-        filter: brightness(1.3);
-      }
-
-      .map-marker[data-teleport-point="a"] .material-icons {
-        color: #2196f3;
-      }
-
-      .map-marker[data-teleport-point="b"] .material-icons {
-        color: #ff9800;
-      }
-
-      .map-marker.editing {
-        outline: 2px solid #4caf50;
-        outline-offset: 2px;
-        z-index: 1000;
-      }
-
-      .map-marker.editing .material-icons {
-        color: #4caf50;
-      }
-
-      #editMarkerTool.active {
-        background: var(--sl-color-primary-600);
-        border-color: var(--sl-color-primary-400);
-      }
-
-      #editMarkerTool.active .tool-button-label {
-        color: white;
-      }
-
-      .teleport-connection {
-        position: absolute;
-        height: 2px;
-        background: linear-gradient(to right, #2196f3, #ff9800);
-        transform-origin: left center;
-        pointer-events: none;
-        opacity: 0.6;
-        z-index: 90;
-      }
-
-      .teleport-connection::after {
-        content: "";
-        position: absolute;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        right: -3px;
-        top: -2px;
-        background: #ff9800;
-      }
-
-      .teleport-connection::before {
-        left: -3px;
-        top: -2px;
-        background: #2196f3;
-      }
-
-      .map-marker[data-teleport-point="a"]:hover .material-icons {
-        color: #64b5f6;
-      }
-
-      .map-marker[data-teleport-point="b"]:hover .material-icons {
-        color: #ffb74d;
-      }
-
-      .map-marker[data-teleport-point].highlighted .material-icons {
-        filter: brightness(1.2);
-      }
-
-      .room-block.polygon-room svg {
-        pointer-events: none;
-        overflow: visible;
-      }
-
-      .map-marker .monster-token {
-        transition: all 0.2s ease;
-      }
-
-      .map-marker:hover .monster-token {
-        transform: translate(-50%, -50%) scale(1.1);
-        box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
-        border-color: #ff9800;
-        transition: all 0.2s ease;
-      }
-
-      .map-marker[title] {
-        position: relative;
-        display: inline-block;
-      }
-
-      .map-marker[title]:hover::after {
-        content: attr(title);
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 5px 10px;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        border-radius: 4px;
-        font-size: 12px;
-        white-space: pre;
-        pointer-events: none;
-        z-index: 1000;
-      }
-
-      .marker-tooltip::after {
-        content: "";
-        position: absolute;
-        bottom: -5px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-top: 5px solid rgba(0, 0, 0, 0.9);
-      }
-
-      .monster-token {
-        pointer-events: all !important;
-        z-index: 100;
-      }
-
-      .layers-list {
-        flex: 1 1 auto;
-        overflow-y: auto;
-        padding: 10px;
-        min-height: 0;
-        position: relative;
-        overflow-x: hidden;
-        margin: 0;
-        background: var(--secondary-bg);
-      }
-
-      #layersList {
-        height: calc(100vh - var(--header-height) - 200px);
-        overflow-y: auto;
-        padding: 10px;
-        flex: 1;
-      }
-
-      .layers-list::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      .layers-list::-webkit-scrollbar-track {
-        background: var(--secondary-bg);
-      }
-
-      .layers-list::-webkit-scrollbar-thumb {
-        background-color: var(--border-color);
-        border-radius: 4px;
-      }
-
-      .layers-list::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 20px;
-        background: linear-gradient(
-          to bottom,
-          transparent,
-          var(--secondary-bg)
-        );
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s;
-      }
-
-      .layers-list:hover::after {
-        opacity: 1;
-      }
-
-      #layersList::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      #layersList::-webkit-scrollbar-track {
-        background: var(--secondary-bg);
-      }
-
-      #layersList::-webkit-scrollbar-thumb {
-        background-color: var(--border-color);
-        border-radius: 4px;
-      }
-
-      .layers-panel::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      .layers-panel::-webkit-scrollbar-track {
-        background: var(--secondary-bg);
-      }
-
-      .layers-panel::-webkit-scrollbar-thumb {
-        background-color: var(--border-color);
-        border-radius: 4px;
-      }
-
-      .drawer-3d-view::part(body) {
-        padding: 0; /* Remove default padding for full canvas */
-      }
-
-      .drawer-3d-view::part(panel) {
-        background-color: #1a1a1a; /* Match your app's dark theme */
-      }
-
-      .layer-visibility {
-        display: flex;
-        align-items: center;
-        padding: 0 8px;
-      }
-
-      .visibility-toggle {
-        font-size: 20px;
-        transition: color 0.2s ease;
-      }
-
-      .visibility-toggle:hover {
-        color: #2196f3 !important;
-      }
-
-      .layer-content {
-        display: grid;
-        grid-template-columns: auto auto 1fr auto;
-        align-items: center;
-        gap: 8px;
-      }
-
-      /* new sidebar UI */
-      .tool-section {
-        margin-bottom: 12px;
-        flex-shrink: 0;
-      }
-
-      .tool-section-title {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        color: #888;
-        margin-bottom: 4px;
-        padding: 0 8px;
-      }
-
-      .tool-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 4px;
-        padding: 0 8px;
-      }
-
-      .tool-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--primary-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        padding: 6px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        height: 32px;
-        width: 32px;
-        position: relative;
-      }
-
-      .tool-button:hover {
-        background: var(--hover-bg);
-      }
-
-      .tool-button.active {
-        background: var(--sl-color-primary-600);
-        border-color: var(--sl-color-primary-400);
-      }
-
-      .tool-button .material-icons {
-        font-size: 20px;
-        color: #fff;
-      }
-
-      .tool-button:hover .material-icons {
-        color: var(--sl-color-primary-400);
-      }
-
-      .tool-button.active .material-icons {
-        color: white;
-      }
-
-      /* Tooltip styles */
-      .tool-button::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 4px 8px;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        font-size: 12px;
-        border-radius: 4px;
-        white-space: nowrap;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.2s ease, visibility 0.2s ease;
-        pointer-events: none;
-        margin-bottom: 4px;
-      }
-
-      .tool-button:hover::after {
-        opacity: 1;
-        visibility: visible;
-      }
-
-      /* Add divider style */
-      .tool-divider {
-        height: 1px;
-        background: var(--border-color);
-        margin: 8px 8px;
-        opacity: 0.5;
-      }
-
-      /* Marker tools specific styles */
-      .marker-tools {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .room-block.wall-room {
-        background: rgba(70, 70, 70, 0.3) !important;
-        border: 2px dashed #666 !important;
-      }
-
-      .room-block.wall-room.highlighted {
-        background: rgba(70, 70, 70, 0.5) !important;
-        border: 2px dashed #888 !important;
-      }
-
-      .room-block.wall-room.editing {
-        background: rgba(70, 70, 70, 0.4) !important;
-        border: 2px dashed #4caf50 !important;
-      }
-
-      .layer-item.wall-room .layer-name {
-        color: #888;
-      }
-
-      .layer-item.wall-room .layer-name::before {
-        content: "🧱";
-        margin-right: 4px;
-      }
-
-      .room-block.wall-room {
-        background: rgba(70, 70, 70, 0.3);
-        border: 2px dashed #666;
-      }
-
-      .room-block.room-room {
-        background: rgba(128, 128, 255, 0.3);
-        border: 2px solid rgba(255, 255, 255, 0.7);
-      }
-
-      .room-block[data-texture-room="true"] {
-        border: 2px dashed #4caf50;
-        background: rgba(76, 175, 80, 0.2);
-      }
-
-      .layer-item .layer-name::before {
-        margin-right: 4px;
-      }
-
-      /* Base styles for layer items */
-      .layer-item .layer-name {
-        display: flex;
-        align-items: center;
-      }
-
-      .layer-item .layer-name::before {
-        font-family: "Material Icons";
-        font-size: 20px;
-        margin-right: 8px;
-        vertical-align: middle;
-      }
-
-      /* Wall specific styles */
-      .layer-item[data-room-type="wall"] .layer-name::before {
-        content: "grid_4x4";
-        color: #757575;
-      }
-
-      /* Room specific styles */
-      .layer-item[data-room-type="room"] .layer-name::before {
-        content: "meeting_room";
-        color: #2196f3;
-      }
-
-      /* Texture specific styles */
-      .layer-item[data-texture-room="true"] .layer-name::before {
-        content: "texture";
-        color: #4caf50;
-      }
-
-      /* Visual indicator for texture rooms */
-      .room-block[data-texture-room="true"] {
-        border: 2px dashed #4caf50;
-        background: rgba(76, 175, 80, 0.2);
-      }
-
-      /* Hover effects for icons */
-      .layer-item:hover .layer-name::before {
-        opacity: 0.8;
-        transform: scale(1.1);
-        transition: all 0.2s ease;
-      }
-
-/* Base styles for all rooms */
-.room-block.room-room,
-.room-block.circle-room.room-room {
-  background: rgba(128, 128, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.7);
+:root {
+    --app-height: 100vh;
+    --header-height: 48px;
+    --sidebar-width: 280px;
+    --primary-bg: #1a1a1a;
+    --secondary-bg: #2a2a2a;
+    --border-color: #3a3a3a;
+    --hover-bg: #3a3a3a;
 }
 
-/* Hover states for all rooms */
-.room-block.room-room:hover,
-.room-block.circle-room.room-room:hover,
-.room-block.room-room.highlighted,
-.room-block.circle-room.room-room.highlighted {
-  background: rgba(128, 128, 255, 0.4);
-  border: 2px solid rgba(255, 255, 255, 1);
-  box-shadow: 0 0 5px rgba(128, 128, 255, 0.5);
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI";
+    background: var(--primary-bg);
+    color: #ffffff;
 }
 
-/* Base styles for all walls */
-.room-block.wall-room,
-.room-block.circle-room.wall-room {
-  background: rgba(255, 152, 0, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.7);
+.app-container {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: var(--header-height) 1fr;
+    height: var(--app-height);
 }
 
-/* Hover states for all walls */
-.room-block.wall-room:hover,
-.room-block.circle-room.wall-room:hover,
-.room-block.wall-room.highlighted,
-.room-block.circle-room.wall-room.highlighted {
-  background: rgba(255, 152, 0, 0.4);
-  border: 2px solid rgba(255, 255, 255, 1);
-  box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+.header {
+    grid-column: 1 / -1;
+    background: var(--secondary-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 1000;
+    position: relative;
+    height: var(--header-height);
 }
 
-/* Polygon-specific styles for rooms */
-.room-block.polygon-room.room-room .polygon-base {
-  fill: rgba(128, 128, 255, 0.2);
-  stroke: rgba(255, 255, 255, 0.7);
-  stroke-dasharray: 5,5;
-  stroke-width: 2;
+.header-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-right: auto;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-/* Polygon-specific hover states for rooms */
-.room-block.polygon-room.room-room:hover .polygon-base,
-.room-block.polygon-room.room-room.highlighted .polygon-base {
-  fill: rgba(128, 128, 255, 0.4);
-  stroke: rgba(255, 255, 255, 1);
-  stroke-width: 3;
-  filter: drop-shadow(0 0 3px rgba(128, 128, 255, 0.5));
+.sidebar {
+    background: var(--secondary-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000;
+    position: relative;
+    height: 100%;
 }
 
-/* Polygon-specific styles for walls */
-.room-block.polygon-room.wall-room .polygon-base {
-  fill: rgba(255, 152, 0, 0.2);
-  stroke: rgba(255, 255, 255, 0.7);
-  stroke-width: 2;
+.sidebar-content {
+    flex: 0 0 auto;
+    overflow-y: auto;
+    padding: 16px;
+    flex-shrink: 0;
+    overflow: hidden;
 }
 
-/* Polygon-specific hover states for walls */
-.room-block.polygon-room.wall-room:hover .polygon-base,
-.room-block.polygon-room.wall-room.highlighted .polygon-base {
-  fill: rgba(255, 152, 0, 0.4);
-  stroke: rgba(255, 255, 255, 1);
-  stroke-width: 3;
-  filter: drop-shadow(0 0 3px rgba(255, 152, 0, 0.5));
+.tool-section {
+    margin-bottom: 12px;
+    flex-shrink: 0;
 }
 
-.map-marker[data-teleport-point="a"] {
-  outline: 2px solid #2196f3;  /* Blue outline for debugging */
+.tool-section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 4px;
+    padding: 0 8px;
 }
 
-.map-marker[data-teleport-point="b"] {
-  outline: 2px solid #ff9800;  /* Orange outline for debugging */
+.tool-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 0 8px;
 }
 
-.map-marker[data-teleport-point="b"] .material-icons {
-  color: #ff9800 !important; /* Added !important for testing */
+.tool-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 32px;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    width: 32px;
+    position: relative;
 }
 
-.layer-item {
-  transition: transform 0.2s ease;
-  cursor: move; /* Indicate item is draggable */
+.tool-button:hover {
+    background: var(--hover-bg);
 }
 
-.layer-item.dragging {
-  opacity: 0.5;
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.1);
+.tool-button.active {
+    background: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-400);
 }
 
-.layer-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+.tool-button sl-icon {
+    font-size: 24px;
+    margin-bottom: 4px;
 }
 
-/* Visual indicator for drag target */
-.layer-item.drag-over {
-  border-bottom: 2px solid var(--sl-color-primary-600);
+.tool-button-label {
+    font-size: 0.8rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
-.layer-folder {
-  margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+.layers-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    background: var(--secondary-bg);
+    flex: 0 0 auto;
 }
 
-.folder-header {
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.folder-header:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.folder-toggle {
-  margin-right: 4px;
-  cursor: pointer;
-  opacity: 0.7;
-}
-
-.folder-icon {
-  margin-right: 8px;
-  color: #2196F3;
-}
-
-.folder-name {
-  flex: 1;
-  font-weight: 500;
-}
-
-.folder-controls {
-  display: flex;
-  gap: 8px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.folder-header:hover .folder-controls {
-  opacity: 1;
-}
-
-.folder-content {
-  padding-left: 24px;
-}
-
-.folder-content {
-  min-height: 10px;
-  padding: 8px 0 8px 24px;
-  transition: background-color 0.2s;
-}
-
-.folder-content.drag-over {
-  background: rgba(33, 150, 243, 0.1);
-}
-
-.folder-header.drag-over {
-  background: rgba(33, 150, 243, 0.2);
-}
-
-.layer-folder {
-  margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.folder-header .visibility-toggle {
-    transition: color 0.2s ease;
-}
-
-.folder-hidden {
-    opacity: 0.7;
-}
-
-.folder-hidden .folder-content {
-    opacity: 0.5;
-}
-
-/* Base layer panel styles */
 .layers-panel {
     padding: 0;
     display: flex;
     flex-direction: column;
     gap: 0;
     overflow-y: auto;
+    border-right: 1px solid #444;
     height: 100%;
     position: relative;
     flex: 1;
@@ -1253,21 +265,8 @@
     background: var(--secondary-bg);
 }
 
-/* Layers list container */
-.layers-list {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 4px;
-    min-height: 0;
-    position: relative;
-    overflow-x: hidden;
-    margin: 0;
-    background: var(--secondary-bg);
-}
-
-/* Individual layer items */
 .layer-item {
-    background: var(--secondary-bg); /* #3d3d3d; */
+    background: var(--secondary-bg);
     border-radius: 3px;
     padding: 4px;
     cursor: pointer;
@@ -1278,26 +277,27 @@
 }
 
 .layer-item:hover {
-    background: #bbbbbb;
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #468e2c;
+    border-color: rgb(255, 255, 255);
 }
 
-/* Layer content layout */
+.layer-item.selected {
+    background: #505050;
+    border: 1px solid #666;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.layer-item.editing {
+    background: #ffffff44;
+}
+
 .layer-content {
     display: grid;
-    grid-template-columns: auto auto 1fr auto;
     align-items: center;
     gap: 4px;
+    grid-template-columns: auto auto 1fr auto;
 }
 
-/* Visibility toggle */
-.layer-visibility {
-    display: flex;
-    align-items: center;
-    padding: 0 2px;
-}
-
-/* Thumbnail area */
 .layer-thumbnail {
     width: 32px;
     height: 32px;
@@ -1312,8 +312,8 @@
     object-fit: cover;
 }
 
-/* Layer info */
 .layer-info {
+    flex: 1;
     min-width: 0;
     padding: 0 4px;
 }
@@ -1328,14 +328,732 @@
 
 .layer-dimensions {
     font-size: 0.8em;
-    color: #aaa;
+    color: #e6e6e6;
 }
 
-/* Folder styles */
+.layer-controls {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.layer-item:hover .layer-controls {
+    opacity: 1;
+}
+
+.canvas-container {
+    position: relative;
+    overflow: hidden;
+    background: var(--primary-bg);
+    z-index: 1;
+}
+
+#mainCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.room-block {
+    position: absolute;
+    background: rgba(128, 128, 128, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    transition: all 0.2s ease;
+}
+
+.room-block.highlighted {
+    background: rgba(128, 128, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.room-block.editing {
+    background: rgba(0, 255, 0, 0.2);
+    border-color: #4caf50;
+}
+
+.room-block .resize-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border: 1px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+}
+
+.tool-button .material-icons {
+    font-size: 20px;
+    margin-bottom: 0;
+    color: #fff;
+    margin-right: 8px;
+}
+
+.tool-button:hover .material-icons {
+    color: var(--sl-color-primary-400);
+}
+
+.tool-button.active .material-icons {
+    color: white;
+}
+
+.tool-button.active .tool-button-label {
+    color: white;
+}
+
+.room-block.circle-room {
+    border-radius: 50%;
+}
+
+.room-block .resize-handle.nw {
+    top: 0;
+    left: 0;
+    cursor: nw-resize;
+}
+
+.room-block .resize-handle.ne {
+    top: 0;
+    left: 100%;
+    cursor: ne-resize;
+}
+
+.room-block .resize-handle.sw {
+    top: 100%;
+    left: 0;
+    cursor: sw-resize;
+}
+
+.room-block .resize-handle.se {
+    top: 100%;
+    left: 100%;
+    cursor: se-resize;
+}
+
+.room-controls {
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.room-block:hover .room-controls {
+    opacity: 1;
+}
+
+.room-controls .material-icons {
+    user-select: none;
+    transition: transform 0.2s ease;
+}
+
+.room-controls .material-icons:hover {
+    transform: scale(1.1);
+}
+
+sl-dialog::part(base) {
+    --sl-panel-background-color: white;
+    color: black;
+}
+
+sl-input::part(form-control-label) {
+    color: black;
+}
+
+.polygon-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.polygon-point {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border: 1px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.polygon-point:first-child {
+    background: #4caf50;
+    width: 10px;
+    height: 10px;
+}
+
+.room-block.polygon-room {
+    background: none !important;
+    border: none !important;
+    position: absolute;
+    overflow: visible !important;
+}
+
+.room-block.polygon-room svg path {
+    transition: all 0.2s ease;
+}
+
+.room-block.polygon-room:hover svg path {
+    fill: rgba(128, 128, 255, 0.4);
+    stroke: rgba(255, 255, 255, 0.9);
+}
+
+.room-block.polygon-room .polygon-fill {
+    transition: all 0.2s ease;
+}
+
+.room-block.polygon-room .polygon-hover {
+    transition: opacity 0.2s ease;
+}
+
+.room-block.polygon-room.highlighted .polygon-hover {
+    opacity: 1 !important;
+}
+
+.room-block.polygon-room.editing .polygon-fill {
+    fill: rgba(0, 255, 0, 0.2);
+    stroke: #4caf50;
+}
+
+.polygon-vertex {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border: 1px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+.room-block.polygon-room.highlighted .polygon-vertex {
+    opacity: 1;
+}
+
+.room-block.polygon-room .polygon-base {
+    transition: all 0.2s ease;
+    vector-effect: non-scaling-stroke;
+}
+
+.room-block.polygon-room .polygon-highlight {
+    transition: opacity 0.2s ease;
+}
+
+.room-block.polygon-room.highlighted .polygon-highlight {
+    opacity: 1 !important;
+}
+
+.room-block.polygon-room.editing .polygon-base {
+    fill: rgba(0, 255, 0, 0.2);
+    stroke: #4caf50;
+}
+
+.room-block.polygon-room .polygon-vertex {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border: 1px solid #333;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.room-block.polygon-room:hover .polygon-base {
+    fill: rgba(128, 128, 255, 0.4);
+    stroke: rgba(255, 255, 255, 0.9);
+}
+
+.room-block.polygon-room.highlighted .polygon-base {
+    fill: rgba(128, 128, 255, 0.4);
+    stroke: rgba(255, 255, 255, 0.9);
+}
+
+.room-block .room-background {
+    transition: all 0.2s ease;
+}
+
+.room-block.highlighted .room-background {
+    background: rgba(128, 128, 255, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.room-block.circle-room .room-background {
+    border-radius: 50%;
+}
+
+.room-block.editing .room-background {
+    background: rgba(0, 255, 0, 0.2) !important;
+    border-color: #4caf50 !important;
+}
+
+.map-marker {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    pointer-events: all !important;
+}
+
+.map-marker .material-icons {
+    font-size: 32px;
+    filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.map-marker:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.marker-player-start .material-icons {
+    color: #4caf50;
+}
+
+.marker-encounter .material-icons {
+    color: #f44336;
+}
+
+.marker-treasure .material-icons {
+    color: #ffd700;
+}
+
+.marker-trap .material-icons {
+    color: #ff5722;
+}
+
+.marker-tooltip {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 10000;
+    white-space: pre-line;
+    transform: translate(-50%, -100%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    min-width: 150px;
+    text-align: center;
+}
+
+.map-marker.marker-teleport .material-icons {
+    color: #9c27b0;
+}
+
+.map-marker.highlighted {
+    transform: translate(-50%, -50%) scale(1.2);
+    filter: brightness(1.3);
+}
+
+.map-marker[data-teleport-point="a"] .material-icons {
+    color: #2196f3;
+}
+
+.map-marker[data-teleport-point="b"] .material-icons {
+    color: #ff9800 !important;
+}
+
+.map-marker.editing {
+    outline: 2px solid #4caf50;
+    outline-offset: 2px;
+    z-index: 1000;
+}
+
+.map-marker.editing .material-icons {
+    color: #4caf50;
+}
+
+#editMarkerTool.active {
+    background: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-400);
+}
+
+#editMarkerTool.active .tool-button-label {
+    color: white;
+}
+
+.teleport-connection {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(to right, #2196f3, #ff9800);
+    transform-origin: left center;
+    pointer-events: none;
+    opacity: 0.6;
+    z-index: 90;
+}
+
+.teleport-connection::after {
+    content: "";
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    right: -3px;
+    top: -2px;
+    background: #ff9800;
+}
+
+.teleport-connection::before {
+    left: -3px;
+    top: -2px;
+    background: #2196f3;
+}
+
+.map-marker[data-teleport-point="a"]:hover .material-icons {
+    color: #64b5f6;
+}
+
+.map-marker[data-teleport-point="b"]:hover .material-icons {
+    color: #ffb74d;
+}
+
+.map-marker[data-teleport-point].highlighted .material-icons {
+    filter: brightness(1.2);
+}
+
+.room-block.polygon-room svg {
+    pointer-events: none;
+    overflow: visible;
+}
+
+.map-marker .monster-token {
+    transition: all 0.2s ease;
+}
+
+.map-marker:hover .monster-token {
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+    border-color: #ff9800;
+    transition: all 0.2s ease;
+}
+
+.map-marker[title] {
+    position: relative;
+    display: inline-block;
+}
+
+.map-marker[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: pre;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.marker-tooltip::after {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid rgba(0, 0, 0, 0.9);
+}
+
+.monster-token {
+    pointer-events: all !important;
+    z-index: 100;
+}
+
+.layers-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 4px;
+    min-height: 0;
+    position: relative;
+    overflow-x: hidden;
+    margin: 0;
+    background: var(--secondary-bg);
+}
+
+#layersList {
+    height: calc(100vh - var(--header-height) - 200px);
+    overflow-y: auto;
+    padding: 10px;
+    flex: 1;
+}
+
+.layers-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.layers-list::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+}
+
+.layers-list::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+}
+
+.layers-list::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--secondary-bg)
+      );
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.layers-list:hover::after {
+    opacity: 1;
+}
+
+#layersList::-webkit-scrollbar {
+    width: 8px;
+}
+
+#layersList::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+}
+
+#layersList::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+}
+
+.layers-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.layers-panel::-webkit-scrollbar-track {
+    background: var(--secondary-bg);
+}
+
+.layers-panel::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+}
+
+.drawer-3d-view::part(body) {
+    padding: 0;
+}
+
+.drawer-3d-view::part(panel) {
+    background-color: #1a1a1a;
+}
+
+.layer-visibility {
+    display: flex;
+    align-items: center;
+    padding: 0 2px;
+}
+
+.visibility-toggle {
+    font-size: 20px;
+    transition: color 0.2s ease;
+}
+
+.visibility-toggle:hover {
+    color: #2196f3 !important;
+}
+
+.tool-button::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    pointer-events: none;
+    margin-bottom: 4px;
+}
+
+.tool-button:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tool-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 8px 8px;
+    opacity: 0.5;
+}
+
+.marker-tools {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.room-block.wall-room {
+    background: rgba(70, 70, 70, 0.3);
+    border: 2px dashed #666;
+}
+
+.room-block.wall-room.highlighted {
+    background: rgba(70, 70, 70, 0.5) !important;
+    border: 2px dashed #888 !important;
+}
+
+.room-block.wall-room.editing {
+    background: rgba(70, 70, 70, 0.4) !important;
+    border: 2px dashed #4caf50 !important;
+}
+
+.layer-item.wall-room .layer-name {
+    color: #fff;
+}
+
+.layer-item.wall-room .layer-name::before {
+    content: "🧱";
+    margin-right: 4px;
+}
+
+.room-block.room-room {
+    background: rgba(128, 128, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.room-block[data-texture-room="true"] {
+    border: 2px dashed #4caf50;
+    background: rgba(76, 175, 80, 0.2);
+}
+
+.layer-item .layer-name::before {
+    margin-right: 8px;
+    font-family: "Material Icons";
+    font-size: 20px;
+    vertical-align: middle;
+}
+
+.layer-item .layer-name {
+    display: flex;
+    align-items: center;
+}
+
+.layer-item[data-room-type="wall"] .layer-name::before {
+    content: "grid_4x4";
+    color: #757575;
+}
+
+.layer-item[data-room-type="room"] .layer-name::before {
+    content: "meeting_room";
+    color: #2196f3;
+}
+
+.layer-item[data-texture-room="true"] .layer-name::before {
+    content: "texture";
+    color: #4caf50;
+}
+
+.layer-item:hover .layer-name::before {
+    opacity: 0.8;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+}
+
+.room-block.circle-room.room-room {
+    background: rgba(128, 128, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.room-block.circle-room.room-room.highlighted {
+    background: rgba(128, 128, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 1);
+    box-shadow: 0 0 5px rgba(128, 128, 255, 0.5);
+}
+
+.room-block.circle-room.wall-room {
+    background: rgba(255, 152, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.room-block.circle-room.wall-room.highlighted {
+    background: rgba(255, 152, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 1);
+    box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+}
+
+.room-block.polygon-room.room-room .polygon-base {
+    fill: rgba(128, 128, 255, 0.2);
+    stroke: rgba(255, 255, 255, 0.7);
+    stroke-dasharray: 5,5;
+    stroke-width: 2;
+}
+
+.room-block.polygon-room.room-room.highlighted .polygon-base {
+    fill: rgba(128, 128, 255, 0.4);
+    stroke: rgba(255, 255, 255, 1);
+    stroke-width: 3;
+    filter: drop-shadow(0 0 3px rgba(128, 128, 255, 0.5));
+}
+
+.room-block.polygon-room.wall-room .polygon-base {
+    fill: rgba(255, 152, 0, 0.2);
+    stroke: rgba(255, 255, 255, 0.7);
+    stroke-width: 2;
+}
+
+.room-block.polygon-room.wall-room.highlighted .polygon-base {
+    fill: rgba(255, 152, 0, 0.4);
+    stroke: rgba(255, 255, 255, 1);
+    stroke-width: 3;
+    filter: drop-shadow(0 0 3px rgba(255, 152, 0, 0.5));
+}
+
+.map-marker[data-teleport-point="a"] {
+    outline: 2px solid #2196f3;
+}
+
+.map-marker[data-teleport-point="b"] {
+    outline: 2px solid #ff9800;
+}
+
+.layer-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.layer-item.drag-over {
+    border-bottom: 2px solid var(--sl-color-primary-600);
+}
+
 .layer-folder {
     margin-bottom: 2px;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 3px;
+    transition: background-color 0.2s;
 }
 
 .folder-header {
@@ -1346,13 +1064,64 @@
     user-select: none;
 }
 
+.folder-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.folder-toggle {
+    margin-right: 4px;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.folder-icon {
+    margin-right: 8px;
+    color: #2196F3;
+}
+
+.folder-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.folder-controls {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.folder-header:hover .folder-controls {
+    opacity: 1;
+}
+
 .folder-content {
+    padding-left: 24px;
     min-height: 10px;
     padding: 2px 0 2px 12px;
     transition: background-color 0.2s;
 }
 
-/* Controls */
+.folder-content.drag-over {
+    background: rgba(33, 150, 243, 0.1);
+}
+
+.folder-header.drag-over {
+    background: rgba(33, 150, 243, 0.2);
+}
+
+.folder-header .visibility-toggle {
+    transition: color 0.2s ease;
+}
+
+.folder-hidden {
+    opacity: 0.7;
+}
+
+.folder-hidden .folder-content {
+    opacity: 0.5;
+}
+
 .folder-controls, .layer-controls {
     display: flex;
     gap: 4px;
@@ -1360,20 +1129,8 @@
     transition: opacity 0.2s;
 }
 
-.layer-item:hover .layer-controls,
-.folder-header:hover .folder-controls {
-    opacity: 1;
-}
-
-/* Material icons in the panel */
 .material-icons {
     font-size: 18px;
-}
-
-/* Selected state */
-.layer-item.selected {
-    background: #505050;
-    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .thumbnail-placeholder {
@@ -1406,7 +1163,6 @@
     pointer-events: none;
 }
 
-.layer-item.locked .edit-btn,
 .layer-item.locked .delete-btn {
     opacity: 0.5;
     cursor: not-allowed;
@@ -1420,56 +1176,16 @@
     color: #f44336 !important;
 }
 
-.layer-item.wall-room .layer-name {
-	color: #fff;
-}
-
-.layer-dimensions {
-	font-size: 0.8em;
-	color: #e6e6e6;
-}
-
-.layer-item:hover {
-	background: #468e2c;
-	border-color: rgb(255, 255, 255);
-}
-
-.header {
-    grid-column: 1 / -1;
-    background: var(--secondary-bg);
-    border-bottom: 1px solid var(--border-color);
-    padding: 0 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    z-index: 1000;
-    position: relative;
-    height: var(--header-height);
-}
-
-/* Add minimum width for button group */
 .header sl-button-group {
-    min-width: 300px;  /* Adjust as needed */
+    min-width: 300px;
     display: flex;
     gap: 4px;
-}
-
-/* Style for header title/filename */
-.header-title {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin-right: auto;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .header-title:hover {
     color: var(--sl-color-primary-500);
 }
 
-/* Add edit icon next to title */
 .header-title-edit {
     opacity: 0.5;
     font-size: 16px;
@@ -1479,35 +1195,49 @@
     opacity: 1;
 }
 
+.door {
+    position: absolute;
+    pointer-events: all;
+    cursor: pointer;
+}
+
+.door-frame {
+    border: 2px solid #666;
+    background: rgba(102, 102, 102, 0.2);
+}
+
+.door-panel {
+    position: absolute;
+    background: #8b4513;
+    transition: transform 0.3s;
+}
+
+.door.open .door-panel {
+    transform: rotateY(90deg);
+}
+
+.map-marker[data-type="door"] {
+    width: 24px;
+    height: 24px;
+    background: #8b4513;
+    border: 2px solid #666;
+    border-radius: 2px;
+    transform-origin: left;
+    transition: transform 0.3s;
+}
+
+.map-marker[data-type="door"].open {
+    transform: rotateY(90deg);
+}
+
+
+
 
     </style>
   </head>
 
   <body>
     <div class="app-container">
-      <!-- <header class="header">
-
-<sl-button-group>
-  <sl-button size="medium" variant="default" id="openMapBtn">
-      <span class="material-icons">folder_open</span>
-      Open
-  </sl-button>
-  <sl-button size="medium" variant="default" id="saveProjectBtn">
-      <span class="material-icons">save</span>
-      Save
-  </sl-button>
-  <sl-button size="medium" variant="default" id="resourceManagerBtn" style="display: none;">
-      <span class="material-icons">palette</span>
-      Resources
-  </sl-button>
-</sl-button-group>
-        <div class="header-title">DnD Map Editor</div>
-
-        <sl-button size="medium" variant="primary" id="create3d">
-          <span class="material-icons">view_in_ar</span>
-          View 3D
-        </sl-button>
-      </header> -->
 
       <header class="header">
         <sl-button-group>
@@ -1521,7 +1251,7 @@
             </sl-button>
             <sl-button size="medium" variant="default" id="resourceManagerBtn" style="display: none;">
                 <span class="material-icons">palette</span>
-                Resources
+                Res.
             </sl-button>
         </sl-button-group>
     
@@ -1604,6 +1334,9 @@
                 data-tooltip="Add Teleport"
               >
                 <span class="material-icons">swap_calls</span>
+              </div>
+              <div class="tool-button" id="doorTool" data-tooltip="Add Door [D]">
+                <span class="material-icons">door_front</span>
               </div>
             </div>
           </div>
@@ -2784,7 +2517,13 @@ if (currentMonsterData.token && (currentMonsterData.token.data || currentMonster
               editor.startDragging(this, e);
             }
           });
-          // }
+
+          roomElement.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (!this.isMarkerEditMode) { // Only show if not in marker edit mode
+        window.mapEditor.showStructureContextMenu(this, e);
+    }
+});
 
           this.element = roomElement;
           this.updateElement();
@@ -4043,58 +3782,6 @@ createLayerItem(room) {
     toast.show();
 }
 
-// updateMapTitle() {
-//     const titleElement = document.getElementById('mapTitleText');
-//     if (this.mapName) {
-//         titleElement.textContent = this.mapName;
-//     } else {
-//         titleElement.textContent = 'Untitled Map';
-//     }
-// }
-
-// setupTitleHandlers() {
-//     const titleContainer = document.getElementById('mapTitle');
-//     titleContainer.addEventListener('click', async () => {
-//         const result = await this.showMapNameDialog();
-//         if (result) {
-//             this.updateMapTitle();
-//         }
-//     });
-// }
-
-//         parseMapFilename(filename) {
-//   // Remove file extension
-//   const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
-  
-//   // Try to find grid dimensions (like 32x20)
-//   const gridMatch = nameWithoutExt.match(/(\d+)x(\d+)/i);
-  
-//   // Try to find a map name
-//   // Look for patterns like:
-//   // - "01-01 Audience Chamber 32x20"
-//   // - "Map Name 32x20"
-//   // - "01_Dungeon_32x20"
-//   let mapName = nameWithoutExt;
-  
-//   // Remove any leading numbers and separators
-//   mapName = mapName.replace(/^[\d-_\s]+/, '');
-  
-//   // Remove the grid dimensions if present
-//   mapName = mapName.replace(/\s*\d+x\d+\s*$/, '');
-  
-//   // Clean up any remaining underscores or extra spaces
-//   mapName = mapName.replace(/_/g, ' ').trim();
-  
-//   return {
-//     success: true,
-//     gridDimensions: gridMatch ? {
-//       width: parseInt(gridMatch[1]),
-//       height: parseInt(gridMatch[2])
-//     } : null,
-//     mapName: mapName || null
-//   };
-// }
-
 parseMapFilename(filename) {
     // Remove file extension
     const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
@@ -4215,7 +3902,186 @@ setupTitleHandlers() {
 }
 
 
-    async saveMap() {
+//     async saveMap() {
+//     // Show saving notification
+//     const toast = document.createElement("div");
+//     toast.style.position = "fixed";
+//     toast.style.bottom = "20px";
+//     toast.style.right = "20px";
+//     toast.style.zIndex = "1000";
+//     toast.style.backgroundColor = "#333";
+//     toast.style.color = "white";
+//     toast.style.padding = "10px 20px";
+//     toast.style.borderRadius = "4px";
+//     toast.style.display = "flex";
+//     toast.style.alignItems = "center";
+//     toast.style.gap = "10px";
+//     toast.innerHTML = `
+//         <span class="material-icons">save</span>
+//         <span>Saving map...</span>
+//     `;
+//     document.body.appendChild(toast);
+
+//     try {
+//         console.log("Starting map save...");
+//         // Create the save data structure
+//         const saveData = {
+//             version: "1.1", // Bumped version number
+//             timestamp: new Date().toISOString(),
+//             mapImage: null,
+//             gridSettings: {
+//                 cellSize: this.cellSize,
+//                 width: this.gridDimensions?.width,
+//                 height: this.gridDimensions?.height
+//             },
+//             rooms: this.rooms.map((room) => {
+//                 console.log("Saving room:", {
+//                     id: room.id,
+//                     shape: room.shape,
+//                     bounds: room.bounds
+//                 });
+//                 return {
+//                     id: room.id,
+//                     name: room.name,
+//                     shape: room.shape,
+//                     bounds: { ...room.bounds },
+//                     points: room.points ? [...room.points] : null,
+//                     thumbnail: room.thumbnail,
+//                     type: room.type,
+//                     locked: room.locked // Added locked state
+//                 };
+//             }),
+//             // Add folders to save data
+//             folders: this.layersPanel.folders.map(folder => ({
+//                 id: folder.id,
+//                 name: folder.name,
+//                 expanded: folder.expanded,
+//                 locked: folder.locked,
+//                 roomIds: folder.rooms.map(room => room.id)
+//             })),
+//             markers: this.markers.map((marker) => {
+//                 // Create a clean copy of marker data
+//                 const markerData = {
+//                     id: marker.id,
+//                     type: marker.type,
+//                     x: marker.x,
+//                     y: marker.y,
+//                     data: {}
+//                 };
+
+//                 console.log("Saving marker:", {
+//                     type: marker.type,
+//                     id: marker.id
+//                 });
+
+//                 // Copy non-circular data
+//                 if (marker.data) {
+//                     Object.keys(marker.data).forEach((key) => {
+//                         // Skip the pairedMarker object reference
+//                         if (key !== "pairedMarker") {
+//                             markerData.data[key] = marker.data[key];
+//                         }
+//                     });
+//                 }
+
+//                 // Special handling for encounter markers
+//                 if (marker.type === "encounter" && marker.data.monster) {
+//                     console.log("Saving monster data:", {
+//                         name: marker.data.monster.basic.name,
+//                         size: marker.data.monster.basic.size,
+//                         stats: marker.data.monster.stats
+//                     });
+
+//                     markerData.data.monster = {
+//                         basic: { ...marker.data.monster.basic },
+//                         stats: {
+//                             ac: marker.data.monster.stats.ac,
+//                             hp: { ...marker.data.monster.stats.hp },
+//                             speed: marker.data.monster.stats.speed
+//                         },
+//                         abilities: { ...marker.data.monster.abilities },
+//                         traits: { ...marker.data.monster.traits },
+//                         token: {
+//                             data: marker.data.monster.token.data,
+//                             url: marker.data.monster.token.url
+//                         }
+//                     };
+//                 }
+
+//                 // Handle teleport markers - store only the ID of the paired marker
+//                 if (marker.type === "teleport" && marker.data.pairedMarker) {
+//                     markerData.data.pairId = marker.data.pairedMarker.id;
+//                     markerData.data.isPointA = marker.data.isPointA;
+//                     markerData.data.hasPair = true;
+//                 }
+
+//                 return markerData;
+//             }),
+//             playerStart: this.playerStart
+//                 ? {
+//                     x: this.playerStart.x,
+//                     y: this.playerStart.y
+//                 }
+//                 : null,
+//             viewSettings: {
+//                 scale: this.scale,
+//                 offset: { ...this.offset }
+//             }
+//         };
+
+//         // Convert main map image to base64
+//         if (this.baseImage) {
+//             const canvas = document.createElement("canvas");
+//             canvas.width = this.baseImage.width;
+//             canvas.height = this.baseImage.height;
+//             const ctx = canvas.getContext("2d");
+//             ctx.drawImage(this.baseImage, 0, 0);
+//             saveData.mapImage = canvas.toDataURL("image/webp");
+//         }
+
+//         console.log("Map data prepared, creating file...");
+
+//         // Create the file
+//         const blob = new Blob([JSON.stringify(saveData, null, 2)], {
+//             type: "application/json"
+//         });
+
+//         // Generate filename based on map name and timestamp
+//         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+//         const mapName = this.mapName || this.originalMapName || "untitled";
+//         const filename = `${mapName}-${timestamp}.json`;
+
+//         // Trigger download
+//         const a = document.createElement("a");
+//         a.href = URL.createObjectURL(blob);
+//         a.download = filename;
+//         document.body.appendChild(a);
+//         a.click();
+//         document.body.removeChild(a);
+//         URL.revokeObjectURL(a.href);
+
+//         console.log("Map save completed");
+
+//         // Show success toast
+//         toast.style.backgroundColor = "#4CAF50";
+//         toast.innerHTML = `
+//             <span class="material-icons">check_circle</span>
+//             <span>Map saved successfully!</span>
+//         `;
+//     } catch (error) {
+//         console.error("Error saving map:", error);
+//         toast.style.backgroundColor = "#f44336";
+//         toast.innerHTML = `
+//             <span class="material-icons">error</span>
+//             <span>Error saving map!</span>
+//         `;
+//     }
+
+//     // Remove toast after delay
+//     setTimeout(() => toast.remove(), 2000);
+// }
+
+async saveMap() {
     // Show saving notification
     const toast = document.createElement("div");
     toast.style.position = "fixed";
@@ -4239,7 +4105,7 @@ setupTitleHandlers() {
         console.log("Starting map save...");
         // Create the save data structure
         const saveData = {
-            version: "1.1", // Bumped version number
+            version: "1.2", // Bump version for texture support
             timestamp: new Date().toISOString(),
             mapImage: null,
             gridSettings: {
@@ -4261,18 +4127,15 @@ setupTitleHandlers() {
                     points: room.points ? [...room.points] : null,
                     thumbnail: room.thumbnail,
                     type: room.type,
-                    locked: room.locked // Added locked state
+                    locked: room.locked
                 };
             }),
-            // Add folders to save data
-            folders: this.layersPanel.folders.map(folder => ({
-                id: folder.id,
-                name: folder.name,
-                expanded: folder.expanded,
-                locked: folder.locked,
-                roomIds: folder.rooms.map(room => room.id)
-            })),
             markers: this.markers.map((marker) => {
+                console.log("Saving marker:", {
+                    type: marker.type,
+                    id: marker.id
+                });
+
                 // Create a clean copy of marker data
                 const markerData = {
                     id: marker.id,
@@ -4282,11 +4145,6 @@ setupTitleHandlers() {
                     data: {}
                 };
 
-                console.log("Saving marker:", {
-                    type: marker.type,
-                    id: marker.id
-                });
-
                 // Copy non-circular data
                 if (marker.data) {
                     Object.keys(marker.data).forEach((key) => {
@@ -4295,16 +4153,23 @@ setupTitleHandlers() {
                             markerData.data[key] = marker.data[key];
                         }
                     });
+
+                    // Handle parent wall reference for doors
+                    if (marker.data.parentWall) {
+                        markerData.data.parentWallId = marker.data.parentWall.id;
+                        delete markerData.data.parentWall;
+                    }
+
+                    // Save texture data if present
+                    if (marker.data.texture) {
+                        markerData.data.textureId = marker.data.texture.id;
+                        markerData.data.textureCategory = marker.data.texture.category;
+                    }
                 }
 
-                // Special handling for encounter markers
+                // Special handling for different marker types
                 if (marker.type === "encounter" && marker.data.monster) {
-                    console.log("Saving monster data:", {
-                        name: marker.data.monster.basic.name,
-                        size: marker.data.monster.basic.size,
-                        stats: marker.data.monster.stats
-                    });
-
+                    // Keep existing monster data handling
                     markerData.data.monster = {
                         basic: { ...marker.data.monster.basic },
                         stats: {
@@ -4319,10 +4184,7 @@ setupTitleHandlers() {
                             url: marker.data.monster.token.url
                         }
                     };
-                }
-
-                // Handle teleport markers - store only the ID of the paired marker
-                if (marker.type === "teleport" && marker.data.pairedMarker) {
+                } else if (marker.type === "teleport" && marker.data.pairedMarker) {
                     markerData.data.pairId = marker.data.pairedMarker.id;
                     markerData.data.isPointA = marker.data.isPointA;
                     markerData.data.hasPair = true;
@@ -4330,16 +4192,8 @@ setupTitleHandlers() {
 
                 return markerData;
             }),
-            playerStart: this.playerStart
-                ? {
-                    x: this.playerStart.x,
-                    y: this.playerStart.y
-                }
-                : null,
-            viewSettings: {
-                scale: this.scale,
-                offset: { ...this.offset }
-            }
+            // Add reference to resource pack if one is loaded
+            resourcePack: this.resourceManager?.activeResourcePack?.name || null
         };
 
         // Convert main map image to base64
@@ -4394,9 +4248,214 @@ setupTitleHandlers() {
     setTimeout(() => toast.remove(), 2000);
 }
 
+//     async loadMap(file) {
+//     const toast = document.createElement("div");
+//     toast.style.position = "fixed";
+//     toast.style.bottom = "20px";
+//     toast.style.right = "20px";
+//     toast.style.zIndex = "1000";
+//     toast.style.backgroundColor = "#333";
+//     toast.style.color = "white";
+//     toast.style.padding = "10px 20px";
+//     toast.style.borderRadius = "4px";
+//     toast.style.display = "flex";
+//     toast.style.alignItems = "center";
+//     toast.style.gap = "10px";
+//     toast.innerHTML = `
+//         <span class="material-icons">hourglass_top</span>
+//         <span>Loading map...</span>
+//     `;
+//     document.body.appendChild(toast);
 
+//     try {
+//         console.log("Starting map load...");
+//         const text = await file.text();
+//         const saveData = JSON.parse(text);
 
-    async loadMap(file) {
+//         // Version check
+//         console.log("Loading map version:", saveData.version);
+        
+//         // Clear existing rooms and markers first
+//         this.rooms.forEach(room => {
+//             room.element?.remove();
+//         });
+//         this.rooms = [];
+
+//         this.markers.forEach(marker => {
+//             marker.element?.remove();
+//         });
+//         this.markers = [];
+
+//         if (this.playerStart?.element) {
+//             this.playerStart.element.remove();
+//             this.playerStart = null;
+//         }
+
+//         // Clear existing folders
+//         this.layersPanel.folders = [];
+
+//         // Load map image first and wait for it to complete
+//         if (saveData.mapImage) {
+//             await new Promise((resolve, reject) => {
+//                 const img = new Image();
+//                 img.onload = () => {
+//                     this.baseImage = img;
+//                     this.naturalWidth = img.naturalWidth;
+//                     this.naturalHeight = img.naturalHeight;
+//                     resolve();
+//                 };
+//                 img.onerror = reject;
+//                 img.src = saveData.mapImage;
+//             });
+//         }
+
+//         // Restore grid settings
+//         this.cellSize = saveData.gridSettings.cellSize;
+//         this.gridDimensions = saveData.gridSettings.width && saveData.gridSettings.height
+//             ? {
+//                 width: saveData.gridSettings.width,
+//                 height: saveData.gridSettings.height
+//             }
+//             : null;
+
+//         console.log("Grid settings restored:", this.gridDimensions);
+
+//         // Restore rooms
+//         for (const roomData of saveData.rooms) {
+//             console.log("Creating room:", {
+//                 id: roomData.id,
+//                 shape: roomData.shape,
+//                 type: roomData.type,
+//                 bounds: roomData.bounds
+//             });
+
+//             const room = Room.createFromSaved(roomData, this);
+//             if (roomData.locked) {
+//                 room.locked = true;
+//             }
+//             this.rooms.push(room);
+//             document.querySelector('.canvas-container').appendChild(room.element);
+//         }
+
+//         // If version 1.1 or higher, restore folders
+//         if (saveData.version && saveData.version !== "1.0" && saveData.folders) {
+//             console.log("Restoring folders...");
+//             saveData.folders.forEach(folderData => {
+//                 const folder = {
+//                     id: folderData.id,
+//                     name: folderData.name,
+//                     expanded: folderData.expanded,
+//                     locked: folderData.locked,
+//                     rooms: []
+//                 };
+                
+//                 // Find and assign rooms to folder
+//                 folderData.roomIds.forEach(roomId => {
+//                     const room = this.rooms.find(r => r.id === roomId);
+//                     if (room) {
+//                         folder.rooms.push(room);
+//                     }
+//                 });
+
+//                 this.layersPanel.folders.push(folder);
+//             });
+//         }
+
+//         // Restore markers
+//         console.log("Starting marker restoration...");
+//         for (const markerData of saveData.markers) {
+//             console.log("Loading marker:", {
+//                 type: markerData.type,
+//                 data: markerData.data
+//             });
+
+//             const marker = this.addMarker(
+//                 markerData.type,
+//                 markerData.x,
+//                 markerData.y,
+//                 markerData.data
+//             );
+
+//             if (marker.type === "encounter" && marker.data.monster) {
+//                 this.updateMarkerAppearance(marker);
+//             }
+//         }
+
+//         // Restore teleport connections
+//         console.log("Restoring teleport connections...");
+//         const teleportMarkers = this.markers.filter(m => m.type === "teleport");
+//         for (const marker of teleportMarkers) {
+//             if (marker.data.pairId) {
+//                 const pair = teleportMarkers.find(
+//                     m => m.data.pairId === marker.data.pairId && m !== marker
+//                 );
+//                 if (pair) {
+//                     console.log("Connecting teleport pair:", {
+//                         markerA: marker.id,
+//                         markerB: pair.id
+//                     });
+
+//                     marker.data.pairedMarker = pair;
+//                     pair.data.pairedMarker = marker;
+//                     marker.data.hasPair = true;
+//                     pair.data.hasPair = true;
+
+//                     if (marker.data.isPointA) {
+//                         if (marker.connection) {
+//                             marker.connection.remove();
+//                         }
+//                         marker.connection = this.createTeleportConnection(marker, pair);
+//                         this.updateTeleportConnection(marker, pair);
+//                     }
+//                 }
+//             }
+//         }
+
+//         // Restore player start
+//         if (saveData.playerStart) {
+//             this.playerStart = this.addMarker(
+//                 "player-start",
+//                 saveData.playerStart.x,
+//                 saveData.playerStart.y
+//             );
+//         }
+
+//         // Restore view settings
+//         this.scale = saveData.viewSettings.scale;
+//         this.offset = saveData.viewSettings.offset;
+
+//         // Update all marker positions
+//         this.markers.forEach(marker => {
+//             this.updateMarkerPosition(marker);
+//         });
+
+//         // Update display
+//         this.centerMap();
+//         this.render();
+//         this.layersPanel.updateLayersList();
+
+//         console.log("Map load completed");
+
+//         // Success notification
+//         toast.style.backgroundColor = "#4CAF50";
+//         toast.innerHTML = `
+//             <span class="material-icons">check_circle</span>
+//             <span>Map loaded successfully!</span>
+//         `;
+//     } catch (error) {
+//         console.error("Error loading map:", error);
+//         toast.style.backgroundColor = "#f44336";
+//         toast.innerHTML = `
+//             <span class="material-icons">error</span>
+//             <span>Error loading map!</span>
+//         `;
+//     }
+
+//     // Remove toast after delay
+//     setTimeout(() => toast.remove(), 2000);
+// }
+
+async loadMap(file) {
     const toast = document.createElement("div");
     toast.style.position = "fixed";
     toast.style.bottom = "20px";
@@ -4439,8 +4498,11 @@ setupTitleHandlers() {
             this.playerStart = null;
         }
 
-        // Clear existing folders
-        this.layersPanel.folders = [];
+        // Load resource pack if specified
+        if (saveData.resourcePack && this.resourceManager) {
+            console.log("Loading associated resource pack:", saveData.resourcePack);
+            // You might want to implement a way to load the resource pack here
+        }
 
         // Load map image first and wait for it to complete
         if (saveData.mapImage) {
@@ -4485,30 +4547,6 @@ setupTitleHandlers() {
             document.querySelector('.canvas-container').appendChild(room.element);
         }
 
-        // If version 1.1 or higher, restore folders
-        if (saveData.version && saveData.version !== "1.0" && saveData.folders) {
-            console.log("Restoring folders...");
-            saveData.folders.forEach(folderData => {
-                const folder = {
-                    id: folderData.id,
-                    name: folderData.name,
-                    expanded: folderData.expanded,
-                    locked: folderData.locked,
-                    rooms: []
-                };
-                
-                // Find and assign rooms to folder
-                folderData.roomIds.forEach(roomId => {
-                    const room = this.rooms.find(r => r.id === roomId);
-                    if (room) {
-                        folder.rooms.push(room);
-                    }
-                });
-
-                this.layersPanel.folders.push(folder);
-            });
-        }
-
         // Restore markers
         console.log("Starting marker restoration...");
         for (const markerData of saveData.markers) {
@@ -4516,6 +4554,19 @@ setupTitleHandlers() {
                 type: markerData.type,
                 data: markerData.data
             });
+
+            // Handle texture restoration
+            if (markerData.data.textureId && this.resourceManager) {
+                const texture = this.resourceManager.resources.textures[markerData.data.textureCategory]?.get(markerData.data.textureId);
+                if (texture) {
+                    markerData.data.texture = texture;
+                }
+            }
+
+            // Handle parent wall restoration for doors
+            if (markerData.data.parentWallId) {
+                markerData.data.parentWall = this.rooms.find(r => r.id === markerData.data.parentWallId);
+            }
 
             const marker = this.addMarker(
                 markerData.type,
@@ -4558,19 +4609,6 @@ setupTitleHandlers() {
                 }
             }
         }
-
-        // Restore player start
-        if (saveData.playerStart) {
-            this.playerStart = this.addMarker(
-                "player-start",
-                saveData.playerStart.x,
-                saveData.playerStart.y
-            );
-        }
-
-        // Restore view settings
-        this.scale = saveData.viewSettings.scale;
-        this.offset = saveData.viewSettings.offset;
 
         // Update all marker positions
         this.markers.forEach(marker => {
@@ -5078,18 +5116,19 @@ setupTitleHandlers() {
 
           // Marker tool type mapping
           const markerTools = {
-            playerStartTool: "player-start",
-            encounterTool: "encounter",
-            treasureTool: "treasure",
-            trapTool: "trap",
-            teleportTool: "teleport"
-          };
+  playerStartTool: "player-start",
+  encounterTool: "encounter",
+  treasureTool: "treasure", 
+  trapTool: "trap",
+  teleportTool: "teleport",
+  doorTool: "door" 
+};
 
-          Object.entries(markerTools).forEach(([toolId, markerType]) => {
-            document.getElementById(toolId)?.addEventListener("click", () => {
-              this.setTool(`marker-${markerType}`);
-            });
-          });
+Object.entries(markerTools).forEach(([toolId, markerType]) => {
+  document.getElementById(toolId)?.addEventListener("click", () => {
+    this.setTool(`marker-${markerType}`);
+  });
+});
 
           // Add to your canvas click handler for marker placement
           document
@@ -5289,6 +5328,166 @@ setupTitleHandlers() {
             this.polygonPreviewElement = null;
           }
         }
+
+        createDoor(roomOrWall) {
+  const door = {
+    id: Date.now(),
+    parentId: roomOrWall.id,
+    width: this.cellSize, // Default 1 grid cell
+    height: this.cellSize * 2, // Default door height
+    position: {x: 0, y: 0}, // Will be set when placing
+    isOpen: false,
+    rotation: 0 // 0 or 90 degrees
+  };
+
+  // Add visual representation
+  const doorElement = document.createElement('div');
+  doorElement.className = 'door';
+  doorElement.innerHTML = `
+    <div class="door-frame"></div>
+    <div class="door-panel"></div>
+  `;
+
+  // Add to room/wall
+  roomOrWall.doors = roomOrWall.doors || [];
+  roomOrWall.doors.push(door);
+
+  return door;
+}
+
+findNearestWall(x, y) {
+  let nearest = null;
+  let minDistance = Infinity;
+  
+  this.rooms.forEach(room => {
+    if (room.type === 'wall') {
+      const distance = this.getDistanceToWall(x, y, room);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearest = room;
+      }
+    }
+  });
+
+  return minDistance < this.cellSize ? nearest : null;
+}
+
+isNearWall(x, y, wall) {
+  const threshold = this.cellSize;
+  const dx = x - wall.bounds.x;
+  const dy = y - wall.bounds.y;
+  return dx >= -threshold && dx <= wall.bounds.width + threshold &&
+         dy >= -threshold && dy <= wall.bounds.height + threshold;
+}
+
+getDistanceToWall(x, y, wall) {
+  const rect = {
+    left: wall.bounds.x,
+    right: wall.bounds.x + wall.bounds.width,
+    top: wall.bounds.y,
+    bottom: wall.bounds.y + wall.bounds.height
+  };
+
+  const dx = Math.max(rect.left - x, 0, x - rect.right);
+  const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+  
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+snapToWall(x, y, wall) {
+  const edges = {
+    left: Math.abs(x - wall.bounds.x),
+    right: Math.abs(x - (wall.bounds.x + wall.bounds.width)),
+    top: Math.abs(y - wall.bounds.y),
+    bottom: Math.abs(y - (wall.bounds.y + wall.bounds.height))
+  };
+
+  const closestEdge = Object.entries(edges).reduce((a, b) => a[1] < b[1] ? a : b)[0];
+
+  switch(closestEdge) {
+    case 'left': return { x: wall.bounds.x, y };
+    case 'right': return { x: wall.bounds.x + wall.bounds.width, y };
+    case 'top': return { x, y: wall.bounds.y };
+    case 'bottom': return { x, y: wall.bounds.y + wall.bounds.height };
+  }
+}
+
+findNearestStructure(x, y, type = 'both') {
+    let nearest = null;
+    let minDistance = Infinity;
+    
+    this.rooms.forEach(room => {
+        // Check if we want this type of structure
+        if (type === 'both' || type === room.type) {
+            const distance = this.getDistanceToStructure(x, y, room);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearest = room;
+            }
+        }
+    });
+
+    return minDistance < this.cellSize ? nearest : null;
+}
+
+isNearStructure(x, y, structure) {
+    const threshold = this.cellSize;
+    const dx = x - structure.bounds.x;
+    const dy = y - structure.bounds.y;
+    return dx >= -threshold && dx <= structure.bounds.width + threshold &&
+           dy >= -threshold && dy <= structure.bounds.height + threshold;
+}
+
+getDistanceToStructure(x, y, structure) {
+    const rect = {
+        left: structure.bounds.x,
+        right: structure.bounds.x + structure.bounds.width,
+        top: structure.bounds.y,
+        bottom: structure.bounds.y + structure.bounds.height
+    };
+
+    const dx = Math.max(rect.left - x, 0, x - rect.right);
+    const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+    
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+snapToStructure(x, y, structure) {
+    const edges = {
+        left: Math.abs(x - structure.bounds.x),
+        right: Math.abs(x - (structure.bounds.x + structure.bounds.width)),
+        top: Math.abs(y - structure.bounds.y),
+        bottom: Math.abs(y - (structure.bounds.y + structure.bounds.height))
+    };
+
+    const closestEdge = Object.entries(edges).reduce((a, b) => a[1] < b[1] ? a : b)[0];
+    const snappedPos = {
+        x: structure.bounds.x,
+        y: structure.bounds.y,
+        edge: closestEdge
+    };
+
+    switch(closestEdge) {
+        case 'left': 
+            snappedPos.x = structure.bounds.x;
+            snappedPos.y = y;
+            break;
+        case 'right': 
+            snappedPos.x = structure.bounds.x + structure.bounds.width;
+            snappedPos.y = y;
+            break;
+        case 'top': 
+            snappedPos.x = x;
+            snappedPos.y = structure.bounds.y;
+            break;
+        case 'bottom': 
+            snappedPos.x = x;
+            snappedPos.y = structure.bounds.y + structure.bounds.height;
+            break;
+    }
+
+    return snappedPos;
+}
 
         startCircleRoom() {
           if (!this.baseImage) {
@@ -6094,6 +6293,57 @@ updateTeleportConnection(pointA, pointB) {
   });
 }
 
+// Add to MapEditor class
+async showStructureContextMenu(structure, event) {
+    event.preventDefault();
+    
+    const dialog = document.createElement('sl-dialog');
+    dialog.label = `${structure.type === 'wall' ? 'Wall' : 'Room'} Options`;
+
+    dialog.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <sl-button class="assign-texture-btn">
+                <span class="material-icons" slot="prefix">texture</span>
+                Assign Texture
+            </sl-button>
+            ${structure.textureAssignments?.size ? `
+                <sl-button class="clear-texture-btn" variant="danger">
+                    <span class="material-icons" slot="prefix">clear</span>
+                    Clear Texture
+                </sl-button>
+            ` : ''}
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    // Handle texture assignment
+    dialog.querySelector('.assign-texture-btn').addEventListener('click', async () => {
+        dialog.hide();
+        const texture = await this.resourceManager.showTextureSelectionDialog(structure);
+        if (texture) {
+            // Handle texture assignment - we'll implement this next
+            console.log('Selected texture:', texture);
+            // await this.assignTexture(structure, texture);
+        }
+    });
+
+    // Handle texture clearing if button exists
+    dialog.querySelector('.clear-texture-btn')?.addEventListener('click', () => {
+        if (structure.textureAssignments) {
+            structure.textureAssignments.clear();
+            // We'll implement visual updates in the next step
+        }
+        dialog.hide();
+    });
+
+    dialog.addEventListener('sl-after-hide', () => {
+        dialog.remove();
+    });
+
+    dialog.show();
+}
+
 
         addMarker(type, x, y, data = {}) {
           // Check if map is loaded
@@ -6101,6 +6351,45 @@ updateTeleportConnection(pointA, pointB) {
             alert("Please load a map before placing markers");
             return null;
           }
+
+    // if (type === "door" || type === "prop") ...
+
+    if (type === "door") {
+        console.log('Finding nearest wall for door placement');
+        const nearestWall = this.rooms.find(room => {
+            return room.type === 'wall' && this.isNearWall(x, y, room);
+        });
+
+        if (nearestWall) {
+            console.log('Found nearest wall:', nearestWall);
+            const snappedPosition = this.snapToWall(x, y, nearestWall);
+            console.log('Snapped position:', snappedPosition);
+            
+            // Get texture from resource manager
+            const textureCategory = "doors";
+            console.log('Getting door texture from resource manager');
+            const texture = this.resourceManager.getSelectedTexture(textureCategory);
+            
+            if (!texture) {
+                console.warn('No door texture available');
+                alert('No door textures available. Please add some in the Resource Manager.');
+                return null;
+            }
+
+            console.log('Creating door marker with texture:', texture);
+            const marker = this.createMarker("door", snappedPosition.x, snappedPosition.y, {
+                texture: texture,
+                door: { position: snappedPosition },
+                parentWall: nearestWall
+            });
+            this.markers.push(marker);
+            return marker;
+        } else {
+            console.warn('No nearby wall found for door placement');
+            alert("Doors must be placed on walls");
+            return null;
+        }
+    }
 
           // Handle player start point (only one allowed)
           if (type === "player-start") {
@@ -6110,6 +6399,8 @@ updateTeleportConnection(pointA, pointB) {
             this.playerStart = this.createMarker(type, x, y, data);
             return this.playerStart;
           }
+
+
 
 
         if (type === "teleport") {
@@ -6286,36 +6577,6 @@ updateTeleportConnection(pointA, pointB) {
           return calculatedSize;
         }
 
-        // getMonsterTokenData(marker) {
-        //   console.log("Processing marker:", marker);
-
-        //   if (!marker || !marker.data || !marker.data.monster) {
-        //     console.log("Invalid marker data");
-        //     return null;
-        //   }
-
-        //   // Get correct token image source
-        //   const tokenSource =
-        //     marker.data.monster.token.data || marker.data.monster.token.url;
-        //   console.log("Token image source:", tokenSource);
-
-        //   const monsterSize = this.getMonsterSizeInSquares(
-        //     marker.data.monster.basic.size || "medium"
-        //   );
-
-        //   const tokenData = {
-        //     x: marker.x,
-        //     y: marker.y,
-        //     size: monsterSize,
-        //     image: tokenSource,
-        //     type: "monster",
-        //     name: marker.data.monster.name || "Unknown Monster",
-        //     height: 2 * monsterSize
-        //   };
-
-        //   console.log("Created token data:", tokenData);
-        //   return tokenData;
-        // }
 
         getMonsterTokenData(marker) {
     console.log("Processing marker:", marker);
@@ -6414,6 +6675,11 @@ updateTeleportConnection(pointA, pointB) {
           markerElement.className = `map-marker marker-${type}`;
           markerElement.id = `marker-${marker.id}`;
 
+          if (data.texture) {
+        console.log('Applying texture to marker:', data.texture);
+        // You might want to add custom styling here based on the texture
+    }
+
           // Set up drag handling with edit mode check
 
           markerElement.addEventListener("mousedown", (e) => {
@@ -6462,14 +6728,14 @@ updateTeleportConnection(pointA, pointB) {
     `;
           } else {
             // Add the default icon based on type
-            const icon =
-              {
-                "player-start": "person_pin_circle",
-                encounter: "local_fire_department",
-                treasure: "workspace_premium",
-                trap: "warning",
-                teleport: "swap_calls"
-              }[type] || "location_on";
+            const icon = {
+  "player-start": "person_pin_circle",
+  encounter: "local_fire_department", 
+  treasure: "workspace_premium",
+  trap: "warning",
+  teleport: "swap_calls",
+  door: "door_front"  // Add this line
+}[type] || "location_on";
 
             markerElement.innerHTML = `<span class="material-icons">${icon}</span>`;
           }
@@ -6479,12 +6745,7 @@ updateTeleportConnection(pointA, pointB) {
             ? "move"
             : "pointer";
 
-        //   if (type === "teleport") {
-        //     markerElement.setAttribute(
-        //       "data-teleport-point",
-        //       data.isPointA ? "a" : "b"
-        //     );
-        //   }
+
         if (type === "teleport") {
   const pointType = data.isPointA ? "a" : "b";
   console.log("Before setting teleport point type:", {
@@ -6650,22 +6911,39 @@ removeMarker(marker) {
 
   let content = '<div style="display: flex; flex-direction: column; gap: 10px;">';
 
+if ((marker.type === 'door' || marker.type === 'prop') && this.resourceManager) {
+        content += `
+            <div style="margin-bottom: 12px;">
+                <sl-button class="change-texture-btn" style="width: 100%;">
+                    <span class="material-icons" style="margin-right: 4px;">texture</span>
+                    ${marker.data.texture ? 'Change' : 'Select'} Texture
+                </sl-button>
+                ${marker.data.texture ? `
+                    <div style="margin-top: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
+                        <div style="font-size: 0.9em; color: #666;">Current Texture:</div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                            <img src="${marker.data.texture.thumbnail}" 
+                                 style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px;">
+                            <span>${marker.data.texture.name}</span>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
     if (marker.type === 'teleport') {
-  content += `
-    <div style="margin-bottom: 12px;">
-      <div style="font-weight: bold; margin-bottom: 4px;">Teleport Point ${marker.data.isPointA ? 'A' : 'B'}</div>
-      <div style="color: #666;">
-        ${marker.data.hasPair ? 
-          `Connected to Point ${marker.data.isPointA ? 'B' : 'A'}` : 
-          'No connection - Place another point to connect'}
-      </div>
-    </div>
-    <sl-button class="remove-marker-btn" variant="danger">
-      <span class="material-icons" style="margin-right: 4px;">delete</span>
-      Remove Teleport Point${marker.data.hasPair ? ' and Connection' : ''}
-    </sl-button>
-  `;
-} else if (marker.type === 'encounter') {
+        content += `
+            <div style="margin-bottom: 12px;">
+                <div style="font-weight: bold; margin-bottom: 4px;">Teleport Point ${marker.data.isPointA ? 'A' : 'B'}</div>
+                <div style="color: #666;">
+                    ${marker.data.hasPair ? 
+                    `Connected to Point ${marker.data.isPointA ? 'B' : 'A'}` : 
+                    'No connection - Place another point to connect'}
+                </div>
+            </div>
+        `;
+    } else if (marker.type === 'encounter') {
             if (marker.data.monster) {
               // Create monster URL using name and source
               const baseUrl = "https://5e.tools/bestiary.html";
@@ -6769,80 +7047,100 @@ removeMarker(marker) {
                 </div>
             </div>
         `;
-            }
 
-            // Add action buttons in a single row
-            content += `
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-            <sl-button id="cloneMonster" size="small">
-                <span class="material-icons">content_copy</span>
-                Clone
-            </sl-button>
-            <sl-button id="linkMonster" size="small">
-                <span class="material-icons">link</span>
-                ${marker.data.monster ? "Change" : "Link"}
-            </sl-button>
-            <sl-button id="removeMarker" variant="danger" size="small">
-                <span class="material-icons">delete</span>
-                Remove
-            </sl-button>
-        </div>
-    `;
-          } else if (["treasure", "trap"].includes(marker.type)) {
-            content += `
+
+    content += `
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                    <sl-button id="cloneMonster" size="small">
+                        <span class="material-icons">content_copy</span>
+                        Clone
+                    </sl-button>
+                    <sl-button id="linkMonster" size="small">
+                        <span class="material-icons">link</span>
+                        ${marker.data.monster ? "Change" : "Link"}
+                    </sl-button>
+                </div>
+            `;
+        }
+    } else if (["treasure", "trap"].includes(marker.type)) {
+        content += `
             <sl-input id="markerDescription" 
                      label="Description"
                      value="${marker.data.description || ""}">
             </sl-input>
         `;
-          }
+    }
 
           content += "</div>";
 
-          dialog.innerHTML = content;
-          document.body.appendChild(dialog);
+
+        // Add standardized footer with delete button
+    content += `
+        <div slot="footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="flex-spacer"></div>
+            <sl-button class="delete-marker-btn" variant="danger">
+                <span class="material-icons" style="margin-right: 4px;">delete</span>
+                Remove ${marker.type.charAt(0).toUpperCase() + marker.type.slice(1)}
+            </sl-button>
+        </div>
+    `;
+
+    dialog.innerHTML = content;
+    document.body.appendChild(dialog);
           dialog.show();
 
-          // Add your existing event handlers here...
-          const cloneBtn = dialog.querySelector("#cloneMonster");
-          if (cloneBtn) {
-            cloneBtn.addEventListener("click", () => {
-              this.monsterManager.cloneEncounter(marker);
-              dialog.hide();
+  const deleteBtn = dialog.querySelector('.delete-marker-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            this.removeMarker(marker);
+            dialog.hide();
+        });
+    }
+
+    // Add other existing event handlers
+    const changeTextureBtn = dialog.querySelector('.change-texture-btn');
+    if (changeTextureBtn) {
+        changeTextureBtn.addEventListener('click', async () => {
+            dialog.hide();
+            const texture = await this.resourceManager.showTextureSelectionDialog({
+                type: marker.type === 'door' ? 'door' : 'prop'
             });
-          }
+            if (texture) {
+                marker.data.texture = texture;
+                this.updateMarkerAppearance(marker);
+            }
+        });
+    }
 
-          const linkBtn = dialog.querySelector("#linkMonster");
-          if (linkBtn) {
-            linkBtn.addEventListener("click", () => {
-              this.monsterManager.showMonsterSelector(marker);
-              dialog.hide();
-            });
-          }
+    const cloneBtn = dialog.querySelector("#cloneMonster");
+    if (cloneBtn) {
+        cloneBtn.addEventListener("click", () => {
+            this.monsterManager.cloneEncounter(marker);
+            dialog.hide();
+        });
+    }
 
-          const descInput = dialog.querySelector("#markerDescription");
-          if (descInput) {
-            descInput.addEventListener("sl-change", (e) => {
-              marker.data.description = e.target.value;
-            });
-          }
+    const linkBtn = dialog.querySelector("#linkMonster");
+    if (linkBtn) {
+        linkBtn.addEventListener("click", () => {
+            this.monsterManager.showMonsterSelector(marker);
+            dialog.hide();
+        });
+    }
 
-          dialog.querySelector('.remove-marker-btn')?.addEventListener('click', () => {
-    this.removeMarker(marker);
-    dialog.hide();
-  });
+    const descInput = dialog.querySelector("#markerDescription");
+    if (descInput) {
+        descInput.addEventListener("sl-change", (e) => {
+            marker.data.description = e.target.value;
+        });
+    }
 
-          dialog
-            .querySelector("#removeMarker")
-            ?.addEventListener("click", () => {
-              this.removeMarker(marker);
-              dialog.hide();
-            });
+    dialog.addEventListener("sl-after-hide", () => {
+        dialog.remove();
+    });
 
-          dialog.addEventListener("sl-after-hide", () => {
-            dialog.remove();
-          });
-        }
+    dialog.show();
+}
 
 
 
@@ -7627,43 +7925,6 @@ this.markers.forEach(marker => {
           }
 
 
-
-        //   if (this.tokens && this.tokens.length > 0) {
-        //     console.log("Creating 3D tokens:", this.tokens);
-        //     this.tokens.forEach((token) => {
-        //       const textureLoader = new THREE.TextureLoader();
-        //       textureLoader.load(
-        //         token.image,
-        //         (texture) => {
-        //           console.log("Token texture loaded:", texture);
-
-        //           const spriteMaterial = new THREE.SpriteMaterial({
-        //             map: texture,
-        //             transparent: true,
-        //             depthWrite: false,
-        //             sizeAttenuation: true
-        //           });
-
-        //           const sprite = new THREE.Sprite(spriteMaterial);
-        //           const scale = token.size * (this.cellSize / 25);
-        //           const aspectRatio =
-        //             texture.image.width / texture.image.height;
-        //           sprite.scale.set(scale * aspectRatio, scale, 1);
-
-        //           // Position at grid location
-        //           const x = token.x / 50 - boxWidth / 2;
-        //           const z = token.y / 50 - boxDepth / 2;
-        //           const y = token.size; // Height above ground based on size
-
-        //           sprite.position.set(x, y, z);
-        //           scene.add(sprite);
-        //         },
-        //         undefined, // onProgress
-        //         (error) => {
-        //           console.error("Error loading token texture:", error);
-        //         }
-        //       );
-
         if (this.tokens && this.tokens.length > 0) {
     console.log("Creating 3D tokens:", this.tokens);
     this.tokens.forEach((token) => {
@@ -8087,6 +8348,70 @@ this.markers.forEach(marker => {
           scene.add(result);
           return result;
         }
+
+// Add to MapEditor class
+async assignTexture(structure, textureData, position = null) {
+    if (!structure || !textureData) return null;
+
+    const assignment = {
+        id: Date.now(),
+        textureId: textureData.id,
+        structureId: structure.id,
+        structureType: structure.type,
+        position: position || null, // For specific placement on walls/rooms
+        dateAssigned: new Date().toISOString()
+    };
+
+    // Initialize texture assignments if needed
+    if (!structure.textureAssignments) {
+        structure.textureAssignments = new Map();
+    }
+
+    structure.textureAssignments.set(assignment.id, assignment);
+
+    // If this is a door texture, handle it specially
+    if (textureData.category === 'doors') {
+        return this.createDoor(structure, assignment);
+    }
+
+    // If this is a prop (like a torch), handle placement
+    if (textureData.category === 'props') {
+        return this.createProp(structure, assignment);
+    }
+
+    return assignment;
+}
+
+createProp(structure, assignment) {
+    const prop = {
+        id: assignment.id,
+        parentId: structure.id,
+        textureId: assignment.textureId,
+        position: assignment.position,
+        rotation: 0
+    };
+
+    // Add visual representation
+    const propElement = document.createElement('div');
+    propElement.className = 'prop';
+    propElement.style.cssText = `
+        position: absolute;
+        pointer-events: all;
+        cursor: pointer;
+        width: ${this.cellSize}px;
+        height: ${this.cellSize}px;
+    `;
+
+    // Add to structure
+    if (!structure.props) structure.props = new Map();
+    structure.props.set(prop.id, prop);
+
+    return prop;
+}
+
+
+
+
       }
 
       document.addEventListener("DOMContentLoaded", updateLayersListHeight);
