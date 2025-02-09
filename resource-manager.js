@@ -601,6 +601,7 @@ getSelectedTexture(category) {
         
     //     dialog.addEventListener('sl-after-hide', () => dialog.remove());
     // }
+
     async showResourcePreview(resource) {
         const dialog = document.createElement('sl-dialog');
         dialog.label = resource.name;
@@ -614,7 +615,7 @@ getSelectedTexture(category) {
                 <div class="image-container" style="position: relative; overflow: hidden; background: #333;">
                     <img src="${resource.data}" 
                          alt="${resource.name}"
-                         style="max-width: 100%; max-height: 70vh; display: block; margin: auto;">
+                         style="max-width: 100%; max-height: 70vh; display: block; margin: auto; user-select: none; -webkit-user-drag: none;">
                     <div class="crop-overlay" style="display: none; position: absolute; 
                          border: 2px solid #4CAF50; background: rgba(76, 175, 80, 0.2);
                          pointer-events: none;">
@@ -650,6 +651,10 @@ getSelectedTexture(category) {
         const resetCropBtn = dialog.querySelector('.reset-crop-btn');
         const instructions = dialog.querySelector('.crop-instructions');
     
+        // Prevent image dragging
+        img.addEventListener('dragstart', (e) => e.preventDefault());
+        img.addEventListener('mousedown', (e) => e.preventDefault());
+    
         // Enable cropping
         cropBtn.addEventListener('click', () => {
             cropActive = !cropActive;
@@ -661,17 +666,22 @@ getSelectedTexture(category) {
                 cropBtn.variant = 'default';
                 container.style.cursor = 'default';
                 instructions.style.display = 'none';
+                overlay.style.display = 'none';
             }
         });
     
         // Handle crop selection
         container.addEventListener('mousedown', (e) => {
             if (!cropActive) return;
-            
+            e.preventDefault(); // Prevent any dragging
+    
             const rect = container.getBoundingClientRect();
+            const imgRect = img.getBoundingClientRect();
+            
+            // Adjust start position to be relative to the image, not the container
             cropStart = {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
+                x: Math.max(imgRect.left, Math.min(imgRect.right, e.clientX)) - rect.left,
+                y: Math.max(imgRect.top, Math.min(imgRect.bottom, e.clientY)) - rect.top
             };
             
             overlay.style.display = 'block';
@@ -681,8 +691,8 @@ getSelectedTexture(category) {
             overlay.style.height = '0px';
     
             const moveHandler = (e) => {
-                const currentX = e.clientX - rect.left;
-                const currentY = e.clientY - rect.top;
+                const currentX = Math.max(imgRect.left, Math.min(imgRect.right, e.clientX)) - rect.left;
+                const currentY = Math.max(imgRect.top, Math.min(imgRect.bottom, e.clientY)) - rect.top;
     
                 const width = currentX - cropStart.x;
                 const height = currentY - cropStart.y;
@@ -699,11 +709,12 @@ getSelectedTexture(category) {
                 
                 // Store crop data
                 const overlayRect = overlay.getBoundingClientRect();
-                const containerRect = container.getBoundingClientRect();
+                const imgRect = img.getBoundingClientRect();
                 
+                // Calculate crop relative to actual image dimensions
                 currentCrop = {
-                    x: (overlayRect.left - containerRect.left) / img.offsetWidth,
-                    y: (overlayRect.top - containerRect.top) / img.offsetHeight,
+                    x: (overlayRect.left - imgRect.left) / img.offsetWidth,
+                    y: (overlayRect.top - imgRect.top) / img.offsetHeight,
                     width: overlayRect.width / img.offsetWidth,
                     height: overlayRect.height / img.offsetHeight
                 };
@@ -720,40 +731,52 @@ getSelectedTexture(category) {
         applyCropBtn.addEventListener('click', async () => {
             if (!currentCrop) return;
     
-            // Create canvas for cropping
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Load image
-            const tempImg = new Image();
-            tempImg.src = resource.data;
-            
-            await new Promise(resolve => {
-                tempImg.onload = () => {
-                    // Set canvas size to crop size
-                    canvas.width = tempImg.width * currentCrop.width;
-                    canvas.height = tempImg.height * currentCrop.height;
+            try {
+                // Create canvas for cropping
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Load image
+                const tempImg = new Image();
+                tempImg.src = resource.data;
+                
+                await new Promise((resolve, reject) => {
+                    tempImg.onload = () => {
+                        // Set canvas size to crop size
+                        canvas.width = tempImg.width * currentCrop.width;
+                        canvas.height = tempImg.height * currentCrop.height;
     
-                    // Draw cropped portion
-                    ctx.drawImage(
-                        tempImg,
-                        tempImg.width * currentCrop.x,
-                        tempImg.height * currentCrop.y,
-                        tempImg.width * currentCrop.width,
-                        tempImg.height * currentCrop.height,
-                        0, 0, canvas.width, canvas.height
-                    );
+                        // Draw cropped portion
+                        ctx.drawImage(
+                            tempImg,
+                            tempImg.width * currentCrop.x,
+                            tempImg.height * currentCrop.y,
+                            tempImg.width * currentCrop.width,
+                            tempImg.height * currentCrop.height,
+                            0, 0, canvas.width, canvas.height
+                        );
     
-                    // Update resource with cropped image
-                    resource.data = canvas.toDataURL();
-                    
-                    // Update thumbnail
-                    this.createThumbnail(resource);
-                    
-                    dialog.hide();
-                    resolve();
-                };
-            });
+                        // Update resource with cropped image
+                        resource.data = canvas.toDataURL('image/png');
+                        
+                        // Generate new thumbnail
+                        const thumbnailCanvas = document.createElement('canvas');
+                        const thumbCtx = thumbnailCanvas.getContext('2d');
+                        thumbnailCanvas.width = 100;
+                        thumbnailCanvas.height = 100;
+                        
+                        // Draw thumbnail
+                        thumbCtx.drawImage(canvas, 0, 0, 100, 100);
+                        resource.thumbnail = thumbnailCanvas.toDataURL('image/png');
+                        
+                        dialog.hide();
+                        resolve();
+                    };
+                    tempImg.onerror = reject;
+                });
+            } catch (error) {
+                console.error('Error applying crop:', error);
+            }
         });
     
         // Reset crop
