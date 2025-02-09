@@ -4130,6 +4130,15 @@ async saveMap() {
                     locked: room.locked
                 };
             }),
+
+                // Add player start marker if it exists
+    playerStart: this.playerStart ? {
+        id: this.playerStart.id,
+        type: this.playerStart.type,
+        x: this.playerStart.x,
+        y: this.playerStart.y,
+        data: { ...this.playerStart.data }
+    } : null,
             markers: this.markers.map((marker) => {
                 console.log("Saving marker:", {
                     type: marker.type,
@@ -4555,6 +4564,16 @@ async loadMap(file) {
                 data: markerData.data
             });
 
+            if (saveData.playerStart) {
+        console.log("Restoring player start marker:", saveData.playerStart);
+        this.playerStart = this.addMarker(
+            "player-start",
+            saveData.playerStart.x,
+            saveData.playerStart.y,
+            saveData.playerStart.data || {}
+        );
+    }
+
             // Handle texture restoration
             if (markerData.data.textureId && this.resourceManager) {
                 const texture = this.resourceManager.resources.textures[markerData.data.textureCategory]?.get(markerData.data.textureId);
@@ -4638,7 +4657,27 @@ async loadMap(file) {
     }
 
     // Remove toast after delay
-    setTimeout(() => toast.remove(), 2000);
+    setTimeout(() => {
+    toast.remove();
+    
+    // Temporarily zoom out and back in to force marker updates
+    const originalScale = this.scale;
+    
+    // Zoom out
+    this.scale *= 0.9;
+    this.rooms.forEach(room => room.updateElement());
+    this.updateMarkerPositions();
+    
+    // Wait a frame then zoom back in
+    requestAnimationFrame(() => {
+        this.scale = originalScale;
+        this.rooms.forEach(room => room.updateElement());
+        this.updateMarkerPositions();
+        this.render();
+    });
+}, 2000);
+
+    this.centerMap();
 }
 
         clearMap() {
@@ -7286,6 +7325,54 @@ this.markers.forEach(marker => {
           const boxWidth = this.baseImage.width / 50;
           const boxHeight = 4; // Wall height
           const boxDepth = this.baseImage.height / 50;
+
+
+          this.markers.forEach(marker => {
+    if (marker.type === 'door' && marker.data.texture) {
+        console.log('Creating 3D door with texture:', marker.data);
+        
+        // Create door geometry
+        const doorGeometry = new THREE.PlaneGeometry(
+            this.cellSize / 50,  // Door width - one grid cell
+            this.cellSize * 2 / 50  // Door height - two grid cells
+        );
+        
+        // Load door texture
+        const doorTexture = new THREE.TextureLoader().load(marker.data.texture.data);
+        doorTexture.encoding = THREE.sRGBEncoding;
+        
+        const doorMaterial = new THREE.MeshStandardMaterial({
+            map: doorTexture,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+        
+        const doorMesh = new THREE.Mesh(doorGeometry, doorMaterial);
+        
+        // Position door on wall
+        const position = marker.data.door.position;
+        doorMesh.position.set(
+            position.x / 50 - boxWidth / 2,
+            this.cellSize / 50,  // Door height from ground
+            position.y / 50 - boxDepth / 2
+        );
+        
+        // Rotate door based on wall orientation
+        if (marker.data.parentWall) {
+            const wall = marker.data.parentWall;
+            // Determine if door should be rotated based on wall orientation
+            const isVerticalWall = wall.bounds.width < wall.bounds.height;
+            if (isVerticalWall) {
+                doorMesh.rotation.y = Math.PI / 2;
+            }
+        }
+        
+        scene.add(doorMesh);
+        console.log('Door mesh added to scene');
+    }
+});
+
+
 
           const createRoomGeometry = (room) => {
             const positions = [];
