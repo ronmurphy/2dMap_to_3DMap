@@ -7327,51 +7327,77 @@ this.markers.forEach(marker => {
           const boxDepth = this.baseImage.height / 50;
 
 
-          this.markers.forEach(marker => {
+// Handle doors with textures
+
+this.markers.forEach(marker => {
     if (marker.type === 'door' && marker.data.texture) {
-        console.log('Creating 3D door with texture:', marker.data);
+        const wall = marker.data.parentWall;
+        const doorPos = marker.data.door.position;
         
-        // Create door geometry
-        const doorGeometry = new THREE.PlaneGeometry(
-            this.cellSize / 50,  // Door width - one grid cell
-            this.cellSize * 2 / 50  // Door height - two grid cells
-        );
+        // Calculate which edge of the wall the door is closest to
+        const distanceToLeft = Math.abs(doorPos.x - wall.bounds.x);
+        const distanceToRight = Math.abs(doorPos.x - (wall.bounds.x + wall.bounds.width));
+        const distanceToTop = Math.abs(doorPos.y - wall.bounds.y);
+        const distanceToBottom = Math.abs(doorPos.y - (wall.bounds.y + wall.bounds.height));
         
-        // Load door texture
+        // If door is closer to left/right edges, it's on a vertical edge
+        const isOnVerticalEdge = Math.min(distanceToLeft, distanceToRight) < Math.min(distanceToTop, distanceToBottom);
+        
+        console.log('Door placement analysis:', {
+            doorPosition: doorPos,
+            distanceToEdges: {
+                left: distanceToLeft,
+                right: distanceToRight,
+                top: distanceToTop,
+                bottom: distanceToBottom
+            },
+            isOnVerticalEdge
+        });
+
+        // Create door based on edge placement rather than wall dimensions
+        const doorHeight = boxHeight * 0.8;
+        const doorWidth = this.cellSize / 50;
+        const wallOffset = 0.05;
+        
+        const doorGeometry = new THREE.PlaneGeometry(doorWidth, doorHeight);
         const doorTexture = new THREE.TextureLoader().load(marker.data.texture.data);
         doorTexture.encoding = THREE.sRGBEncoding;
         
         const doorMaterial = new THREE.MeshStandardMaterial({
             map: doorTexture,
             transparent: true,
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            depthWrite: true,
+            depthTest: true,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1
         });
         
         const doorMesh = new THREE.Mesh(doorGeometry, doorMaterial);
         
-        // Position door on wall
-        const position = marker.data.door.position;
-        doorMesh.position.set(
-            position.x / 50 - boxWidth / 2,
-            this.cellSize / 50,  // Door height from ground
-            position.y / 50 - boxDepth / 2
-        );
-        
-        // Rotate door based on wall orientation
-        if (marker.data.parentWall) {
-            const wall = marker.data.parentWall;
-            // Determine if door should be rotated based on wall orientation
-            const isVerticalWall = wall.bounds.width < wall.bounds.height;
-            if (isVerticalWall) {
-                doorMesh.rotation.y = Math.PI / 2;
-            }
+        if (isOnVerticalEdge) {
+            // Door on left/right edge
+            doorMesh.rotation.y = Math.PI / 2;
+            doorMesh.position.set(
+                (doorPos.x / 50 - boxWidth / 2) + wallOffset,
+                doorHeight / 2,
+                doorPos.y / 50 - boxDepth / 2
+            );
+        } else {
+            // Door on top/bottom edge
+            doorMesh.rotation.y = 0;
+            doorMesh.position.set(
+                doorPos.x / 50 - boxWidth / 2,
+                doorHeight / 2,
+                (doorPos.y / 50 - boxDepth / 2) + wallOffset
+            );
         }
         
+        doorMesh.renderOrder = 1;
         scene.add(doorMesh);
-        console.log('Door mesh added to scene');
     }
 });
-
 
 
           const createRoomGeometry = (room) => {
