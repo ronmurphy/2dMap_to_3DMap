@@ -5,7 +5,7 @@ window.ResourceManager = class {
                 walls: new Map(),
                 doors: new Map(),
                 floors: new Map(),
-                props: new Map()  // For things like torches, furniture, etc.
+                props: new Map()
             },
             sounds: {
                 ambient: new Map(),
@@ -18,11 +18,15 @@ window.ResourceManager = class {
             }
         };
         
-        this.loadedPacks = new Map();  // Store multiple resource packs
+        this.loadedPacks = new Map();
         this.activePackId = null;
-        this.mapResourceLinks = new Map();  // Track which maps use which resources
+        this.mapResourceLinks = new Map();
         this.activeResourcePack = null;
-        this.thumbnailSize = 100;  // Default thumbnail size
+        this.thumbnailSize = 100;
+        
+        // Initialize textureAssignments map in constructor
+        this.textureAssignments = new Map();
+        this.defaultWallTextureId = null;
     }
 
     // Resource pack methods
@@ -117,6 +121,18 @@ serializeSplashArt() {
 }
 
 // Add corresponding deserialize methods for loading
+// deserializeResourcePack(packData) {
+//     if (packData.textures) {
+//         for (const [category, textures] of Object.entries(packData.textures)) {
+//             if (!this.resources.textures[category]) {
+//                 this.resources.textures[category] = new Map();
+//             }
+//             for (const [id, texture] of Object.entries(textures)) {
+//                 this.resources.textures[category].set(id, texture);
+//             }
+//         }
+//     }
+
 deserializeResourcePack(packData) {
     if (packData.textures) {
         for (const [category, textures] of Object.entries(packData.textures)) {
@@ -125,9 +141,16 @@ deserializeResourcePack(packData) {
             }
             for (const [id, texture] of Object.entries(textures)) {
                 this.resources.textures[category].set(id, texture);
+                
+                // Add this: Set first wall texture as default
+                if (category === 'walls' && !this.defaultWallTextureId) {
+                    this.defaultWallTextureId = id;
+                    console.log('Set default wall texture:', id);
+                }
             }
         }
     }
+
 
     if (packData.sounds) {
         for (const [category, sounds] of Object.entries(packData.sounds)) {
@@ -145,6 +168,32 @@ deserializeResourcePack(packData) {
             this.resources.splashArt.set(id, art);
         }
     }
+}
+
+getDefaultWallTexture() {
+    if (!this.defaultWallTextureId) return null;
+    return this.resources.textures.walls.get(this.defaultWallTextureId);
+}
+
+serializeTextureAssignments() {
+    return Array.from(this.textureAssignments.entries())
+        .map(([wallId, data]) => ({
+            wallId,
+            textureId: data.textureId,
+            type: data.type,
+            dateAssigned: data.dateAssigned
+        }));
+}
+
+deserializeTextureAssignments(data) {
+    this.textureAssignments = new Map();
+    data?.forEach(item => {
+        this.textureAssignments.set(item.wallId, {
+            textureId: item.textureId,
+            type: item.type,
+            dateAssigned: item.dateAssigned
+        });
+    });
 }
 
     // Method to link resources to a map
@@ -192,39 +241,6 @@ getResourceFromPack(resourceId, packId = null) {
     return pack?.resources[resourceId] || null;
 }
 
-    // Texture handling
-    // async addTexture(file, category, subcategory) {
-    //     if (!file || !category) return null;
-
-    //     try {
-    //         // Create thumbnail and base64 data
-    //         const imageData = await this.createImageData(file);
-    //         const thumbnail = await this.createThumbnail(file);
-
-    //         const textureData = {
-    //             id: `${category}_${Date.now()}`,
-    //             name: file.name,
-    //             category,
-    //             subcategory,
-    //             data: imageData,
-    //             thumbnail,
-    //             dateAdded: new Date().toISOString()
-    //         };
-
-    //         // Store in appropriate category
-    //         if (!this.resources.textures[category]) {
-    //             this.resources.textures[category] = new Map();
-    //         }
-    //         this.resources.textures[category].set(textureData.id, textureData);
-
-    //         return textureData.id;
-    //     } catch (error) {
-    //         console.error('Error adding texture:', error);
-    //         return null;
-    //     }
-    // }
-
-    // Add after your other ResourceManager methods, before the final class closing bracket
 async showTextureSelectionDialog(structure) {
     // Create dialog
     const dialog = document.createElement('sl-dialog');
@@ -461,6 +477,79 @@ getSelectedTexture(category) {
         return this.resources.textures[category]?.get(id) || null;
     }
 
+    assignTextureToWall(wallId, textureId) {
+        if (!this.resources.textures.walls.has(textureId)) {
+            console.warn('Texture not found:', textureId);
+            return false;
+        }
+        
+        this.textureAssignments.set(wallId, {
+            textureId,
+            type: 'wall',
+            dateAssigned: new Date().toISOString()
+        });
+        
+        console.log('Texture assigned:', {
+            wallId,
+            textureId,
+            assignments: this.textureAssignments
+        });
+        
+        return true;
+    }
+
+    // Add method to get texture assignment
+    getWallTextureAssignment(wallId) {
+        return this.textureAssignments.get(wallId);
+    }
+
+        // Add this method to the ResourceManager class
+    
+    getStructureTextureAssignment(structureId) {
+        // This method will handle both walls and rooms
+        const assignment = this.textureAssignments.get(structureId);
+        if (assignment) {
+            console.log('Found texture assignment for structure:', {
+                structureId,
+                assignment
+            });
+            return assignment;
+        }
+        console.log('No texture assignment found for structure:', structureId);
+        return null;
+    }
+
+    assignTextureToStructure(structureId, textureId, category) {
+        if (!this.resources.textures[category]?.has(textureId)) {
+            console.warn('Texture not found:', textureId);
+            return false;
+        }
+        
+        if (!this.textureAssignments) {
+            this.textureAssignments = new Map();
+        }
+
+        this.textureAssignments.set(structureId, {
+            textureId,
+            type: category,
+            dateAssigned: new Date().toISOString()
+        });
+        
+        console.log('Texture assigned:', {
+            structureId,
+            textureId,
+            category,
+            assignments: this.textureAssignments
+        });
+        
+        return true;
+    }
+
+    getDefaultRoomTexture() {
+        if (!this.defaultRoomTextureId) return null;
+        return this.resources.textures.rooms?.get(this.defaultRoomTextureId);
+    }
+
     // Gallery UI methods can be added here
     createGalleryUI(container) {
         container.innerHTML = '';
@@ -584,25 +673,7 @@ getSelectedTexture(category) {
     }
     
     // Preview method
-    // showResourcePreview(resource) {
-    //     const dialog = document.createElement('sl-dialog');
-    //     dialog.label = resource.name;
-    //     dialog.innerHTML = `
-    //         <div style="text-align: center;">
-    //             <img 
-    //                 src="${resource.data}" 
-    //                 alt="${resource.name}"
-    //                 style="max-width: 100%; max-height: 70vh;"
-    //             />
-    //         </div>
-    //     `;
-    //     document.body.appendChild(dialog);
-    //     dialog.show();
-        
-    //     dialog.addEventListener('sl-after-hide', () => dialog.remove());
-    // }
-
-    async showResourcePreview(resource) {
+     async showResourcePreview(resource) {
         const dialog = document.createElement('sl-dialog');
         dialog.label = resource.name;
     

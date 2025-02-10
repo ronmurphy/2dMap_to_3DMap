@@ -103,7 +103,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 <!-- Resource Manager-->
-    <script src="resource-manager.js"></script>
+<script src="resource-manager.js"></script>
+<!-- Texture Manager -->
+<script src="texture-manager.js"></script>
 
 <style>
 :root {
@@ -3439,59 +3441,93 @@ createLayerItem(room) {
 
           return layerItem;
         }
-
-        async showRenameDialog(room) {
-    const dialog = document.createElement('sl-dialog');
-    dialog.label = 'Room Properties';
     
-    // Get current folder if any
-    const currentFolder = this.folders.find(folder => 
-        folder.rooms.includes(room)
-    );
+        async showRenameDialog(room) {
+        const dialog = document.createElement('sl-dialog');
+        dialog.label = 'Room Properties';
+        
+        // Get available textures from resource manager
+        const wallTextures = this.editor.resourceManager?.resources.textures.walls;
+        const hasTextures = wallTextures && wallTextures.size > 0;
+        
+        // Get current folder if any
+        const currentFolder = this.folders.find(folder => folder.rooms.includes(room));
+    
+        // Check for legacy texture assignments
+    const isLegacyTexture = room.name === "WallTexture" || room.name === "RoomTexture";
+    const legacyTextureType = room.name === "WallTexture" ? "wall" : "room";
 
-    dialog.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-            <sl-input 
-                id="roomNameInput" 
-                value="${room.name}" 
-                label="Room Name"
-            ></sl-input>
+    // Check for resource pack texture assignment
+    const assignedTextureId = this.editor.resourceManager?.textureAssignments?.get(room.id)?.textureId;
 
-            <!-- Room/Wall Type Toggle -->
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <label>Type:</label>
-                <sl-button-group>
-                    <sl-button 
-                        size="small" 
-                        id="roomTypeBtn"
-                        variant="${room.type === 'room' ? 'primary' : 'default'}"
-                    >Room</sl-button>
-                    <sl-button 
-                        size="small" 
-                        id="wallTypeBtn"
-                        variant="${room.type === 'wall' ? 'primary' : 'default'}"
-                    >Wall</sl-button>
-                </sl-button-group>
-            </div>
+        dialog.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <sl-input 
+                    id="roomNameInput" 
+                    value="${room.name}" 
+                    label="Room Name"
+                ></sl-input>
+    
+                <!-- Room/Wall Type Toggle -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label>Type:</label>
+                    <sl-button-group>
+                        <sl-button 
+                            size="small" 
+                            id="roomTypeBtn"
+                            variant="${room.type === 'room' ? 'primary' : 'default'}"
+                        >Room</sl-button>
+                        <sl-button 
+                            size="small" 
+                            id="wallTypeBtn"
+                            variant="${room.type === 'wall' ? 'primary' : 'default'}"
+                        >Wall</sl-button>
+                    </sl-button-group>
+                </div>
+    
+                <!-- Folder Selection -->
+                <sl-select 
+                    id="folderSelect" 
+                    label="Folder"
+                    value="${currentFolder ? currentFolder.id : ''}"
+                >
+                    <sl-option value="">No Folder</sl-option>
+                    ${this.folders.map(folder => `
+                        <sl-option value="${folder.id}">${folder.name}</sl-option>
+                    `).join('')}
+                </sl-select>
+    
+            <!-- Texture Selection (if available) -->
+            ${hasTextures ? `
+                <div style="border: 1px solid #444; padding: 12px; border-radius: 4px;">
+                    <label>Wall Texture:</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 8px;">
+                        ${Array.from(wallTextures.entries()).map(([id, texture]) => `
+                            <div class="texture-option" data-texture-id="${id}" 
+                                style="cursor: pointer; border: 2px solid ${assignedTextureId === id ? 'var(--sl-color-primary-600)' : 'transparent'}; 
+                                padding: 4px; border-radius: 4px; position: relative;">
+                                <img src="${texture.data}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 2px;">
+                                <div style="font-size: 0.8em; text-align: center; margin-top: 4px;">${texture.name}</div>
+                                ${assignedTextureId === id ? `
+                                    <span class="material-icons" style="position: absolute; top: 4px; right: 4px; color: #4CAF50; 
+                                        background: rgba(0,0,0,0.5); border-radius: 50%; padding: 2px;">
+                                        check_circle
+                                    </span>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
 
-            <!-- Folder Selection -->
-            <sl-select 
-                id="folderSelect" 
-                label="Folder"
-                value="${currentFolder ? currentFolder.id : ''}"
-            >
-                <sl-option value="">No Folder</sl-option>
-                ${this.folders.map(folder => `
-                    <sl-option value="${folder.id}">${folder.name}</sl-option>
-                `).join('')}
-            </sl-select>
-
-            <!-- Texture Controls (only for rectangle rooms) -->
+            <!-- Legacy Texture Controls -->
             ${room.shape === 'rectangle' ? `
                 <div style="border: 1px solid #444; padding: 12px; border-radius: 4px;">
-                    <sl-checkbox id="setAsTexture">Set as Texture</sl-checkbox>
-                    <div id="textureOptions" style="margin-top: 12px; display: none;">
-                        <sl-radio-group label="Texture Type" name="textureType">
+                    <sl-checkbox id="setAsTexture" ${isLegacyTexture ? 'checked' : ''}>
+                        Set as Legacy Texture
+                    </sl-checkbox>
+                    <div id="textureOptions" style="margin-top: 12px; display: ${isLegacyTexture ? 'block' : 'none'};">
+                        <sl-radio-group label="Texture Type" name="textureType" value="${legacyTextureType}">
                             <sl-radio value="wall">Wall Texture</sl-radio>
                             <sl-radio value="room">Room Texture</sl-radio>
                         </sl-radio-group>
@@ -3499,231 +3535,244 @@ createLayerItem(room) {
                 </div>
             ` : ''}
         </div>
-        <div slot="footer">
+            <div slot="footer">
                 <sl-button class="edit-room-btn" variant="neutral">
                     <span class="material-icons" style="margin-right: 4px;">edit</span>
                     Edit Room
                 </sl-button>
-            <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
-            <sl-button variant="primary" class="save-btn">Save</sl-button>
-        </div>
-    `;
+                <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+                <sl-button variant="primary" class="save-btn">Save</sl-button>
+            </div>
+        `;
+    
+// Add texture selection handler
+const textureSelectionOptions = dialog.querySelectorAll('.texture-option');
+textureSelectionOptions.forEach(option => {
+    option.addEventListener('click', () => {
+        textureSelectionOptions.forEach(opt => opt.style.border = '2px solid transparent');
+        option.style.border = '2px solid var(--sl-color-primary-600)';
+        dialog.selectedTextureId = option.dataset.textureId;
+    });
+});
 
-        // Add Edit Room button handler
-        const editBtn = dialog.querySelector('.edit-room-btn');
-    if (editBtn) {
-        editBtn.addEventListener('click', () => {
-            if (room.locked) {
-                this.editor.showLockedMessage();
-                return;
-            }
-            // Re-enable editing for the room
-            room.finalized = false;
-            room.updateEditState(true);
-            
-            // Update room element
-            const roomElement = document.getElementById(`room-${room.id}`);
-            if (roomElement) {
-                roomElement.style.pointerEvents = 'auto';
-                roomElement.classList.add('editing');
-            }
-            
-            // Update layers panel
-            this.updateLayersList();
-            dialog.hide();
-        });
-    }
+document.body.appendChild(dialog);
 
-          document.body.appendChild(dialog);
-
-          // Get references to controls
-          const nameInput = dialog.querySelector("#roomNameInput");
-          const setAsTextureCheckbox = dialog.querySelector("#setAsTexture");
-          const textureOptions = dialog.querySelector("#textureOptions");
-          const textureTypeRadios = dialog.querySelector("sl-radio-group");
-          const roomTypeBtn = dialog.querySelector("#roomTypeBtn");
-          const wallTypeBtn = dialog.querySelector("#wallTypeBtn");
-
-          // Set up event handlers
-          if (setAsTextureCheckbox) {
+// Get references to controls
+const nameInput = dialog.querySelector("#roomNameInput");
+const setAsTextureCheckbox = dialog.querySelector("#setAsTexture");
+const legacyTextureOptions = dialog.querySelector("#textureOptions");  // Renamed to be clear this is for legacy textures
+const textureTypeRadios = dialog.querySelector("sl-radio-group");
+        const roomTypeBtn = dialog.querySelector("#roomTypeBtn");
+        const wallTypeBtn = dialog.querySelector("#wallTypeBtn");
+    
+        // Set up event handlers
+        if (setAsTextureCheckbox) {
             setAsTextureCheckbox.addEventListener("sl-change", (e) => {
-              if (e.target.checked) {
-                textureOptions.style.display = "block";
-                // Set name based on selected texture type
-                const textureType = textureTypeRadios.value;
-                nameInput.value =
-                  textureType === "wall" ? "WallTexture" : "RoomTexture";
-                nameInput.disabled = true;
-              } else {
-                textureOptions.style.display = "none";
-                nameInput.disabled = false;
-              }
+                if (e.target.checked) {
+                    textureOptions.style.display = "block";
+                    const textureType = textureTypeRadios.value;
+                    nameInput.value = textureType === "wall" ? "WallTexture" : "RoomTexture";
+                    nameInput.disabled = true;
+                } else {
+                    textureOptions.style.display = "none";
+                    nameInput.disabled = false;
+                }
             });
-          }
-
-          if (textureTypeRadios) {
+        }
+    
+        if (textureTypeRadios) {
             textureTypeRadios.addEventListener("sl-change", (e) => {
-              if (setAsTextureCheckbox.checked) {
-                nameInput.value =
-                  e.target.value === "wall" ? "WallTexture" : "RoomTexture";
-              }
+                if (setAsTextureCheckbox.checked) {
+                    nameInput.value = e.target.value === "wall" ? "WallTexture" : "RoomTexture";
+                }
             });
-          }
-
-          // Handle room/wall type toggle
-          roomTypeBtn.addEventListener("click", () => {
+        }
+    
+        // Handle room/wall type toggle
+        roomTypeBtn.addEventListener("click", () => {
             roomTypeBtn.variant = "primary";
             wallTypeBtn.variant = "default";
             room.type = "room";
-          });
-
-          wallTypeBtn.addEventListener("click", () => {
+        });
+    
+        wallTypeBtn.addEventListener("click", () => {
             wallTypeBtn.variant = "primary";
             roomTypeBtn.variant = "default";
             room.type = "wall";
-          });
+        });
+    
+        await customElements.whenDefined("sl-dialog");
+        await customElements.whenDefined("sl-input");
+        await customElements.whenDefined("sl-button");
+        await customElements.whenDefined("sl-checkbox");
+        await customElements.whenDefined("sl-radio");
+        await customElements.whenDefined("sl-radio-group");
+        await customElements.whenDefined("sl-select");
 
-          await customElements.whenDefined("sl-dialog");
-          await customElements.whenDefined("sl-input");
-          await customElements.whenDefined("sl-button");
-          await customElements.whenDefined("sl-checkbox");
-          await customElements.whenDefined("sl-radio");
-          await customElements.whenDefined("sl-radio-group");
+            // If it's a legacy texture, disable the name input
+    if (isLegacyTexture) {
+        const nameInput = dialog.querySelector("#roomNameInput");
+        nameInput.disabled = true;
+    }
 
-          return new Promise((resolve) => {
+    // Store the selected texture ID if one is assigned
+    if (assignedTextureId) {
+        dialog.selectedTextureId = assignedTextureId;
+    }
+    
+        return new Promise((resolve) => {
             const cancelBtn = dialog.querySelector(".cancel-btn");
             const saveBtn = dialog.querySelector(".save-btn");
-
-            const handleCancel = () => {
-              dialog.hide();
-              resolve(false);
-            };
-
-            const handleSave = () => {
-    const nameInput = dialog.querySelector('#roomNameInput');
-    const folderSelect = dialog.querySelector('#folderSelect');  // Add this line
-    const selectedFolderId = folderSelect.value;  // Add this line
-    const newName = nameInput.value.trim();
-    if (newName) {
-        const isTextureRoom = setAsTextureCheckbox?.checked || false;
-        if (isTextureRoom && room.shape === "rectangle") {
-            // Set the appropriate texture name based on radio selection
-            const textureType = textureTypeRadios.value;
-            room.name = textureType === "wall" ? "WallTexture" : "RoomTexture";
-            // Ensure type matches the texture type
-            room.type = textureType;
-        } else {
-            room.name = newName;
-            // Update room type based on toggle buttons
-            room.type = roomTypeBtn.variant === "primary" ? "room" : "wall";
-        }
-        
-        // Handle folder assignment
-        if (selectedFolderId) {
-            // Remove from current folder if any
-            this.folders.forEach(folder => {
-                folder.rooms = folder.rooms.filter(r => r.id !== room.id);
-            });
-           
-            // Add to new folder
-            const newFolder = this.folders.find(f => f.id === parseInt(selectedFolderId));
-            if (newFolder) {
-                newFolder.rooms.push(room);
+            const editBtn = dialog.querySelector('.edit-room-btn');
+    
+            if (editBtn) {
+                editBtn.addEventListener('click', () => {
+                    if (room.locked) {
+                        this.editor.showLockedMessage();
+                        return;
+                    }
+                    room.finalized = false;
+                    room.updateEditState(true);
+                    const roomElement = document.getElementById(`room-${room.id}`);
+                    if (roomElement) {
+                        roomElement.style.pointerEvents = 'auto';
+                        roomElement.classList.add('editing');
+                    }
+                    this.updateLayersList();
+                    dialog.hide();
+                });
             }
-        } else {
-            // Remove from any folder (move to root)
-            this.folders.forEach(folder => {
-                folder.rooms = folder.rooms.filter(r => r.id !== room.id);
-            });
-        }
-
-        // Update the layer list and room appearance
-        this.updateLayersList();
-
-        // Update the room's visual appearance
-        const roomElement = document.getElementById(`room-${room.id}`);
-        if (roomElement) {
-            roomElement.classList.remove("wall-room", "room-room");
-            roomElement.classList.add(`${room.type}-room`);
-        }
-        dialog.hide();
-        resolve(true);
-    }
-};
-
+    
+            const handleCancel = () => {
+                dialog.hide();
+                resolve(false);
+            };
+    
+            const handleSave = () => {
+                const nameInput = dialog.querySelector('#roomNameInput');
+                const folderSelect = dialog.querySelector('#folderSelect');
+                const selectedFolderId = folderSelect.value;
+                const newName = nameInput.value.trim();
+    
+                if (newName) {
+                    const isTextureRoom = setAsTextureCheckbox?.checked || false;
+                    if (isTextureRoom && room.shape === "rectangle") {
+                        const textureType = textureTypeRadios.value;
+                        room.name = textureType === "wall" ? "WallTexture" : "RoomTexture";
+                        room.type = textureType;
+                    } else {
+                        room.name = newName;
+                        room.type = roomTypeBtn.variant === "primary" ? "room" : "wall";
+                    }
+    
+                    // Handle texture assignment if one was selected
+                    if (dialog.selectedTextureId && this.editor.resourceManager) {
+                        this.editor.resourceManager.assignTextureToWall(room.id, dialog.selectedTextureId);
+                    }
+    
+                    // Handle folder assignment
+                    if (selectedFolderId) {
+                        this.folders.forEach(folder => {
+                            folder.rooms = folder.rooms.filter(r => r.id !== room.id);
+                        });
+                        const newFolder = this.folders.find(f => f.id === parseInt(selectedFolderId));
+                        if (newFolder) {
+                            newFolder.rooms.push(room);
+                        }
+                    } else {
+                        this.folders.forEach(folder => {
+                            folder.rooms = folder.rooms.filter(r => r.id !== room.id);
+                        });
+                    }
+    
+                    this.updateLayersList();
+                    const roomElement = document.getElementById(`room-${room.id}`);
+                    if (roomElement) {
+                        roomElement.classList.remove("wall-room", "room-room");
+                        roomElement.classList.add(`${room.type}-room`);
+                    }
+                    dialog.hide();
+                    resolve(true);
+                }
+            };
+    
             cancelBtn.addEventListener("click", handleCancel);
             saveBtn.addEventListener("click", handleSave);
-
+    
             dialog.addEventListener("sl-after-hide", () => {
-              cancelBtn.removeEventListener("click", handleCancel);
-              saveBtn.removeEventListener("click", handleSave);
-              dialog.remove();
+                cancelBtn.removeEventListener("click", handleCancel);
+                saveBtn.removeEventListener("click", handleSave);
+                dialog.remove();
             });
-
+    
             dialog.show();
             setTimeout(() => {
-              nameInput.focus();
+                nameInput.focus();
             }, 100);
-
+    
             nameInput.addEventListener("keydown", (e) => {
-              if (e.key === "Enter") {
-                handleSave();
-              } else if (e.key === "Escape") {
-                handleCancel();
-              }
+                if (e.key === "Enter") {
+                    handleSave();
+                } else if (e.key === "Escape") {
+                    handleCancel();
+                }
             });
-          });
-        }
-      }
+        });
+    }
+    
+    }
 
 
       class MapEditor {
-        constructor() {
-          this.canvas = document.getElementById("mainCanvas");
-          this.ctx = this.canvas.getContext("2d");
-          this.scene3D = new Scene3DController();
-          this.rooms = [];
-          this.baseImage = null;
-          this.scale = 1;
-          this.offset = { x: 0, y: 0 };
-          this.isDragging = false;
-          this.isResizing = false;
-          this.selectedRoomId = null;
-          this.currentTool = "rectangle";
-          this.isDraggingMarker = false;
-          this.previousTool = null;
-          this.isDrawingPolygon = false;
-          this.polygonPoints = [];
-          this.previewPoint = null;
-          this.polygonPreviewElement = null;
-          this.markers = [];
-          this.playerStart = null;
-          this.isMarkerEditMode = false;
-          this.mapName = null;
-          this.layersPanel = new LayersPanel(this);
-          this.originalMapName = null;
-          this.monsterManager = new MonsterManager(this);
-          this.setupTitleHandlers();
-          this.updateMapTitle();
-          this.checkResourceManager();
-          this.setupEventListeners();
-          this.setupCanvas();
+constructor() {
+    this.canvas = document.getElementById("mainCanvas");
+    this.ctx = this.canvas.getContext("2d");
+    this.scene3D = new Scene3DController();
+    this.rooms = [];
+    this.baseImage = null;
+    this.scale = 1;
+    this.offset = { x: 0, y: 0 };
+    this.isDragging = false;
+    this.isResizing = false;
+    this.selectedRoomId = null;
+    this.currentTool = "rectangle";
+    this.isDraggingMarker = false;
+    this.previousTool = null;
+    this.isDrawingPolygon = false;
+    this.polygonPoints = [];
+    this.previewPoint = null;
+    this.polygonPreviewElement = null;
+    this.markers = [];
+    this.playerStart = null;
+    this.isMarkerEditMode = false;
+    this.mapName = null;
+    this.layersPanel = new LayersPanel(this);
+    this.originalMapName = null;
+    this.monsterManager = new MonsterManager(this);
+    
+    // Initialize managers in correct order
+    this.resourceManager = null;  // Initialize to null first
+    this.textureManager = null;   // Initialize to null first
+    
+    // Setup in correct order
+    this.setupTitleHandlers();
+    this.updateMapTitle();
+    this.checkResourceManager(() => {
+        console.log('ResourceManager initialized:', !!this.resourceManager);
+        this.checkTextureManager(() => {
+            console.log('TextureManager initialized:', !!this.textureManager);
+            this.setupEventListeners();
+        });
+    });
+    
+    this.setupCanvas();
+    this.calculateLayersListHeight = this.calculateLayersListHeight.bind(this);
+    this.setupLayersObserver();
+    setTimeout(() => this.calculateLayersListHeight(), 100);
+    window.addEventListener("resize", this.calculateLayersListHeight);
+}
 
-          // Add the height calculation method to the instance
-          this.calculateLayersListHeight =
-            this.calculateLayersListHeight.bind(this);
-
-          // Set up the observer for content changes
-          this.setupLayersObserver();
-
-          // Initial calculation after a short delay to ensure DOM is ready
-          setTimeout(() => this.calculateLayersListHeight(), 100);
-
-          // Add resize listener
-          window.addEventListener("resize", this.calculateLayersListHeight);
-        }
-
-        checkResourceManager() {
+checkResourceManager(callback) {
     const resourceManagerBtn = document.getElementById('resourceManagerBtn');
     
     // Create a temporary script element to test loading
@@ -3732,20 +3781,53 @@ createLayerItem(room) {
     script.onload = () => {
         // Resource manager loaded successfully
         this.resourceManager = new ResourceManager();
-        resourceManagerBtn.style.display = 'flex';
-        
-        // Add click handler
-        resourceManagerBtn.addEventListener('click', () => {
-            const drawer = this.resourceManager.createResourceManagerUI();
-            drawer.show();
-        });
+        if (resourceManagerBtn) {
+            resourceManagerBtn.style.display = 'flex';
+            resourceManagerBtn.innerHTML = `
+                <span class="material-icons">palette</span>
+                Res.
+            `;
+            
+            // Add click handler
+            resourceManagerBtn.addEventListener('click', () => {
+                const drawer = this.resourceManager.createResourceManagerUI();
+                drawer.show();
+            });
+        }
+        if (callback) callback();
     };
     script.onerror = () => {
         console.warn('Resource manager not available');
-        resourceManagerBtn.style.display = 'none';
+        if (resourceManagerBtn) {
+            resourceManagerBtn.style.display = 'none';
+        }
+        if (callback) callback();
     };
     document.head.appendChild(script);
 }
+
+checkTextureManager(callback) {
+    const script = document.createElement('script');
+    script.src = 'texture-manager.js';
+    script.onload = () => {
+        console.log('TextureManager script loaded');
+        if (this.resourceManager) {
+            this.textureManager = new TextureManager(this);
+            console.log('TextureManager created with ResourceManager');
+        } else {
+            console.warn('Creating TextureManager without ResourceManager');
+            this.textureManager = new TextureManager(this);
+        }
+        if (callback) callback();
+    };
+    script.onerror = () => {
+        console.warn('Texture manager not available');
+        if (callback) callback();
+    };
+    document.head.appendChild(script);
+}
+
+
 
                 snapToGrid(value, gridSize, snapThreshold = 0.25) {
             if (!gridSize) return value;
@@ -3901,186 +3983,6 @@ setupTitleHandlers() {
   });
 }
 
-
-//     async saveMap() {
-//     // Show saving notification
-//     const toast = document.createElement("div");
-//     toast.style.position = "fixed";
-//     toast.style.bottom = "20px";
-//     toast.style.right = "20px";
-//     toast.style.zIndex = "1000";
-//     toast.style.backgroundColor = "#333";
-//     toast.style.color = "white";
-//     toast.style.padding = "10px 20px";
-//     toast.style.borderRadius = "4px";
-//     toast.style.display = "flex";
-//     toast.style.alignItems = "center";
-//     toast.style.gap = "10px";
-//     toast.innerHTML = `
-//         <span class="material-icons">save</span>
-//         <span>Saving map...</span>
-//     `;
-//     document.body.appendChild(toast);
-
-//     try {
-//         console.log("Starting map save...");
-//         // Create the save data structure
-//         const saveData = {
-//             version: "1.1", // Bumped version number
-//             timestamp: new Date().toISOString(),
-//             mapImage: null,
-//             gridSettings: {
-//                 cellSize: this.cellSize,
-//                 width: this.gridDimensions?.width,
-//                 height: this.gridDimensions?.height
-//             },
-//             rooms: this.rooms.map((room) => {
-//                 console.log("Saving room:", {
-//                     id: room.id,
-//                     shape: room.shape,
-//                     bounds: room.bounds
-//                 });
-//                 return {
-//                     id: room.id,
-//                     name: room.name,
-//                     shape: room.shape,
-//                     bounds: { ...room.bounds },
-//                     points: room.points ? [...room.points] : null,
-//                     thumbnail: room.thumbnail,
-//                     type: room.type,
-//                     locked: room.locked // Added locked state
-//                 };
-//             }),
-//             // Add folders to save data
-//             folders: this.layersPanel.folders.map(folder => ({
-//                 id: folder.id,
-//                 name: folder.name,
-//                 expanded: folder.expanded,
-//                 locked: folder.locked,
-//                 roomIds: folder.rooms.map(room => room.id)
-//             })),
-//             markers: this.markers.map((marker) => {
-//                 // Create a clean copy of marker data
-//                 const markerData = {
-//                     id: marker.id,
-//                     type: marker.type,
-//                     x: marker.x,
-//                     y: marker.y,
-//                     data: {}
-//                 };
-
-//                 console.log("Saving marker:", {
-//                     type: marker.type,
-//                     id: marker.id
-//                 });
-
-//                 // Copy non-circular data
-//                 if (marker.data) {
-//                     Object.keys(marker.data).forEach((key) => {
-//                         // Skip the pairedMarker object reference
-//                         if (key !== "pairedMarker") {
-//                             markerData.data[key] = marker.data[key];
-//                         }
-//                     });
-//                 }
-
-//                 // Special handling for encounter markers
-//                 if (marker.type === "encounter" && marker.data.monster) {
-//                     console.log("Saving monster data:", {
-//                         name: marker.data.monster.basic.name,
-//                         size: marker.data.monster.basic.size,
-//                         stats: marker.data.monster.stats
-//                     });
-
-//                     markerData.data.monster = {
-//                         basic: { ...marker.data.monster.basic },
-//                         stats: {
-//                             ac: marker.data.monster.stats.ac,
-//                             hp: { ...marker.data.monster.stats.hp },
-//                             speed: marker.data.monster.stats.speed
-//                         },
-//                         abilities: { ...marker.data.monster.abilities },
-//                         traits: { ...marker.data.monster.traits },
-//                         token: {
-//                             data: marker.data.monster.token.data,
-//                             url: marker.data.monster.token.url
-//                         }
-//                     };
-//                 }
-
-//                 // Handle teleport markers - store only the ID of the paired marker
-//                 if (marker.type === "teleport" && marker.data.pairedMarker) {
-//                     markerData.data.pairId = marker.data.pairedMarker.id;
-//                     markerData.data.isPointA = marker.data.isPointA;
-//                     markerData.data.hasPair = true;
-//                 }
-
-//                 return markerData;
-//             }),
-//             playerStart: this.playerStart
-//                 ? {
-//                     x: this.playerStart.x,
-//                     y: this.playerStart.y
-//                 }
-//                 : null,
-//             viewSettings: {
-//                 scale: this.scale,
-//                 offset: { ...this.offset }
-//             }
-//         };
-
-//         // Convert main map image to base64
-//         if (this.baseImage) {
-//             const canvas = document.createElement("canvas");
-//             canvas.width = this.baseImage.width;
-//             canvas.height = this.baseImage.height;
-//             const ctx = canvas.getContext("2d");
-//             ctx.drawImage(this.baseImage, 0, 0);
-//             saveData.mapImage = canvas.toDataURL("image/webp");
-//         }
-
-//         console.log("Map data prepared, creating file...");
-
-//         // Create the file
-//         const blob = new Blob([JSON.stringify(saveData, null, 2)], {
-//             type: "application/json"
-//         });
-
-//         // Generate filename based on map name and timestamp
-//         const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-//         const mapName = this.mapName || this.originalMapName || "untitled";
-//         const filename = `${mapName}-${timestamp}.json`;
-
-//         // Trigger download
-//         const a = document.createElement("a");
-//         a.href = URL.createObjectURL(blob);
-//         a.download = filename;
-//         document.body.appendChild(a);
-//         a.click();
-//         document.body.removeChild(a);
-//         URL.revokeObjectURL(a.href);
-
-//         console.log("Map save completed");
-
-//         // Show success toast
-//         toast.style.backgroundColor = "#4CAF50";
-//         toast.innerHTML = `
-//             <span class="material-icons">check_circle</span>
-//             <span>Map saved successfully!</span>
-//         `;
-//     } catch (error) {
-//         console.error("Error saving map:", error);
-//         toast.style.backgroundColor = "#f44336";
-//         toast.innerHTML = `
-//             <span class="material-icons">error</span>
-//             <span>Error saving map!</span>
-//         `;
-//     }
-
-//     // Remove toast after delay
-//     setTimeout(() => toast.remove(), 2000);
-// }
-
 async saveMap() {
     // Show saving notification
     const toast = document.createElement("div");
@@ -4130,6 +4032,10 @@ async saveMap() {
                     locked: room.locked
                 };
             }),
+            textureData: {
+        assignments: this.resourceManager?.serializeTextureAssignments(),
+        activeResourcePack: this.resourceManager?.activeResourcePack?.name
+    },
 
                 // Add player start marker if it exists
     playerStart: this.playerStart ? {
@@ -4257,213 +4163,6 @@ async saveMap() {
     setTimeout(() => toast.remove(), 2000);
 }
 
-//     async loadMap(file) {
-//     const toast = document.createElement("div");
-//     toast.style.position = "fixed";
-//     toast.style.bottom = "20px";
-//     toast.style.right = "20px";
-//     toast.style.zIndex = "1000";
-//     toast.style.backgroundColor = "#333";
-//     toast.style.color = "white";
-//     toast.style.padding = "10px 20px";
-//     toast.style.borderRadius = "4px";
-//     toast.style.display = "flex";
-//     toast.style.alignItems = "center";
-//     toast.style.gap = "10px";
-//     toast.innerHTML = `
-//         <span class="material-icons">hourglass_top</span>
-//         <span>Loading map...</span>
-//     `;
-//     document.body.appendChild(toast);
-
-//     try {
-//         console.log("Starting map load...");
-//         const text = await file.text();
-//         const saveData = JSON.parse(text);
-
-//         // Version check
-//         console.log("Loading map version:", saveData.version);
-        
-//         // Clear existing rooms and markers first
-//         this.rooms.forEach(room => {
-//             room.element?.remove();
-//         });
-//         this.rooms = [];
-
-//         this.markers.forEach(marker => {
-//             marker.element?.remove();
-//         });
-//         this.markers = [];
-
-//         if (this.playerStart?.element) {
-//             this.playerStart.element.remove();
-//             this.playerStart = null;
-//         }
-
-//         // Clear existing folders
-//         this.layersPanel.folders = [];
-
-//         // Load map image first and wait for it to complete
-//         if (saveData.mapImage) {
-//             await new Promise((resolve, reject) => {
-//                 const img = new Image();
-//                 img.onload = () => {
-//                     this.baseImage = img;
-//                     this.naturalWidth = img.naturalWidth;
-//                     this.naturalHeight = img.naturalHeight;
-//                     resolve();
-//                 };
-//                 img.onerror = reject;
-//                 img.src = saveData.mapImage;
-//             });
-//         }
-
-//         // Restore grid settings
-//         this.cellSize = saveData.gridSettings.cellSize;
-//         this.gridDimensions = saveData.gridSettings.width && saveData.gridSettings.height
-//             ? {
-//                 width: saveData.gridSettings.width,
-//                 height: saveData.gridSettings.height
-//             }
-//             : null;
-
-//         console.log("Grid settings restored:", this.gridDimensions);
-
-//         // Restore rooms
-//         for (const roomData of saveData.rooms) {
-//             console.log("Creating room:", {
-//                 id: roomData.id,
-//                 shape: roomData.shape,
-//                 type: roomData.type,
-//                 bounds: roomData.bounds
-//             });
-
-//             const room = Room.createFromSaved(roomData, this);
-//             if (roomData.locked) {
-//                 room.locked = true;
-//             }
-//             this.rooms.push(room);
-//             document.querySelector('.canvas-container').appendChild(room.element);
-//         }
-
-//         // If version 1.1 or higher, restore folders
-//         if (saveData.version && saveData.version !== "1.0" && saveData.folders) {
-//             console.log("Restoring folders...");
-//             saveData.folders.forEach(folderData => {
-//                 const folder = {
-//                     id: folderData.id,
-//                     name: folderData.name,
-//                     expanded: folderData.expanded,
-//                     locked: folderData.locked,
-//                     rooms: []
-//                 };
-                
-//                 // Find and assign rooms to folder
-//                 folderData.roomIds.forEach(roomId => {
-//                     const room = this.rooms.find(r => r.id === roomId);
-//                     if (room) {
-//                         folder.rooms.push(room);
-//                     }
-//                 });
-
-//                 this.layersPanel.folders.push(folder);
-//             });
-//         }
-
-//         // Restore markers
-//         console.log("Starting marker restoration...");
-//         for (const markerData of saveData.markers) {
-//             console.log("Loading marker:", {
-//                 type: markerData.type,
-//                 data: markerData.data
-//             });
-
-//             const marker = this.addMarker(
-//                 markerData.type,
-//                 markerData.x,
-//                 markerData.y,
-//                 markerData.data
-//             );
-
-//             if (marker.type === "encounter" && marker.data.monster) {
-//                 this.updateMarkerAppearance(marker);
-//             }
-//         }
-
-//         // Restore teleport connections
-//         console.log("Restoring teleport connections...");
-//         const teleportMarkers = this.markers.filter(m => m.type === "teleport");
-//         for (const marker of teleportMarkers) {
-//             if (marker.data.pairId) {
-//                 const pair = teleportMarkers.find(
-//                     m => m.data.pairId === marker.data.pairId && m !== marker
-//                 );
-//                 if (pair) {
-//                     console.log("Connecting teleport pair:", {
-//                         markerA: marker.id,
-//                         markerB: pair.id
-//                     });
-
-//                     marker.data.pairedMarker = pair;
-//                     pair.data.pairedMarker = marker;
-//                     marker.data.hasPair = true;
-//                     pair.data.hasPair = true;
-
-//                     if (marker.data.isPointA) {
-//                         if (marker.connection) {
-//                             marker.connection.remove();
-//                         }
-//                         marker.connection = this.createTeleportConnection(marker, pair);
-//                         this.updateTeleportConnection(marker, pair);
-//                     }
-//                 }
-//             }
-//         }
-
-//         // Restore player start
-//         if (saveData.playerStart) {
-//             this.playerStart = this.addMarker(
-//                 "player-start",
-//                 saveData.playerStart.x,
-//                 saveData.playerStart.y
-//             );
-//         }
-
-//         // Restore view settings
-//         this.scale = saveData.viewSettings.scale;
-//         this.offset = saveData.viewSettings.offset;
-
-//         // Update all marker positions
-//         this.markers.forEach(marker => {
-//             this.updateMarkerPosition(marker);
-//         });
-
-//         // Update display
-//         this.centerMap();
-//         this.render();
-//         this.layersPanel.updateLayersList();
-
-//         console.log("Map load completed");
-
-//         // Success notification
-//         toast.style.backgroundColor = "#4CAF50";
-//         toast.innerHTML = `
-//             <span class="material-icons">check_circle</span>
-//             <span>Map loaded successfully!</span>
-//         `;
-//     } catch (error) {
-//         console.error("Error loading map:", error);
-//         toast.style.backgroundColor = "#f44336";
-//         toast.innerHTML = `
-//             <span class="material-icons">error</span>
-//             <span>Error loading map!</span>
-//         `;
-//     }
-
-//     // Remove toast after delay
-//     setTimeout(() => toast.remove(), 2000);
-// }
-
 async loadMap(file) {
     const toast = document.createElement("div");
     toast.style.position = "fixed";
@@ -4508,10 +4207,15 @@ async loadMap(file) {
         }
 
         // Load resource pack if specified
-        if (saveData.resourcePack && this.resourceManager) {
-            console.log("Loading associated resource pack:", saveData.resourcePack);
-            // You might want to implement a way to load the resource pack here
-        }
+        if (saveData.textureData?.activeResourcePack && this.resourceManager) {
+        console.log("Loading associated resource pack:", saveData.textureData.activeResourcePack);
+        await this.resourceManager.loadResourcePackByName(saveData.textureData.activeResourcePack);
+    }
+
+    // Restore texture assignments
+    if (saveData.textureData?.assignments && this.resourceManager) {
+        this.resourceManager.deserializeTextureAssignments(saveData.textureData.assignments);
+    }
 
         // Load map image first and wait for it to complete
         if (saveData.mapImage) {
@@ -7326,76 +7030,20 @@ this.markers.forEach(marker => {
           const boxHeight = 4; // Wall height
           const boxDepth = this.baseImage.height / 50;
 
-
 // Handle doors with textures
-
 this.markers.forEach(marker => {
     if (marker.type === 'door' && marker.data.texture) {
-        const wall = marker.data.parentWall;
-        const doorPos = marker.data.door.position;
-        
-        // Calculate which edge of the wall the door is closest to
-        const distanceToLeft = Math.abs(doorPos.x - wall.bounds.x);
-        const distanceToRight = Math.abs(doorPos.x - (wall.bounds.x + wall.bounds.width));
-        const distanceToTop = Math.abs(doorPos.y - wall.bounds.y);
-        const distanceToBottom = Math.abs(doorPos.y - (wall.bounds.y + wall.bounds.height));
-        
-        // If door is closer to left/right edges, it's on a vertical edge
-        const isOnVerticalEdge = Math.min(distanceToLeft, distanceToRight) < Math.min(distanceToTop, distanceToBottom);
-        
-        console.log('Door placement analysis:', {
-            doorPosition: doorPos,
-            distanceToEdges: {
-                left: distanceToLeft,
-                right: distanceToRight,
-                top: distanceToTop,
-                bottom: distanceToBottom
-            },
-            isOnVerticalEdge
-        });
-
-        // Create door based on edge placement rather than wall dimensions
-        const doorHeight = boxHeight * 0.8;
-        const doorWidth = this.cellSize / 50;
-        const wallOffset = 0.05;
-        
-        const doorGeometry = new THREE.PlaneGeometry(doorWidth, doorHeight);
-        const doorTexture = new THREE.TextureLoader().load(marker.data.texture.data);
-        doorTexture.encoding = THREE.sRGBEncoding;
-        
-        const doorMaterial = new THREE.MeshStandardMaterial({
-            map: doorTexture,
-            transparent: true,
-            side: THREE.DoubleSide,
-            depthWrite: true,
-            depthTest: true,
-            polygonOffset: true,
-            polygonOffsetFactor: -1,
-            polygonOffsetUnits: -1
-        });
-        
-        const doorMesh = new THREE.Mesh(doorGeometry, doorMaterial);
-        
-        if (isOnVerticalEdge) {
-            // Door on left/right edge
-            doorMesh.rotation.y = Math.PI / 2;
-            doorMesh.position.set(
-                (doorPos.x / 50 - boxWidth / 2) + wallOffset,
-                doorHeight / 2,
-                doorPos.y / 50 - boxDepth / 2
-            );
-        } else {
-            // Door on top/bottom edge
-            doorMesh.rotation.y = 0;
-            doorMesh.position.set(
-                doorPos.x / 50 - boxWidth / 2,
-                doorHeight / 2,
-                (doorPos.y / 50 - boxDepth / 2) + wallOffset
-            );
+        console.log('Creating 3D door with texture:', marker.data);
+        const doorMesh = this.textureManager.createDoorMesh(
+            marker,
+            boxWidth,
+            boxHeight,
+            boxDepth
+        );
+        if (doorMesh) {
+            scene.add(doorMesh);
+            console.log('Door mesh added to scene');
         }
-        
-        doorMesh.renderOrder = 1;
-        scene.add(doorMesh);
     }
 });
 
@@ -7952,26 +7600,11 @@ this.markers.forEach(marker => {
             geometry.setIndex(indices);
 
 
-            const material =
-              room.type === "wall"
-                ? new THREE.MeshStandardMaterial({
-                    color: wallTexture ? 0xffffff : 0x505050,
-                    map: wallTexture,
-                    roughness: 0.8,
-                    metalness: 0.1,
-                    transparent: false,
-                    opacity: 1.0,
-                    side: THREE.DoubleSide,
-                    depthWrite: true
-                  })
-                : new THREE.MeshStandardMaterial({
-                    color: roomTexture ? 0xffffff : 0x808080,
-                    map: roomTexture,
-                    roughness: 0.7,
-                    transparent: false,
-                    opacity: 1.0,
-                    side: THREE.DoubleSide
-                  });
+
+
+    const material = room.type === "wall"
+    ? this.textureManager.createMaterial(room, wallTextureRoom)
+    : this.textureManager.createMaterial(room, roomTextureRoom);
 
             return new THREE.Mesh(geometry, material);
           };
