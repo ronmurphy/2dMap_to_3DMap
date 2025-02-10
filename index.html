@@ -4207,10 +4207,10 @@ async loadMap(file) {
         }
 
         // Load resource pack if specified
-        if (saveData.textureData?.activeResourcePack && this.resourceManager) {
-        console.log("Loading associated resource pack:", saveData.textureData.activeResourcePack);
-        await this.resourceManager.loadResourcePackByName(saveData.textureData.activeResourcePack);
-    }
+    //     if (saveData.textureData?.activeResourcePack && this.resourceManager) {
+    //     console.log("Loading associated resource pack:", saveData.textureData.activeResourcePack);
+    //     await this.resourceManager.loadResourcePackByName(saveData.textureData.activeResourcePack);
+    // }
 
     // Restore texture assignments
     if (saveData.textureData?.assignments && this.resourceManager) {
@@ -6985,7 +6985,7 @@ this.markers.forEach(marker => {
         }
     }
 });
-
+// brad
           const camera = new THREE.PerspectiveCamera(
             75,
             (window.innerWidth * 0.75) / window.innerHeight,
@@ -6994,8 +6994,10 @@ this.markers.forEach(marker => {
           );
           camera.position.set(0, 2, 5);
 
+        //  const sidebarContentWidth = document.querySelector(".sidebar-content");
+
           const renderer = new THREE.WebGLRenderer({ antialias: true });
-          renderer.setSize(window.innerWidth * 0.75, window.innerHeight);
+          renderer.setSize(window.innerWidth * 0.95, window.innerHeight);
           renderer.shadowMap.enabled = true;
 
           const wallTextureRoom = this.rooms.find(
@@ -7027,7 +7029,7 @@ this.markers.forEach(marker => {
 
           // Create main block dimensions
           const boxWidth = this.baseImage.width / 50;
-          const boxHeight = 4; // Wall height
+          const boxHeight = 4.5; // 4; // Wall height
           const boxDepth = this.baseImage.height / 50;
 
 // Handle doors with textures
