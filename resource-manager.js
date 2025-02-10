@@ -17,13 +17,13 @@ window.ResourceManager = class {
                 lighting: new Map()
             }
         };
-        
+
         this.loadedPacks = new Map();
         this.activePackId = null;
         this.mapResourceLinks = new Map();
         this.activeResourcePack = null;
         this.thumbnailSize = 100;
-        
+
         // Initialize textureAssignments map in constructor
         this.textureAssignments = new Map();
         this.defaultWallTextureId = null;
@@ -35,11 +35,11 @@ window.ResourceManager = class {
             // Read the file as text
             const text = await file.text();
             const packData = JSON.parse(text);
-            
+
             // Load the data into our resources
             this.deserializeResourcePack(packData);
             this.activeResourcePack = packData;
-    
+
             return true;
         } catch (error) {
             console.error('Error loading resource pack:', error);
@@ -56,9 +56,9 @@ window.ResourceManager = class {
             splashArt: this.serializeSplashArt()
         };
 
-        const blob = new Blob([JSON.stringify(packData, null, 2)], 
+        const blob = new Blob([JSON.stringify(packData, null, 2)],
             { type: 'application/json' });
-        
+
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = filename;
@@ -68,189 +68,189 @@ window.ResourceManager = class {
         URL.revokeObjectURL(a.href);
     }
 
-// Add these methods to ResourceManager class
-serializeTextures() {
-    const serialized = {};
-    for (const [category, textures] of Object.entries(this.resources.textures)) {
-        serialized[category] = {};
-        textures.forEach((texture, id) => {
-            serialized[category][id] = {
-                id: texture.id,
-                name: texture.name,
-                category: texture.category,
-                subcategory: texture.subcategory,
-                data: texture.data,
-                thumbnail: texture.thumbnail,
-                dateAdded: texture.dateAdded
+    // Add these methods to ResourceManager class
+    serializeTextures() {
+        const serialized = {};
+        for (const [category, textures] of Object.entries(this.resources.textures)) {
+            serialized[category] = {};
+            textures.forEach((texture, id) => {
+                serialized[category][id] = {
+                    id: texture.id,
+                    name: texture.name,
+                    category: texture.category,
+                    subcategory: texture.subcategory,
+                    data: texture.data,
+                    thumbnail: texture.thumbnail,
+                    dateAdded: texture.dateAdded
+                };
+            });
+        }
+        return serialized;
+    }
+
+    serializeSounds() {
+        const serialized = {};
+        for (const [category, sounds] of Object.entries(this.resources.sounds)) {
+            serialized[category] = {};
+            sounds.forEach((sound, id) => {
+                serialized[category][id] = {
+                    id: sound.id,
+                    name: sound.name,
+                    data: sound.data,
+                    duration: sound.duration,
+                    dateAdded: sound.dateAdded
+                };
+            });
+        }
+        return serialized;
+    }
+
+    serializeSplashArt() {
+        const serialized = {};
+        this.resources.splashArt.forEach((art, id) => {
+            serialized[id] = {
+                id: art.id,
+                name: art.name,
+                data: art.data,
+                thumbnail: art.thumbnail,
+                description: art.description,
+                dateAdded: art.dateAdded
             };
         });
+        return serialized;
     }
-    return serialized;
-}
 
-serializeSounds() {
-    const serialized = {};
-    for (const [category, sounds] of Object.entries(this.resources.sounds)) {
-        serialized[category] = {};
-        sounds.forEach((sound, id) => {
-            serialized[category][id] = {
-                id: sound.id,
-                name: sound.name,
-                data: sound.data,
-                duration: sound.duration,
-                dateAdded: sound.dateAdded
-            };
-        });
-    }
-    return serialized;
-}
+    // Add corresponding deserialize methods for loading
+    // deserializeResourcePack(packData) {
+    //     if (packData.textures) {
+    //         for (const [category, textures] of Object.entries(packData.textures)) {
+    //             if (!this.resources.textures[category]) {
+    //                 this.resources.textures[category] = new Map();
+    //             }
+    //             for (const [id, texture] of Object.entries(textures)) {
+    //                 this.resources.textures[category].set(id, texture);
+    //             }
+    //         }
+    //     }
 
-serializeSplashArt() {
-    const serialized = {};
-    this.resources.splashArt.forEach((art, id) => {
-        serialized[id] = {
-            id: art.id,
-            name: art.name,
-            data: art.data,
-            thumbnail: art.thumbnail,
-            description: art.description,
-            dateAdded: art.dateAdded
-        };
-    });
-    return serialized;
-}
+    deserializeResourcePack(packData) {
+        if (packData.textures) {
+            for (const [category, textures] of Object.entries(packData.textures)) {
+                if (!this.resources.textures[category]) {
+                    this.resources.textures[category] = new Map();
+                }
+                for (const [id, texture] of Object.entries(textures)) {
+                    this.resources.textures[category].set(id, texture);
 
-// Add corresponding deserialize methods for loading
-// deserializeResourcePack(packData) {
-//     if (packData.textures) {
-//         for (const [category, textures] of Object.entries(packData.textures)) {
-//             if (!this.resources.textures[category]) {
-//                 this.resources.textures[category] = new Map();
-//             }
-//             for (const [id, texture] of Object.entries(textures)) {
-//                 this.resources.textures[category].set(id, texture);
-//             }
-//         }
-//     }
-
-deserializeResourcePack(packData) {
-    if (packData.textures) {
-        for (const [category, textures] of Object.entries(packData.textures)) {
-            if (!this.resources.textures[category]) {
-                this.resources.textures[category] = new Map();
-            }
-            for (const [id, texture] of Object.entries(textures)) {
-                this.resources.textures[category].set(id, texture);
-                
-                // Add this: Set first wall texture as default
-                if (category === 'walls' && !this.defaultWallTextureId) {
-                    this.defaultWallTextureId = id;
-                    console.log('Set default wall texture:', id);
+                    // Add this: Set first wall texture as default
+                    if (category === 'walls' && !this.defaultWallTextureId) {
+                        this.defaultWallTextureId = id;
+                        console.log('Set default wall texture:', id);
+                    }
                 }
             }
         }
-    }
 
 
-    if (packData.sounds) {
-        for (const [category, sounds] of Object.entries(packData.sounds)) {
-            if (!this.resources.sounds[category]) {
-                this.resources.sounds[category] = new Map();
+        if (packData.sounds) {
+            for (const [category, sounds] of Object.entries(packData.sounds)) {
+                if (!this.resources.sounds[category]) {
+                    this.resources.sounds[category] = new Map();
+                }
+                for (const [id, sound] of Object.entries(sounds)) {
+                    this.resources.sounds[category].set(id, sound);
+                }
             }
-            for (const [id, sound] of Object.entries(sounds)) {
-                this.resources.sounds[category].set(id, sound);
+        }
+
+        if (packData.splashArt) {
+            for (const [id, art] of Object.entries(packData.splashArt)) {
+                this.resources.splashArt.set(id, art);
             }
         }
     }
 
-    if (packData.splashArt) {
-        for (const [id, art] of Object.entries(packData.splashArt)) {
-            this.resources.splashArt.set(id, art);
-        }
+    getDefaultWallTexture() {
+        if (!this.defaultWallTextureId) return null;
+        return this.resources.textures.walls.get(this.defaultWallTextureId);
     }
-}
 
-getDefaultWallTexture() {
-    if (!this.defaultWallTextureId) return null;
-    return this.resources.textures.walls.get(this.defaultWallTextureId);
-}
+    serializeTextureAssignments() {
+        return Array.from(this.textureAssignments.entries())
+            .map(([wallId, data]) => ({
+                wallId,
+                textureId: data.textureId,
+                type: data.type,
+                dateAssigned: data.dateAssigned
+            }));
+    }
 
-serializeTextureAssignments() {
-    return Array.from(this.textureAssignments.entries())
-        .map(([wallId, data]) => ({
-            wallId,
-            textureId: data.textureId,
-            type: data.type,
-            dateAssigned: data.dateAssigned
-        }));
-}
-
-deserializeTextureAssignments(data) {
-    this.textureAssignments = new Map();
-    data?.forEach(item => {
-        this.textureAssignments.set(item.wallId, {
-            textureId: item.textureId,
-            type: item.type,
-            dateAssigned: item.dateAssigned
+    deserializeTextureAssignments(data) {
+        this.textureAssignments = new Map();
+        data?.forEach(item => {
+            this.textureAssignments.set(item.wallId, {
+                textureId: item.textureId,
+                type: item.type,
+                dateAssigned: item.dateAssigned
+            });
         });
-    });
-}
+    }
 
     // Method to link resources to a map
-linkMapToResources(mapName, resourceIds) {
-    this.mapResourceLinks.set(mapName, {
-        packId: this.activePackId,
-        resources: resourceIds
-    });
-}
-
-// Load additional resource pack without replacing current one
-async loadAdditionalPack(jsonFile) {
-    try {
-        const response = await fetch(jsonFile);
-        const packData = await response.json();
-        this.loadedPacks.set(packData.id, packData);
-        
-        // Optional: Switch to this pack
-        // this.switchResourcePack(packData.id);
-        
-        return packData.id;
-    } catch (error) {
-        console.error('Error loading resource pack:', error);
-        return null;
+    linkMapToResources(mapName, resourceIds) {
+        this.mapResourceLinks.set(mapName, {
+            packId: this.activePackId,
+            resources: resourceIds
+        });
     }
-}
 
-// Switch between loaded resource packs
-switchResourcePack(packId) {
-    if (this.loadedPacks.has(packId)) {
-        this.activePackId = packId;
-        // Update UI to reflect active pack
-        this.updateResourceUI();
-        return true;
+    // Load additional resource pack without replacing current one
+    async loadAdditionalPack(jsonFile) {
+        try {
+            const response = await fetch(jsonFile);
+            const packData = await response.json();
+            this.loadedPacks.set(packData.id, packData);
+
+            // Optional: Switch to this pack
+            // this.switchResourcePack(packData.id);
+
+            return packData.id;
+        } catch (error) {
+            console.error('Error loading resource pack:', error);
+            return null;
+        }
     }
-    return false;
-}
 
-// Get resource from any loaded pack
-getResourceFromPack(resourceId, packId = null) {
-    const pack = packId ? 
-        this.loadedPacks.get(packId) : 
-        this.loadedPacks.get(this.activePackId);
-    
-    return pack?.resources[resourceId] || null;
-}
+    // Switch between loaded resource packs
+    switchResourcePack(packId) {
+        if (this.loadedPacks.has(packId)) {
+            this.activePackId = packId;
+            // Update UI to reflect active pack
+            this.updateResourceUI();
+            return true;
+        }
+        return false;
+    }
 
-async showTextureSelectionDialog(structure) {
-    // Create dialog
-    const dialog = document.createElement('sl-dialog');
-    dialog.label = `Assign Texture to ${structure.type === 'wall' ? 'Wall' : 'Room'}`;
+    // Get resource from any loaded pack
+    getResourceFromPack(resourceId, packId = null) {
+        const pack = packId ?
+            this.loadedPacks.get(packId) :
+            this.loadedPacks.get(this.activePackId);
 
-    // Get appropriate textures based on structure type
-    const categories = structure.type === 'wall' ? ['walls', 'doors'] : ['floors'];
+        return pack?.resources[resourceId] || null;
+    }
 
-    // Create the dialog content
-    dialog.innerHTML = `
+    async showTextureSelectionDialog(structure) {
+        // Create dialog
+        const dialog = document.createElement('sl-dialog');
+        dialog.label = `Assign Texture to ${structure.type === 'wall' ? 'Wall' : 'Room'}`;
+
+        // Get appropriate textures based on structure type
+        const categories = structure.type === 'wall' ? ['walls', 'doors'] : ['floors'];
+
+        // Create the dialog content
+        dialog.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 16px;">
             <!-- Category Selection -->
             <sl-select label="Texture Type" id="textureCategory">
@@ -292,110 +292,110 @@ async showTextureSelectionDialog(structure) {
         </div>
     `;
 
-    // Add to document
-    document.body.appendChild(dialog);
+        // Add to document
+        document.body.appendChild(dialog);
 
-    // Get references to elements
-    const categorySelect = dialog.querySelector('#textureCategory');
-    const gallery = dialog.querySelector('.texture-selection-gallery');
-    const preview = dialog.querySelector('.texture-preview');
-    const applyBtn = dialog.querySelector('.apply-btn');
-    let selectedTextureId = null;
+        // Get references to elements
+        const categorySelect = dialog.querySelector('#textureCategory');
+        const gallery = dialog.querySelector('.texture-selection-gallery');
+        const preview = dialog.querySelector('.texture-preview');
+        const applyBtn = dialog.querySelector('.apply-btn');
+        let selectedTextureId = null;
 
-    // Function to update gallery based on category
-    const updateGallery = (category) => {
-        gallery.innerHTML = '';
-        const textures = this.resources?.textures[category];
-        
-        if (!textures || textures.size === 0) {
-            gallery.innerHTML = `
+        // Function to update gallery based on category
+        const updateGallery = (category) => {
+            gallery.innerHTML = '';
+            const textures = this.resources?.textures[category];
+
+            if (!textures || textures.size === 0) {
+                gallery.innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 16px; color: var(--sl-color-neutral-500);">
                     No ${category} textures available
                 </div>
             `;
-            return;
-        }
+                return;
+            }
 
-        textures.forEach((texture, id) => {
-            const item = document.createElement('div');
-            item.className = 'texture-item';
-            item.style.cssText = `
+            textures.forEach((texture, id) => {
+                const item = document.createElement('div');
+                item.className = 'texture-item';
+                item.style.cssText = `
                 cursor: pointer;
                 padding: 4px;
                 border: 2px solid transparent;
                 border-radius: var(--sl-border-radius-medium);
                 transition: all 0.2s ease;
             `;
-            item.innerHTML = `
+                item.innerHTML = `
                 <img src="${texture.thumbnail}" 
                      alt="${texture.name}"
                      style="width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px;">
             `;
 
-            item.addEventListener('click', () => {
-                // Update selection
-                gallery.querySelectorAll('.texture-item').forEach(i => 
-                    i.style.borderColor = 'transparent');
-                item.style.borderColor = 'var(--sl-color-primary-500)';
-                selectedTextureId = id;
-                applyBtn.disabled = false;
+                item.addEventListener('click', () => {
+                    // Update selection
+                    gallery.querySelectorAll('.texture-item').forEach(i =>
+                        i.style.borderColor = 'transparent');
+                    item.style.borderColor = 'var(--sl-color-primary-500)';
+                    selectedTextureId = id;
+                    applyBtn.disabled = false;
 
-                // Update preview
-                preview.style.display = 'block';
-                preview.querySelector('img').src = texture.data;
-                preview.querySelector('.preview-name').textContent = texture.name;
+                    // Update preview
+                    preview.style.display = 'block';
+                    preview.querySelector('img').src = texture.data;
+                    preview.querySelector('.preview-name').textContent = texture.name;
+                });
+
+                gallery.appendChild(item);
+            });
+        };
+
+        // Handle category changes
+        categorySelect.addEventListener('sl-change', () => {
+            updateGallery(categorySelect.value);
+            selectedTextureId = null;
+            applyBtn.disabled = true;
+            preview.style.display = 'none';
+        });
+
+        // Initial gallery load
+        updateGallery(categorySelect.value);
+
+        // Return a promise that resolves with the selected texture or null if canceled
+        return new Promise((resolve) => {
+            dialog.querySelector('.cancel-btn').addEventListener('click', () => {
+                dialog.hide();
+                resolve(null);
             });
 
-            gallery.appendChild(item);
+            dialog.querySelector('.apply-btn').addEventListener('click', () => {
+                const category = categorySelect.value;
+                const texture = this.resources?.textures[category]?.get(selectedTextureId);
+                dialog.hide();
+                resolve(texture);
+            });
+
+            dialog.addEventListener('sl-after-hide', () => {
+                dialog.remove();
+            });
+
+            dialog.show();
         });
-    };
-
-    // Handle category changes
-    categorySelect.addEventListener('sl-change', () => {
-        updateGallery(categorySelect.value);
-        selectedTextureId = null;
-        applyBtn.disabled = true;
-        preview.style.display = 'none';
-    });
-
-    // Initial gallery load
-    updateGallery(categorySelect.value);
-
-    // Return a promise that resolves with the selected texture or null if canceled
-    return new Promise((resolve) => {
-        dialog.querySelector('.cancel-btn').addEventListener('click', () => {
-            dialog.hide();
-            resolve(null);
-        });
-
-        dialog.querySelector('.apply-btn').addEventListener('click', () => {
-            const category = categorySelect.value;
-            const texture = this.resources?.textures[category]?.get(selectedTextureId);
-            dialog.hide();
-            resolve(texture);
-        });
-
-        dialog.addEventListener('sl-after-hide', () => {
-            dialog.remove();
-        });
-
-        dialog.show();
-    });
-}
-
-getSelectedTexture(category) {
-    console.log('Getting selected texture for category:', category);
-    if (!this.resources?.textures[category]) {
-        console.warn(`No textures found for category: ${category}`);
-        return null;
     }
 
-    const textures = this.resources.textures[category];
-    const firstTexture = textures.values().next().value;
-    
-    console.log('Found texture:', firstTexture);
-    return firstTexture;
-}
+    getSelectedTexture(category) {
+        console.log('Getting selected texture for category:', category);
+        if (!this.resources?.textures[category]) {
+            console.warn(`No textures found for category: ${category}`);
+            return null;
+        }
+
+        const textures = this.resources.textures[category];
+        const firstTexture = textures.values().next().value;
+
+        console.log('Found texture:', firstTexture);
+        return firstTexture;
+    }
 
 
     async addTexture(file, category, subcategory) {
@@ -403,13 +403,13 @@ getSelectedTexture(category) {
             console.warn('Missing required parameters:', { file, category });
             return null;
         }
-    
+
         try {
             console.log('Creating texture from file:', file);
             // Create thumbnail and base64 data
             const imageData = await this.createImageData(file);
             const thumbnail = await this.createThumbnail(file);
-    
+
             const textureData = {
                 id: `${category}_${Date.now()}`,
                 name: file.name,
@@ -419,15 +419,15 @@ getSelectedTexture(category) {
                 thumbnail,
                 dateAdded: new Date().toISOString()
             };
-    
+
             console.log('Created texture data:', textureData);
-    
+
             // Store in appropriate category
             if (!this.resources.textures[category]) {
                 this.resources.textures[category] = new Map();
             }
             this.resources.textures[category].set(textureData.id, textureData);
-    
+
             return textureData.id;
         } catch (error) {
             console.error('Error adding texture:', error);
@@ -451,12 +451,12 @@ getSelectedTexture(category) {
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                
+
                 // Calculate thumbnail dimensions maintaining aspect ratio
                 const ratio = img.width / img.height;
                 let width = this.thumbnailSize;
                 let height = this.thumbnailSize;
-                
+
                 if (ratio > 1) {
                     height = width / ratio;
                 } else {
@@ -482,19 +482,19 @@ getSelectedTexture(category) {
             console.warn('Texture not found:', textureId);
             return false;
         }
-        
+
         this.textureAssignments.set(wallId, {
             textureId,
             type: 'wall',
             dateAssigned: new Date().toISOString()
         });
-        
+
         console.log('Texture assigned:', {
             wallId,
             textureId,
             assignments: this.textureAssignments
         });
-        
+
         return true;
     }
 
@@ -503,8 +503,8 @@ getSelectedTexture(category) {
         return this.textureAssignments.get(wallId);
     }
 
-        // Add this method to the ResourceManager class
-    
+    // Add this method to the ResourceManager class
+
     getStructureTextureAssignment(structureId) {
         // This method will handle both walls and rooms
         const assignment = this.textureAssignments.get(structureId);
@@ -524,7 +524,7 @@ getSelectedTexture(category) {
             console.warn('Texture not found:', textureId);
             return false;
         }
-        
+
         if (!this.textureAssignments) {
             this.textureAssignments = new Map();
         }
@@ -534,14 +534,14 @@ getSelectedTexture(category) {
             type: category,
             dateAssigned: new Date().toISOString()
         });
-        
+
         console.log('Texture assigned:', {
             structureId,
             textureId,
             category,
             assignments: this.textureAssignments
         });
-        
+
         return true;
     }
 
@@ -553,11 +553,11 @@ getSelectedTexture(category) {
     // Gallery UI methods can be added here
     createGalleryUI(container) {
         container.innerHTML = '';
-        
+
         // Create category tabs
         const tabs = document.createElement('div');
         tabs.className = 'resource-tabs';
-        
+
         Object.keys(this.resources.textures).forEach(category => {
             const tab = document.createElement('div');
             tab.className = 'resource-tab';
@@ -567,7 +567,7 @@ getSelectedTexture(category) {
         });
 
         container.appendChild(tabs);
-        
+
         // Create gallery content area
         const content = document.createElement('div');
         content.className = 'resource-content';
@@ -588,13 +588,13 @@ getSelectedTexture(category) {
             console.warn(`Gallery container not found for ${category}`);
             return;
         }
-    
+
         // Update container class based on view
         container.className = `gallery-container ${view === 'grid' ? 'gallery-grid' : 'gallery-list'}`;
-    
+
         // Clear existing content
         container.innerHTML = '';
-    
+
         // Get resources for the selected category
         const resources = this.resources.textures[category];
         if (!resources || resources.size === 0) {
@@ -608,13 +608,13 @@ getSelectedTexture(category) {
             `;
             return;
         }
-    
+
         // Create cards for each resource
         resources.forEach((resource, id) => {
             console.log('Creating card for resource:', resource);
             const card = document.createElement('sl-card');
             card.className = 'resource-item';
-    
+
             // Create content based on view type
             card.innerHTML = `
                 ${view === 'grid' ? `
@@ -652,17 +652,17 @@ getSelectedTexture(category) {
                     </sl-button-group>
                 </div>
             `;
-    
+
             // Add event listeners
             card.querySelector('.preview-btn').addEventListener('click', () => {
                 this.showResourcePreview(resource);
             });
-    
+
             card.querySelector('.delete-btn').addEventListener('click', () => {
                 this.deleteResource(category, id);
                 this.updateGallery(drawer, category, view);
             });
-    
+
             container.appendChild(card);
         });
     }
@@ -671,16 +671,16 @@ getSelectedTexture(category) {
         const date = new Date(dateString);
         return date.toLocaleDateString();
     }
-    
+
     // Preview method
-     async showResourcePreview(resource) {
+    async showResourcePreview(resource) {
         const dialog = document.createElement('sl-dialog');
         dialog.label = resource.name;
-    
+
         let cropActive = false;
         let cropStart = { x: 0, y: 0 };
         let currentCrop = null;
-    
+
         dialog.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 16px;">
                 <div class="image-container" style="position: relative; overflow: hidden; background: #333;">
@@ -713,7 +713,7 @@ getSelectedTexture(category) {
                 </div>
             </div>
         `;
-    
+
         const container = dialog.querySelector('.image-container');
         const img = dialog.querySelector('img');
         const overlay = dialog.querySelector('.crop-overlay');
@@ -721,11 +721,11 @@ getSelectedTexture(category) {
         const applyCropBtn = dialog.querySelector('.apply-crop-btn');
         const resetCropBtn = dialog.querySelector('.reset-crop-btn');
         const instructions = dialog.querySelector('.crop-instructions');
-    
+
         // Prevent image dragging
         img.addEventListener('dragstart', (e) => e.preventDefault());
         img.addEventListener('mousedown', (e) => e.preventDefault());
-    
+
         // Enable cropping
         cropBtn.addEventListener('click', () => {
             cropActive = !cropActive;
@@ -740,48 +740,48 @@ getSelectedTexture(category) {
                 overlay.style.display = 'none';
             }
         });
-    
+
         // Handle crop selection
         container.addEventListener('mousedown', (e) => {
             if (!cropActive) return;
             e.preventDefault(); // Prevent any dragging
-    
+
             const rect = container.getBoundingClientRect();
             const imgRect = img.getBoundingClientRect();
-            
+
             // Adjust start position to be relative to the image, not the container
             cropStart = {
                 x: Math.max(imgRect.left, Math.min(imgRect.right, e.clientX)) - rect.left,
                 y: Math.max(imgRect.top, Math.min(imgRect.bottom, e.clientY)) - rect.top
             };
-            
+
             overlay.style.display = 'block';
             overlay.style.left = `${cropStart.x}px`;
             overlay.style.top = `${cropStart.y}px`;
             overlay.style.width = '0px';
             overlay.style.height = '0px';
-    
+
             const moveHandler = (e) => {
                 const currentX = Math.max(imgRect.left, Math.min(imgRect.right, e.clientX)) - rect.left;
                 const currentY = Math.max(imgRect.top, Math.min(imgRect.bottom, e.clientY)) - rect.top;
-    
+
                 const width = currentX - cropStart.x;
                 const height = currentY - cropStart.y;
-    
+
                 overlay.style.width = `${Math.abs(width)}px`;
                 overlay.style.height = `${Math.abs(height)}px`;
                 overlay.style.left = `${width < 0 ? currentX : cropStart.x}px`;
                 overlay.style.top = `${height < 0 ? currentY : cropStart.y}px`;
             };
-    
+
             const upHandler = () => {
                 document.removeEventListener('mousemove', moveHandler);
                 document.removeEventListener('mouseup', upHandler);
-                
+
                 // Store crop data
                 const overlayRect = overlay.getBoundingClientRect();
                 const imgRect = img.getBoundingClientRect();
-                
+
                 // Calculate crop relative to actual image dimensions
                 currentCrop = {
                     x: (overlayRect.left - imgRect.left) / img.offsetWidth,
@@ -789,34 +789,34 @@ getSelectedTexture(category) {
                     width: overlayRect.width / img.offsetWidth,
                     height: overlayRect.height / img.offsetHeight
                 };
-    
+
                 applyCropBtn.disabled = false;
                 resetCropBtn.disabled = false;
             };
-    
+
             document.addEventListener('mousemove', moveHandler);
             document.addEventListener('mouseup', upHandler);
         });
-    
+
         // Apply crop
         applyCropBtn.addEventListener('click', async () => {
             if (!currentCrop) return;
-    
+
             try {
                 // Create canvas for cropping
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                
+
                 // Load image
                 const tempImg = new Image();
                 tempImg.src = resource.data;
-                
+
                 await new Promise((resolve, reject) => {
                     tempImg.onload = () => {
                         // Set canvas size to crop size
                         canvas.width = tempImg.width * currentCrop.width;
                         canvas.height = tempImg.height * currentCrop.height;
-    
+
                         // Draw cropped portion
                         ctx.drawImage(
                             tempImg,
@@ -826,20 +826,20 @@ getSelectedTexture(category) {
                             tempImg.height * currentCrop.height,
                             0, 0, canvas.width, canvas.height
                         );
-    
+
                         // Update resource with cropped image
                         resource.data = canvas.toDataURL('image/png');
-                        
+
                         // Generate new thumbnail
                         const thumbnailCanvas = document.createElement('canvas');
                         const thumbCtx = thumbnailCanvas.getContext('2d');
                         thumbnailCanvas.width = 100;
                         thumbnailCanvas.height = 100;
-                        
+
                         // Draw thumbnail
                         thumbCtx.drawImage(canvas, 0, 0, 100, 100);
                         resource.thumbnail = thumbnailCanvas.toDataURL('image/png');
-                        
+
                         dialog.hide();
                         resolve();
                     };
@@ -849,7 +849,7 @@ getSelectedTexture(category) {
                 console.error('Error applying crop:', error);
             }
         });
-    
+
         // Reset crop
         resetCropBtn.addEventListener('click', () => {
             overlay.style.display = 'none';
@@ -857,11 +857,11 @@ getSelectedTexture(category) {
             applyCropBtn.disabled = true;
             resetCropBtn.disabled = true;
         });
-    
+
         document.body.appendChild(dialog);
         dialog.show();
     }
-    
+
     // Delete method
     deleteResource(category, id) {
         const resources = this.resources.textures[category];
@@ -876,7 +876,7 @@ getSelectedTexture(category) {
         drawer.label = "Resource Manager";
         drawer.placement = "end";
         drawer.classList.add("resource-manager-drawer");
-        
+
         // Add embedded styles
         const styles = document.createElement('style');
         styles.textContent = `
@@ -1017,7 +1017,7 @@ getSelectedTexture(category) {
         `;
 
 
-    drawer.innerHTML = `
+        drawer.innerHTML = `
     ${styles.outerHTML}
     <div class="resource-manager-content">
         <sl-tab-group>
@@ -1137,197 +1137,197 @@ getSelectedTexture(category) {
     </div>
 `;
 
-            // Add pack selector to drawer header
-    const packSelector = document.createElement('sl-select');
-    packSelector.label = 'Resource Pack';
-    
-    this.loadedPacks.forEach((pack, id) => {
-        const option = document.createElement('sl-option');
-        option.value = id;
-        option.textContent = pack.name;
-        packSelector.appendChild(option);
-    });
+        // Add pack selector to drawer header
+        const packSelector = document.createElement('sl-select');
+        packSelector.label = 'Resource Pack';
 
-    packSelector.value = this.activePackId;
-    packSelector.addEventListener('sl-change', (e) => {
-        this.switchResourcePack(e.target.value);
-    });
+        this.loadedPacks.forEach((pack, id) => {
+            const option = document.createElement('sl-option');
+            option.value = id;
+            option.textContent = pack.name;
+            packSelector.appendChild(option);
+        });
 
-    // Add "Import Pack" button
-    const importBtn = document.createElement('sl-button');
-    importBtn.innerHTML = `
+        packSelector.value = this.activePackId;
+        packSelector.addEventListener('sl-change', (e) => {
+            this.switchResourcePack(e.target.value);
+        });
+
+        // Add "Import Pack" button
+        const importBtn = document.createElement('sl-button');
+        importBtn.innerHTML = `
         <sl-icon slot="prefix" name="plus-circle"></sl-icon>
         Import Pack
     `;
-    importBtn.addEventListener('click', () => {
-        // Show pack import dialog
-        this.showPackImportDialog();
-    });
-    
+        importBtn.addEventListener('click', () => {
+            // Show pack import dialog
+            this.showPackImportDialog();
+        });
+
         // Add event handlers
         this.setupEventHandlers(drawer);
-    
+
         document.body.appendChild(drawer);
         return drawer;
     }
 
 
 
-setupEventHandlers(drawer) {
+    setupEventHandlers(drawer) {
 
 
-    const saveBtn = drawer.querySelector('#saveResourcePack');
-    const loadBtn = drawer.querySelector('#loadResourcePack');
+        const saveBtn = drawer.querySelector('#saveResourcePack');
+        const loadBtn = drawer.querySelector('#loadResourcePack');
 
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            this.saveResourcePack();
-        });
-    }
-
-    if (loadBtn) {
-        loadBtn.addEventListener('click', () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const success = await this.loadResourcePack(file);
-                    if (success) {
-                        const currentCategory = drawer.querySelector('.texture-categories sl-button[variant="primary"]')?.dataset.category || 'walls';
-                        this.updateGallery(drawer, currentCategory);
-                    }
-                }
-            };
-            input.click();
-        });
-    }
-
-// Update the view toggle handler
-drawer.querySelectorAll('.view-toggle').forEach(toggle => {
-    toggle.addEventListener('click', () => {
-        const panel = toggle.closest('sl-tab-panel');
-        if (!panel) return;
-
-        const galleryContainer = panel.querySelector('.gallery-container');
-        if (!galleryContainer) return;
-
-        const view = toggle.dataset.view;
-        
-        // Update button states
-        panel.querySelectorAll('.view-toggle').forEach(t => t.variant = 'default');
-        toggle.variant = 'primary';
-        
-        // Update gallery view
-        galleryContainer.className = `gallery-container ${view === 'grid' ? 'gallery-grid' : 'gallery-list'}`;
-        
-        // Refresh gallery content
-        const category = panel.querySelector('[data-category]')?.dataset.category;
-        if (category) {
-            this.updateGallery(drawer, category, view);
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                this.saveResourcePack();
+            });
         }
-    });
-});
 
-    // Setup category selection for textures
-    const categoryBtns = drawer.querySelectorAll('.texture-categories sl-button');
-    categoryBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Update button states
-            categoryBtns.forEach(b => b.setAttribute('variant', 'default'));
-            btn.setAttribute('variant', 'primary');
-            
-            const category = btn.dataset.category;
-            
-            // Hide all galleries first
-            ['walls', 'doors', 'floors', 'props'].forEach(cat => {
-                const gallery = drawer.querySelector(`#${cat}Gallery`);
-                if (gallery) {
-                    gallery.style.display = 'none';
+        if (loadBtn) {
+            loadBtn.addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const success = await this.loadResourcePack(file);
+                        if (success) {
+                            const currentCategory = drawer.querySelector('.texture-categories sl-button[variant="primary"]')?.dataset.category || 'walls';
+                            this.updateGallery(drawer, currentCategory);
+                        }
+                    }
+                };
+                input.click();
+            });
+        }
+
+        // Update the view toggle handler
+        drawer.querySelectorAll('.view-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const panel = toggle.closest('sl-tab-panel');
+                if (!panel) return;
+
+                const galleryContainer = panel.querySelector('.gallery-container');
+                if (!galleryContainer) return;
+
+                const view = toggle.dataset.view;
+
+                // Update button states
+                panel.querySelectorAll('.view-toggle').forEach(t => t.variant = 'default');
+                toggle.variant = 'primary';
+
+                // Update gallery view
+                galleryContainer.className = `gallery-container ${view === 'grid' ? 'gallery-grid' : 'gallery-list'}`;
+
+                // Refresh gallery content
+                const category = panel.querySelector('[data-category]')?.dataset.category;
+                if (category) {
+                    this.updateGallery(drawer, category, view);
                 }
             });
-            
-            // Show selected category's gallery
-            const selectedGallery = drawer.querySelector(`#${category}Gallery`);
-            if (selectedGallery) {
-                selectedGallery.style.display = 'grid';
-                // Update gallery content
-                this.updateGallery(drawer, category);
-            }
         });
-    });
 
-    // Handle file uploads for each type
-// Handle file uploads for each type
-const setupUploadHandler = (btnClass, inputClass, type) => {
-    const uploadBtn = drawer.querySelector(`.${btnClass}`);
-    const fileInput = drawer.querySelector(`.${inputClass}`);
-    
-    if (!uploadBtn || !fileInput) {
-        console.warn(`Upload elements not found for ${type}`);
-        return;
+        // Setup category selection for textures
+        const categoryBtns = drawer.querySelectorAll('.texture-categories sl-button');
+        categoryBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update button states
+                categoryBtns.forEach(b => b.setAttribute('variant', 'default'));
+                btn.setAttribute('variant', 'primary');
+
+                const category = btn.dataset.category;
+
+                // Hide all galleries first
+                ['walls', 'doors', 'floors', 'props'].forEach(cat => {
+                    const gallery = drawer.querySelector(`#${cat}Gallery`);
+                    if (gallery) {
+                        gallery.style.display = 'none';
+                    }
+                });
+
+                // Show selected category's gallery
+                const selectedGallery = drawer.querySelector(`#${category}Gallery`);
+                if (selectedGallery) {
+                    selectedGallery.style.display = 'grid';
+                    // Update gallery content
+                    this.updateGallery(drawer, category);
+                }
+            });
+        });
+
+        // Handle file uploads for each type
+        // Handle file uploads for each type
+        const setupUploadHandler = (btnClass, inputClass, type) => {
+            const uploadBtn = drawer.querySelector(`.${btnClass}`);
+            const fileInput = drawer.querySelector(`.${inputClass}`);
+
+            if (!uploadBtn || !fileInput) {
+                console.warn(`Upload elements not found for ${type}`);
+                return;
+            }
+
+            uploadBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', async (e) => {
+                const files = Array.from(e.target.files || []);
+                const tabPanel = uploadBtn.closest('sl-tab-panel');
+
+                if (!files.length) return;
+
+                console.log(`Processing ${files.length} ${type} files`);
+
+                for (const file of files) {
+                    try {
+                        if (type === 'splashArt') {
+                            const description = await this.promptForDescription(file.name);
+                            await this.addSplashArt(file, description);
+                        } else if (type === 'sound') {
+                            const category = tabPanel?.querySelector('.sound-categories sl-button[variant="primary"]')?.dataset.category || 'ambient';
+                            await this.addSound(file, category);
+                        } else {
+                            const category = tabPanel?.querySelector('.texture-categories sl-button[variant="primary"]')?.dataset.category || 'walls';
+                            await this.addTexture(file, category);
+                        }
+                    } catch (error) {
+                        console.error(`Error processing ${type} file:`, error);
+                    }
+                }
+
+                // Refresh the appropriate gallery
+                if (tabPanel) {
+                    const view = tabPanel.querySelector('.view-toggle[variant="primary"]')?.dataset.view || 'grid';
+                    const category = tabPanel.querySelector('[data-category][variant="primary"]')?.dataset.category;
+                    this.updateGallery(drawer, category, view);
+                }
+
+                // Reset file input
+                fileInput.value = '';
+            });
+        };
+
+        setupUploadHandler('texture-upload-btn', 'texture-file-input', 'texture');
+        setupUploadHandler('sound-upload-btn', 'sound-file-input', 'sound');
+        setupUploadHandler('splashart-upload-btn', 'splashart-file-input', 'splashArt');
+
+
+
+
+        // Add close handler
+        drawer.addEventListener('sl-after-hide', () => {
+            // Optional: Clean up any resources if needed
+        });
     }
 
-    uploadBtn.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    fileInput.addEventListener('change', async (e) => {
-        const files = Array.from(e.target.files || []);
-        const tabPanel = uploadBtn.closest('sl-tab-panel');
-        
-        if (!files.length) return;
-
-        console.log(`Processing ${files.length} ${type} files`);
-        
-        for (const file of files) {
-            try {
-                if (type === 'splashArt') {
-                    const description = await this.promptForDescription(file.name);
-                    await this.addSplashArt(file, description);
-                } else if (type === 'sound') {
-                    const category = tabPanel?.querySelector('.sound-categories sl-button[variant="primary"]')?.dataset.category || 'ambient';
-                    await this.addSound(file, category);
-                } else {
-                    const category = tabPanel?.querySelector('.texture-categories sl-button[variant="primary"]')?.dataset.category || 'walls';
-                    await this.addTexture(file, category);
-                }
-            } catch (error) {
-                console.error(`Error processing ${type} file:`, error);
-            }
-        }
-        
-        // Refresh the appropriate gallery
-        if (tabPanel) {
-            const view = tabPanel.querySelector('.view-toggle[variant="primary"]')?.dataset.view || 'grid';
-            const category = tabPanel.querySelector('[data-category][variant="primary"]')?.dataset.category;
-            this.updateGallery(drawer, category, view);
-        }
-
-        // Reset file input
-        fileInput.value = '';
-    });
-};
-
-setupUploadHandler('texture-upload-btn', 'texture-file-input', 'texture');
-setupUploadHandler('sound-upload-btn', 'sound-file-input', 'sound');
-setupUploadHandler('splashart-upload-btn', 'splashart-file-input', 'splashArt');
-    
-
-
-
-// Add close handler
-    drawer.addEventListener('sl-after-hide', () => {
-        // Optional: Clean up any resources if needed
-    });
-}
-
-async promptForDescription(filename) {
-    return new Promise((resolve) => {
-        const dialog = document.createElement('sl-dialog');
-        dialog.label = `Add Description for ${filename}`;
-        dialog.innerHTML = `
+    async promptForDescription(filename) {
+        return new Promise((resolve) => {
+            const dialog = document.createElement('sl-dialog');
+            dialog.label = `Add Description for ${filename}`;
+            dialog.innerHTML = `
             <sl-input label="Description" id="description-input"></sl-input>
             <div slot="footer">
                 <sl-button variant="primary" id="save-btn">Save</sl-button>
@@ -1335,28 +1335,28 @@ async promptForDescription(filename) {
             </div>
         `;
 
-        document.body.appendChild(dialog);
-        dialog.show();
+            document.body.appendChild(dialog);
+            dialog.show();
 
-        const input = dialog.querySelector('#description-input');
-        const saveBtn = dialog.querySelector('#save-btn');
-        const cancelBtn = dialog.querySelector('#cancel-btn');
+            const input = dialog.querySelector('#description-input');
+            const saveBtn = dialog.querySelector('#save-btn');
+            const cancelBtn = dialog.querySelector('#cancel-btn');
 
-        saveBtn.addEventListener('click', () => {
-            dialog.hide();
-            resolve(input.value);
+            saveBtn.addEventListener('click', () => {
+                dialog.hide();
+                resolve(input.value);
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                dialog.hide();
+                resolve('');
+            });
+
+            dialog.addEventListener('sl-after-hide', () => {
+                dialog.remove();
+            });
         });
-
-        cancelBtn.addEventListener('click', () => {
-            dialog.hide();
-            resolve('');
-        });
-
-        dialog.addEventListener('sl-after-hide', () => {
-            dialog.remove();
-        });
-    });
-}
+    }
 
 
 
