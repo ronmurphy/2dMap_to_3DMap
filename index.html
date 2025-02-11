@@ -99,6 +99,11 @@
   src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/option/option.js"
 ></script>
 
+<script
+  type="module"
+  src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/range/range.js"
+></script>
+
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
@@ -3490,8 +3495,22 @@ createLayerItem(room) {
                             </div>
                         `).join('')}
                     </div>
-                </div>
-            ` : ''}
+    </div>
+
+<!-- Raised Block Options -->
+<div style="border: 1px solid #444; padding: 12px; border-radius: 4px;">
+    <sl-range 
+        id="blockHeight" 
+        label="Block Height" 
+        min="0" 
+        max="8" 
+        step="1" 
+        tooltip="top" 
+        value="${room.blockHeight ? Math.round(room.blockHeight * 2) : '0'}"
+        help-text="0 = No raised block, 1 = ½ block, 2 = 1 block, etc."
+    ></sl-range>
+</div>
+` : ''}
 
             <!-- Legacy Wall Texture Option -->
             ${room.shape === 'rectangle' ? `
@@ -3526,10 +3545,31 @@ createLayerItem(room) {
             });
         });
 
+        const blockHeightSlider = dialog.querySelector('#blockHeight');
+if (blockHeightSlider) {
+    // Set initial value if room is a raised block
+    if (room.isRaisedBlock && room.blockHeight) {
+        blockHeightSlider.value = Math.round(room.blockHeight * 2);
+    }
+
+    blockHeightSlider.addEventListener('sl-input', (e) => {
+        // Update label while sliding
+        const value = parseInt(e.target.value);
+        const height = value / 2;
+        blockHeightSlider.label = `Block Height: ${height} ${height === 1 ? 'block' : 'blocks'}`;
+    });
+}
+
+
         const handleSave = () => {
             const newName = nameInput.value.trim();
             if (newName) {
                 room.name = setAsTextureCheckbox?.checked ? "WallTexture" : newName;
+
+                        // Save raised block settings
+                        const blockHeight = parseInt(blockHeightSlider.value) / 2;
+room.isRaisedBlock = blockHeight > 0;
+room.blockHeight = room.isRaisedBlock ? blockHeight : undefined;
                 
                 if (dialog.selectedTextureId && this.editor.resourceManager) {
                     this.editor.resourceManager.assignTextureToStructure(room.id, dialog.selectedTextureId, 'walls');
@@ -7743,27 +7783,144 @@ this.markers.forEach(marker => {
           ];
 
           // Create rooms and subtract from main mesh
-          updateStatus(20);
-          this.rooms.forEach((room, index) => {
-            // Skip the WallTexture room in 3D view
-            if (room.name === "WallTexture" || room.name === "RoomTexture")
-              return;
+          // updateStatus(20);
+          // this.rooms.forEach((room, index) => {
+          //   // Skip the WallTexture room in 3D view
+          //   if (room.name === "WallTexture" || room.name === "RoomTexture")
+          //     return;
+            
 
-            const roomMesh = createRoomGeometry(room);
-            if (roomMesh) {
-              roomMesh.userData.isWall = room.type === "wall";
-              if (roomMesh.userData.isWall) {
-                console.log("Creating wall mesh:", {
-                  roomName: room.name,
-                  hasTexture: !!roomMesh.material.map,
-                  isTransparent: roomMesh.material.transparent,
-                  opacity: roomMesh.material.opacity
-                });
-              }
-              scene.add(roomMesh);
-            }
-            updateStatus(20 + 60 * (index / this.rooms.length));
-          });
+          //   const roomMesh = createRoomGeometry(room);
+          //   if (roomMesh) {
+          //     roomMesh.userData.isWall = room.type === "wall";
+          //     if (roomMesh.userData.isWall) {
+          //       console.log("Creating wall mesh:", {
+          //         roomName: room.name,
+          //         hasTexture: !!roomMesh.material.map,
+          //         isTransparent: roomMesh.material.transparent,
+          //         opacity: roomMesh.material.opacity
+          //       });
+          //     }
+          //     scene.add(roomMesh);
+          //   }
+          //   updateStatus(20 + 60 * (index / this.rooms.length));
+          // });
+
+
+          const createRaisedBlockGeometry = (room) => {
+    const positions = [];
+    const normals = [];
+    const uvs = [];
+    const indices = [];
+
+    const x1 = room.bounds.x / 50 - boxWidth / 2;
+    const x2 = x1 + room.bounds.width / 50;
+    const z1 = room.bounds.y / 50 - boxDepth / 2;
+    const z2 = z1 + room.bounds.height / 50;
+    const height = room.blockHeight;
+
+    positions.push(
+        x1, 0, z1,
+        x2, 0, z1,
+        x2, 0, z2,
+        x1, 0, z2,
+        x1, height, z1,
+        x2, height, z1,
+        x2, height, z2,
+        x1, height, z2,
+        x1, 0, z1,
+        x2, 0, z1,
+        x2, height, z1,
+        x1, height, z1,
+        x1, 0, z2,
+        x2, 0, z2,
+        x2, height, z2,
+        x1, height, z2,
+        x1, 0, z1,
+        x1, 0, z2,
+        x1, height, z2,
+        x1, height, z1,
+        x2, 0, z1,
+        x2, 0, z2,
+        x2, height, z2,
+        x2, height, z1
+    );
+
+    for (let i = 0; i < 4; i++) normals.push(0, -1, 0);
+    for (let i = 0; i < 4; i++) normals.push(0, 1, 0);
+    for (let i = 0; i < 4; i++) normals.push(0, 0, -1);
+    for (let i = 0; i < 4; i++) normals.push(0, 0, 1);
+    for (let i = 0; i < 4; i++) normals.push(-1, 0, 0);
+    for (let i = 0; i < 4; i++) normals.push(1, 0, 0);
+
+    const textureRepeatsU = wallTexture ? wallTexture.repeat.x : 1;
+    const textureRepeatsV = wallTexture ? wallTexture.repeat.y : 1;
+
+    for (let face = 0; face < 6; face++) {
+        uvs.push(
+            0, 0,
+            textureRepeatsU, 0,
+            textureRepeatsU, textureRepeatsV,
+            0, textureRepeatsV
+        );
+    }
+
+    for (let face = 0; face < 6; face++) {
+        const base = face * 4;
+        indices.push(
+            base, base + 1, base + 2,
+            base, base + 2, base + 3
+        );
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+
+    return new THREE.Mesh(geometry, room.type === "wall" ?
+        this.textureManager.createMaterial(room, wallTextureRoom) :
+        this.textureManager.createMaterial(room, roomTextureRoom)
+    );
+};
+
+
+          // Create rooms and subtract from main mesh
+updateStatus(20);
+this.rooms.forEach((room, index) => {
+    // Skip the WallTexture room in 3D view
+    if (room.name === "WallTexture" || room.name === "RoomTexture") {
+        return;
+    }
+
+    let roomMesh;
+    if (room.isRaisedBlock && room.blockHeight) {
+        roomMesh = createRaisedBlockGeometry(room);
+        if (roomMesh) {
+            roomMesh.userData.isWall = true;
+        }
+    } else {
+        roomMesh = createRoomGeometry(room);
+        if (roomMesh) {
+            roomMesh.userData.isWall = room.type === "wall";
+        }
+    }
+
+    if (roomMesh) {
+        if (roomMesh.userData.isWall) {
+            console.log("Creating wall mesh:", {
+                roomName: room.name,
+                hasTexture: !!roomMesh.material.map,
+                isTransparent: roomMesh.material.transparent,
+                opacity: roomMesh.material.opacity
+            });
+        }
+        scene.add(roomMesh);
+    }
+    updateStatus(20 + 60 * (index / this.rooms.length));
+});
+
 
           // Add floor
           const floorGeometry = new THREE.PlaneGeometry(boxWidth, boxDepth);
