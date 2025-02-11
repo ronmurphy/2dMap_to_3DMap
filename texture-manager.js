@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable no-undef */
 window.TextureManager = class {
     constructor(mapEditor) {
@@ -16,168 +17,90 @@ window.TextureManager = class {
         this.textureAssignments = new Map();
     }
 
-    createDoorMesh(marker, boxWidth, boxHeight, boxDepth) {
-        if (!marker.type === 'door' || !marker.data.texture) return null;
+createDoorMesh(marker, boxWidth, boxHeight, boxDepth) {
+    if (!marker.type === 'door' || !marker.data.texture) return null;
 
-        const wall = marker.data.parentWall;
-        const doorPos = marker.data.door.position;
-
-        // Calculate door dimensions and offset
-        const doorHeight = boxHeight * 0.8;
-        const doorWidth = this.mapEditor.cellSize / 50;
-        const wallOffset = 0.05;
-        const doorDepth = wallOffset * 3; // Give the door some depth
-
-        // Calculate door edge placement
-        const distanceToLeft = Math.abs(doorPos.x - wall.bounds.x);
-        const distanceToRight = Math.abs(doorPos.x - (wall.bounds.x + wall.bounds.width));
-        const distanceToTop = Math.abs(doorPos.y - wall.bounds.y);
-        const distanceToBottom = Math.abs(doorPos.y - (wall.bounds.y + wall.bounds.height));
-
-        const isOnVerticalEdge = Math.min(distanceToLeft, distanceToRight) <
-            Math.min(distanceToTop, distanceToBottom);
-
-        // Create door geometry with depth (using BoxGeometry instead of PlaneGeometry)
-        const doorGeometry = new THREE.BoxGeometry(doorWidth, doorHeight, doorDepth);
-        const doorTexture = new THREE.TextureLoader().load(marker.data.texture.data);
-        doorTexture.encoding = THREE.sRGBEncoding;
-
-        const doorMaterial = new THREE.MeshStandardMaterial({
-            map: doorTexture,
-            transparent: true,
-            side: THREE.DoubleSide,
-            depthWrite: true,
-            depthTest: true,
-            polygonOffset: true,
-            polygonOffsetFactor: -1,
-            polygonOffsetUnits: -1
-        });
-
-        const doorMesh = new THREE.Mesh(doorGeometry, doorMaterial);
-
-        if (isOnVerticalEdge) {
-            // Door on left/right edge
-            doorMesh.rotation.y = Math.PI / 2;
-            doorMesh.position.set(
-                (doorPos.x / 50 - boxWidth / 2),  // Removed offset as door now has depth
-                doorHeight / 2,
-                doorPos.y / 50 - boxDepth / 2
-            );
-        } else {
-            // Door on top/bottom edge
-            doorMesh.rotation.y = 0;
-            doorMesh.position.set(
-                doorPos.x / 50 - boxWidth / 2,
-                doorHeight / 2,
-                (doorPos.y / 50 - boxDepth / 2)  // Removed offset as door now has depth
-            );
-        }
-
-        doorMesh.renderOrder = 1;
-        return doorMesh;
+    // Get door position data
+    const doorPos = marker.data.door?.position;
+    if (!doorPos) {
+        console.warn('Door marker has no position data:', marker);
+        return null;
     }
 
-    // createMaterial(structure, textureRoom) {
-    //     // Try resource pack first
-    //     console.log('Checking resource pack...', {
-    //         hasResourceManager: !!this.resourceManager,
-    //         hasTextureAssignments: !!this.resourceManager?.textureAssignments,
-    //         structureId: structure.id,
-    //         assignments: this.resourceManager?.textureAssignments
-    //     });
+    // Calculate door dimensions and offset
+    const doorHeight = boxHeight * 0.8;
+    const doorWidth = this.mapEditor.cellSize / 50;
+    const wallOffset = 0.05;
+    const doorDepth = wallOffset * 3;
 
-    //     if (this.resourceManager) {
-    //         // First check for specific assignment
-    //         const assignment = this.resourceManager.getStructureTextureAssignment(structure.id);
-    //         if (assignment) {
-    //             const texture = this.resourceManager.resources.textures[structure.type === 'wall' ? 'walls' : 'rooms'].get(assignment.textureId);
-    //             if (texture) {
-    //                 console.log(`Using assigned ${structure.type} texture:`, texture.name);
-    //                 return this.createMaterialFromTexture(texture);
-    //             }
-    //         }
+    // Create door geometry
+    const doorGeometry = new THREE.BoxGeometry(doorWidth, doorHeight, doorDepth);
+    const doorTexture = new THREE.TextureLoader().load(marker.data.texture.data);
+    doorTexture.encoding = THREE.sRGBEncoding;
 
-    //         // If no specific assignment, try default texture for this type
-    //         const defaultTexture = structure.type === 'wall' ?
-    //             this.resourceManager.getDefaultWallTexture() :
-    //             this.resourceManager.getDefaultRoomTexture();
+    const doorMaterial = new THREE.MeshStandardMaterial({
+        map: doorTexture,
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: true,
+        depthTest: true,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1
+    });
 
-    //         if (defaultTexture) {
-    //             console.log(`Using default ${structure.type} texture:`, defaultTexture.name);
-    //             return this.createMaterialFromTexture(defaultTexture);
-    //         }
-    //     }
+    const doorMesh = new THREE.Mesh(doorGeometry, doorMaterial);
 
-    //     // Legacy fallback
-    //     if (textureRoom) {
-    //         console.log(`Using legacy ${structure.type} texture for:`, structure.id);
-    //         const texture = this.createTextureFromRoom(textureRoom);
-    //         return new THREE.MeshStandardMaterial({
-    //             color: 0xffffff,
-    //             map: texture,
-    //             roughness: 0.8,
-    //             metalness: 0.1,
-    //             transparent: false,
-    //             opacity: 1.0,
-    //             side: THREE.DoubleSide,
-    //             depthWrite: true
-    //         });
-    //     }
+    // Position the door
+    const x = doorPos.x / 50 - boxWidth / 2;
+    const z = doorPos.y / 50 - boxDepth / 2;
+    doorMesh.position.set(x, doorHeight / 2, z);
 
-    //     // Default material if no texture found
-    //     return new THREE.MeshStandardMaterial({
-    //         color: structure.type === 'wall' ? 0xcccccc : 0x666666,
-    //         roughness: 0.7,
-    //         metalness: 0.2,
-    //         side: THREE.DoubleSide
-    //     });
-    // }
+    // Set render order for proper transparency
+    doorMesh.renderOrder = 1;
 
-    createMaterial(structure, textureRoom) {
-        console.log('Checking resource pack...', {
-            hasResourceManager: !!this.resourceManager,
-            hasTextureAssignments: !!this.resourceManager?.textureAssignments,
-            structureId: structure.id,
-            assignments: this.resourceManager?.textureAssignments
-        });
-    
-        if (this.resourceManager) {
-            const assignment = this.resourceManager.getStructureTextureAssignment(structure.id);
-            if (assignment) {
-                const textureCategory = structure.type === 'wall' ? 'walls' : 'floors';
-                const textures = this.resourceManager.resources.textures[textureCategory];
-                if (textures && textures.get(assignment.textureId)) {
-                    const texture = textures.get(assignment.textureId);
-                    console.log(`Using assigned ${structure.type} texture:`, texture.name);
-                    // return this.createMaterialFromTexture(texture);
-                    return this.createMaterialFromTexture(texture, structure.bounds.width, structure.bounds.height, this.mapEditor.cellSize);                }
+    return doorMesh;
+}
+
+        createMaterial(structure, textureRoom) {
+            // Treat everything as a wall for texture purposes
+            console.log('Creating material for:', {
+                structureId: structure.id,
+                type: structure.type,  // Keep this for logging only
+                hasResourceManager: !!this.resourceManager,
+                hasTextureRoom: !!textureRoom
+            });
+        
+            // First try resource pack textures
+            if (this.resourceManager) {
+                const assignment = this.resourceManager.getStructureTextureAssignment(structure.id);
+                if (assignment) {
+                    const textures = this.resourceManager.resources.textures.walls;  // Always use walls collection
+                    
+                    if (textures && textures.get(assignment.textureId)) {
+                        const texture = textures.get(assignment.textureId);
+                        return this.createMaterialFromTexture(
+                            texture,
+                            structure.bounds.width,
+                            structure.bounds.height,
+                            this.mapEditor.cellSize
+                        );
+                    }
+                }
             }
     
-            const defaultTexture = structure.type === 'wall' ? 
-                this.resourceManager.getDefaultWallTexture() :
-                this.resourceManager.getDefaultRoomTexture();
-    
-            if (defaultTexture) {
-                console.log(`Using default ${structure.type} texture:`, defaultTexture.name);
-                // return this.createMaterialFromTexture(defaultTexture);
-                return this.createMaterialFromTexture(texture, structure.bounds.width, structure.bounds.height, this.mapEditor.cellSize);            }
-        }
-    
+        // Legacy texture handling
         if (textureRoom) {
             console.log(`Using legacy ${structure.type} texture for:`, structure.id);
             const texture = this.createTextureFromRoom(textureRoom);
-            return new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                map: texture,
-                roughness: 0.8,
-                metalness: 0.1,
-                transparent: false,
-                opacity: 1.0,
-                side: THREE.DoubleSide,
-                depthWrite: true
-            });
+            return this.createMaterialFromTexture({
+                data: texture,
+                category: structure.type === 'wall' ? 'walls' : 'rooms'
+            }, structure.bounds.width, structure.bounds.height, this.mapEditor.cellSize);
         }
     
+        // Default fallback material
+        console.log(`Using default material for ${structure.type}:`, structure.id);
         return new THREE.MeshStandardMaterial({
             color: structure.type === 'wall' ? 0xcccccc : 0x666666,
             roughness: 0.7,
@@ -186,53 +109,35 @@ window.TextureManager = class {
         });
     }
 
-    createMaterialFromTexture(textureData, roomWidth = 1000, roomHeight = 1000, cellSize = 50) {
-        const texture = new THREE.TextureLoader().load(textureData.data);
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
 
-        // Check texture category for special handling
-        switch (textureData.category) {
-            case 'windows':
-                return new THREE.MeshStandardMaterial({
-                    color: 0xffffff,
-                    map: texture,
-                    transparent: true,
-                    opacity: 0.3,
-                    side: THREE.DoubleSide,
-                    roughness: 0.2,
-                    metalness: 0.5
-                });
-            case 'rooms':
-                return new THREE.MeshStandardMaterial({
-                    color: 0xffffff,
-                    map: texture,
-                    roughness: 0.9, // More matte for floors/ceilings
-                    metalness: 0.1,
-                    side: THREE.DoubleSide
-                });
-                case 'floors':
-                    texture.repeat.set(
-                        Math.round(roomWidth / cellSize),
-                        Math.round(roomHeight / cellSize)
-                    );
-                    return new THREE.MeshStandardMaterial({
-                        color: 0xffffff,
-                        map: texture,
-                        roughness: 0.9,
-                        metalness: 0.1,
-                        side: THREE.FrontSide
-                    });
-            default: // walls and others
-                return new THREE.MeshStandardMaterial({
-                    color: 0xffffff,
-                    map: texture,
-                    roughness: 0.8,
-                    metalness: 0.2,
-                    side: THREE.DoubleSide
-                });
-        }
+createMaterialFromTexture(textureData, roomWidth = 1000, roomHeight = 1000, cellSize = 50) {
+    const texture = new THREE.TextureLoader().load(textureData.data);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    console.log('Texture data:', textureData.category);
+
+    // Check texture category for special handling
+    switch (textureData.category) {
+        case 'walls':
+            return new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                map: texture,
+                roughness: 0.8,
+                metalness: 0.2,
+                side: THREE.DoubleSide
+            });
+
+        default:
+            return new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                map: texture,
+                roughness: 0.8,
+                metalness: 0.2,
+                side: THREE.DoubleSide
+            });
     }
+}
 
     createWallMaterial(wall, wallTextureRoom) {
         // Try resource pack first
