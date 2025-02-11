@@ -1,3 +1,11 @@
+// Add comment near the splash art panel:
+/* TODO: Splash art upload functionality not fully implemented
+   Known issues:
+   - File upload not working
+   - Preview/gallery not updating
+   Consider hiding this tab until functionality is complete
+*/
+
 window.ResourceManager = class {
     constructor() {
         this.resources = {
@@ -120,18 +128,7 @@ window.ResourceManager = class {
         return serialized;
     }
 
-    // Add corresponding deserialize methods for loading
-    // deserializeResourcePack(packData) {
-    //     if (packData.textures) {
-    //         for (const [category, textures] of Object.entries(packData.textures)) {
-    //             if (!this.resources.textures[category]) {
-    //                 this.resources.textures[category] = new Map();
-    //             }
-    //             for (const [id, texture] of Object.entries(textures)) {
-    //                 this.resources.textures[category].set(id, texture);
-    //             }
-    //         }
-    //     }
+
 
     deserializeResourcePack(packData) {
         if (packData.textures) {
@@ -1037,12 +1034,14 @@ window.ResourceManager = class {
 <!-- Texture Panel -->
 <sl-tab-panel name="textures">
     <div class="panel-header">
-        <sl-button-group class="texture-categories">
-            <sl-button size="small" data-category="walls">Walls</sl-button>
-            <sl-button size="small" data-category="doors">Doors</sl-button>
-            <sl-button size="small" data-category="floors">Floors</sl-button>
-            <sl-button size="small" data-category="props">Props</sl-button>
-        </sl-button-group>
+<sl-button-group class="texture-categories">
+    <sl-button size="small" data-category="walls">Walls</sl-button>
+    <sl-button size="small" data-category="doors">Doors</sl-button>
+    <sl-button size="small" data-category="floors" disabled tooltip="Floor textures coming soon">
+        Floors <sl-badge variant="neutral" pill>WIP</sl-badge>
+    </sl-button>
+    <sl-button size="small" data-category="props">Props</sl-button>
+</sl-button-group>
         
         <sl-button size="small" class="texture-upload-btn" variant="primary">
             <span class="material-icons">add_circle</span>
