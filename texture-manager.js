@@ -18,20 +18,24 @@ window.TextureManager = class {
     }
 
 createDoorMesh(marker, boxWidth, boxHeight, boxDepth) {
-    if (!marker.type === 'door' || !marker.data.texture) return null;
-
-    // Get door position data
-    const doorPos = marker.data.door?.position;
-    if (!doorPos) {
-        console.warn('Door marker has no position data:', marker);
+    // Check for required data
+    if (!marker?.data?.parentStructure) {
+        console.warn('Door marker missing parent structure reference:', marker);
         return null;
     }
 
-    // Calculate door dimensions and offset
+    const structure = marker.data.parentStructure;
+    const doorPos = marker.data.door?.position;
+    
+    if (!doorPos) {
+        console.warn('Door position data missing:', marker);
+        return null;
+    }
+
+    // Calculate door dimensions
     const doorHeight = boxHeight * 0.8;
     const doorWidth = this.mapEditor.cellSize / 50;
-    const wallOffset = 0.05;
-    const doorDepth = wallOffset * 3;
+    const doorDepth = 0.2;  // Standard door depth
 
     // Create door geometry
     const doorGeometry = new THREE.BoxGeometry(doorWidth, doorHeight, doorDepth);
@@ -51,16 +55,49 @@ createDoorMesh(marker, boxWidth, boxHeight, boxDepth) {
 
     const doorMesh = new THREE.Mesh(doorGeometry, doorMaterial);
 
-    // Position the door
-    const x = doorPos.x / 50 - boxWidth / 2;
-    const z = doorPos.y / 50 - boxDepth / 2;
-    doorMesh.position.set(x, doorHeight / 2, z);
+    // Get door orientation from position data
+    const isVertical = doorPos.edge === 'left' || doorPos.edge === 'right';
 
-    // Set render order for proper transparency
+    // Apply rotation based on edge
+    switch(doorPos.edge) {
+        case 'left':
+            doorMesh.rotation.y = Math.PI / 2;
+            doorMesh.position.set(
+                (doorPos.x / 50 - boxWidth / 2) - doorDepth/2,
+                doorHeight / 2,
+                doorPos.y / 50 - boxDepth / 2
+            );
+            break;
+        case 'right':
+            doorMesh.rotation.y = Math.PI / 2;
+            doorMesh.position.set(
+                (doorPos.x / 50 - boxWidth / 2) + doorDepth/2,
+                doorHeight / 2,
+                doorPos.y / 50 - boxDepth / 2
+            );
+            break;
+        case 'top':
+            doorMesh.rotation.y = 0;
+            doorMesh.position.set(
+                doorPos.x / 50 - boxWidth / 2,
+                doorHeight / 2,
+                (doorPos.y / 50 - boxDepth / 2) - doorDepth/2
+            );
+            break;
+        case 'bottom':
+            doorMesh.rotation.y = 0;
+            doorMesh.position.set(
+                doorPos.x / 50 - boxWidth / 2,
+                doorHeight / 2,
+                (doorPos.y / 50 - boxDepth / 2) + doorDepth/2
+            );
+            break;
+    }
+
     doorMesh.renderOrder = 1;
-
     return doorMesh;
 }
+
 
         createMaterial(structure, textureRoom) {
             // Treat everything as a wall for texture purposes

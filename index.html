@@ -3331,12 +3331,16 @@ createLayerItem(room) {
                     ${room.locked ? 'lock' : 'lock_open'}
                 </span>
             </div>
-            <div class="layer-thumbnail">
-                ${room.thumbnail ? 
-                    `<img src="${room.thumbnail}" alt="Room thumbnail">` : 
-                    `<div class="thumbnail-placeholder"></div>`
-                }
-            </div>
+<div class="layer-thumbnail">
+    ${(() => {
+        if (!room.thumbnail) {
+            room.createThumbnail();
+        }
+        return room.thumbnail ? 
+            `<img src="${room.thumbnail}" alt="Room thumbnail">` :
+            `<div class="thumbnail-placeholder"></div>`;
+    })()}
+</div>
             <div class="layer-info">
                 <div class="layer-name">${room.name}</div>
                 <div class="layer-dimensions">${Math.round(room.bounds.width)}×${Math.round(
@@ -5110,29 +5114,37 @@ snapToStructure(x, y, structure) {
         bottom: Math.abs(y - (structure.bounds.y + structure.bounds.height))
     };
 
+    // Find the closest edge
     const closestEdge = Object.entries(edges).reduce((a, b) => a[1] < b[1] ? a : b)[0];
+    
+    // Calculate snapped position and determine orientation
     const snappedPos = {
-        x: structure.bounds.x,
-        y: structure.bounds.y,
-        edge: closestEdge
+        x: x,
+        y: y,
+        edge: closestEdge,
+        rotation: 0 // Add rotation property
     };
 
     switch(closestEdge) {
         case 'left': 
             snappedPos.x = structure.bounds.x;
             snappedPos.y = y;
+            snappedPos.rotation = 90; // Door faces left
             break;
         case 'right': 
             snappedPos.x = structure.bounds.x + structure.bounds.width;
             snappedPos.y = y;
+            snappedPos.rotation = -90; // Door faces right
             break;
         case 'top': 
             snappedPos.x = x;
             snappedPos.y = structure.bounds.y;
+            snappedPos.rotation = 0; // Door faces up
             break;
         case 'bottom': 
             snappedPos.x = x;
             snappedPos.y = structure.bounds.y + structure.bounds.height;
+            snappedPos.rotation = 180; // Door faces down
             break;
     }
 
@@ -5883,12 +5895,7 @@ this.markers.forEach(marker => {
         }
 
         createTeleportConnection(pointA, pointB) {
-//   console.log("Creating teleport connection:", {
-//     pointAId: pointA.id,
-//     pointAIsPointA: pointA.data.isPointA,
-//     pointBId: pointB.id,
-//     pointBIsPointA: pointB.data.isPointA
-//   });
+
   
   const connection = document.createElement("div");
   connection.className = "teleport-connection";
@@ -6006,7 +6013,7 @@ async showStructureContextMenu(structure, event) {
           }
 
 
-    if (type === "door") {
+        if (type === "door") {
         console.log('Finding nearest structure for door placement');
         const nearestStructure = this.rooms.find(room => {
             return this.isNearWall(x, y, room);  // Keep using isNearWall since it works for both
@@ -6014,7 +6021,8 @@ async showStructureContextMenu(structure, event) {
     
         if (nearestStructure) {
             console.log('Found nearest structure:', nearestStructure);
-            const snappedPosition = this.snapToWall(x, y, nearestStructure);
+            // Use snapToStructure instead of snapToWall to get rotation info
+            const snappedPosition = this.snapToStructure(x, y, nearestStructure);
             console.log('Snapped position:', snappedPosition);
             
             // Get texture from resource manager
@@ -6031,8 +6039,11 @@ async showStructureContextMenu(structure, event) {
             console.log('Creating door marker with texture:', texture);
             const marker = this.createMarker("door", snappedPosition.x, snappedPosition.y, {
                 texture: texture,
-                door: { position: snappedPosition },
-                parentStructure: nearestStructure  // Changed from parentWall to parentStructure
+                door: { 
+                    position: snappedPosition,  // This now includes edge and rotation
+                    isOpen: false
+                },
+                parentStructure: nearestStructure
             });
             this.markers.push(marker);
             return marker;
@@ -6414,6 +6425,10 @@ async showStructureContextMenu(structure, event) {
     newAttr: markerElement.getAttribute('data-teleport-point'),
     element: markerElement.outerHTML
   });
+}
+
+if (type === "door") {
+    markerElement.style.transform = `rotate(${data.door?.position?.rotation || 0}deg)`;
 }
 
           // Add context menu handler
@@ -6811,6 +6826,9 @@ showMarkerContextMenu(marker, event) {
                 finalizeRoom(room) {
             room.finalized = true;
             room.updateEditState(false);
+
+                // Generate new thumbnail after resizing
+    room.createThumbnail();
             
             // Ensure room controls stay interactive
             const controls = room.element.querySelector('.room-controls');
