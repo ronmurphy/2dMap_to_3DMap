@@ -7004,128 +7004,216 @@ this.markers.forEach(marker => {
             });
 
             switch (room.shape) {
+              // case "circle": {
+              //   const segments = 32;
+
+              //   // Calculate grid-aligned position
+              //   const gridX = Math.floor(room.bounds.x / this.cellSize);
+              //   const gridY = Math.floor(room.bounds.y / this.cellSize);
+
+              //   const radius =
+              //     Math.max(room.bounds.width, room.bounds.height) / 100;
+              //   // console.log("Radius:", radius);
+              //   // console.log("Cell Size:", this.cellSize);
+
+              //   const dimensionFactor =
+              //     Math.max(
+              //       this.gridDimensions.width,
+              //       this.gridDimensions.height
+              //     ) / 10;
+              //   const hiddenNumber = Math.ceil(dimensionFactor) * 2;
+              //   // Add a small adjustment for smaller maps
+              //   const adjustment = this.gridDimensions.width < 40 ? -1 : 0;
+              //   const finalNumber = hiddenNumber + adjustment;
+
+              //   const offsetX =
+              //     room.bounds.width / (this.cellSize - finalNumber);
+              //   const offsetZ =
+              //     room.bounds.height / (this.cellSize - finalNumber);
+
+              //   const centerX =
+              //     (gridX * this.cellSize) / 50 + offsetX - boxWidth / 2;
+              //   const centerZ =
+              //     (gridY * this.cellSize) / 50 + offsetZ - boxDepth / 2;
+
+
+              //   if (isWall) {
+              //     // For walls, create solid cylinder including top and bottom
+              //     for (let i = 0; i <= segments; i++) {
+              //       const theta = (i / segments) * Math.PI * 2;
+              //       const x = Math.cos(theta);
+              //       const z = Math.sin(theta);
+
+              //       // Bottom vertices
+              //       positions.push(
+              //         centerX + radius * x,
+              //         0,
+              //         centerZ + radius * z
+              //       );
+              //       normals.push(x, 0, z);
+              //       uvs.push(i / segments, 0);
+
+              //       // Top vertices
+              //       positions.push(
+              //         centerX + radius * x,
+              //         boxHeight,
+              //         centerZ + radius * z
+              //       );
+              //       normals.push(x, 0, z);
+              //       uvs.push(i / segments, 1);
+              //     }
+
+              //     // Create faces for cylinder walls
+              //     for (let i = 0; i < segments; i++) {
+              //       const base = i * 2;
+              //       indices.push(
+              //         base,
+              //         base + 1,
+              //         base + 2,
+              //         base + 1,
+              //         base + 3,
+              //         base + 2
+              //       );
+              //     }
+
+              //     // Add center vertices for top and bottom caps
+              //     const bottomCenterIndex = positions.length / 3;
+              //     positions.push(centerX, 0, centerZ);
+              //     normals.push(0, -1, 0);
+              //     uvs.push(0.5, 0.5);
+
+              //     const topCenterIndex = positions.length / 3;
+              //     positions.push(centerX, boxHeight, centerZ);
+              //     normals.push(0, 1, 0);
+              //     uvs.push(0.5, 0.5);
+
+              //     // Add cap faces
+              //     for (let i = 0; i < segments; i++) {
+              //       const current = i * 2;
+              //       const next = ((i + 1) % segments) * 2;
+              //       // Bottom cap
+              //       indices.push(bottomCenterIndex, current, next);
+              //       // Top cap
+              //       indices.push(topCenterIndex, next + 1, current + 1);
+              //     }
+              //   } else {
+              //     // Original hollow room code
+              //     for (let i = 0; i <= segments; i++) {
+              //       const theta = (i / segments) * Math.PI * 2;
+              //       const x = centerX + radius * Math.cos(theta);
+              //       const z = centerZ + radius * Math.sin(theta);
+
+              //       positions.push(x, 0, z);
+              //       positions.push(x, boxHeight, z);
+
+              //       const normal = [Math.cos(theta), 0, Math.sin(theta)];
+              //       normals.push(...normal, ...normal);
+
+              //       uvs.push(i / segments, 0, i / segments, 1);
+              //     }
+
+              //     for (let i = 0; i < segments; i++) {
+              //       const base = i * 2;
+              //       indices.push(
+              //         base,
+              //         base + 1,
+              //         base + 2,
+              //         base + 1,
+              //         base + 3,
+              //         base + 2
+              //       );
+              //     }
+              //   }
+              //   break;
+              // }
+
               case "circle": {
-                const segments = 32;
+    const segments = 32;
+    const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
+    const centerX = (room.bounds.x + room.bounds.width/2) / 50 - boxWidth / 2;
+    const centerZ = (room.bounds.y + room.bounds.height/2) / 50 - boxDepth / 2;
 
-                // Calculate grid-aligned position
-                const gridX = Math.floor(room.bounds.x / this.cellSize);
-                const gridY = Math.floor(room.bounds.y / this.cellSize);
+    if (isWall) {
+        // For walls, create solid cylinder including top and bottom
+        for (let i = 0; i <= segments; i++) {
+            const theta = (i / segments) * Math.PI * 2;
+            const x = Math.cos(theta);
+            const z = Math.sin(theta);
 
-                const radius =
-                  Math.max(room.bounds.width, room.bounds.height) / 100;
-                // console.log("Radius:", radius);
-                // console.log("Cell Size:", this.cellSize);
+            // Bottom vertices
+            positions.push(
+                centerX + radius * x,
+                0,
+                centerZ + radius * z
+            );
+            normals.push(x, 0, z);
+            uvs.push(i / segments, 0);
 
-                const dimensionFactor =
-                  Math.max(
-                    this.gridDimensions.width,
-                    this.gridDimensions.height
-                  ) / 10;
-                const hiddenNumber = Math.ceil(dimensionFactor) * 2;
-                // Add a small adjustment for smaller maps
-                const adjustment = this.gridDimensions.width < 40 ? -1 : 0;
-                const finalNumber = hiddenNumber + adjustment;
+            // Top vertices
+            positions.push(
+                centerX + radius * x,
+                boxHeight,
+                centerZ + radius * z
+            );
+            normals.push(x, 0, z);
+            uvs.push(i / segments, 1);
+        }
 
-                const offsetX =
-                  room.bounds.width / (this.cellSize - finalNumber);
-                const offsetZ =
-                  room.bounds.height / (this.cellSize - finalNumber);
+        // Create faces for cylinder walls
+        for (let i = 0; i < segments; i++) {
+            const base = i * 2;
+            indices.push(
+                base, base + 1, base + 2,
+                base + 1, base + 3, base + 2
+            );
+        }
 
-                const centerX =
-                  (gridX * this.cellSize) / 50 + offsetX - boxWidth / 2;
-                const centerZ =
-                  (gridY * this.cellSize) / 50 + offsetZ - boxDepth / 2;
+        // Add center vertices for top and bottom caps
+        const bottomCenterIndex = positions.length / 3;
+        positions.push(centerX, 0, centerZ);
+        normals.push(0, -1, 0);
+        uvs.push(0.5, 0.5);
 
+        const topCenterIndex = positions.length / 3;
+        positions.push(centerX, boxHeight, centerZ);
+        normals.push(0, 1, 0);
+        uvs.push(0.5, 0.5);
 
-                if (isWall) {
-                  // For walls, create solid cylinder including top and bottom
-                  for (let i = 0; i <= segments; i++) {
-                    const theta = (i / segments) * Math.PI * 2;
-                    const x = Math.cos(theta);
-                    const z = Math.sin(theta);
+        // Add cap faces
+        for (let i = 0; i < segments; i++) {
+            const current = i * 2;
+            const next = ((i + 1) % segments) * 2;
+            // Bottom cap
+            indices.push(bottomCenterIndex, current, next);
+            // Top cap
+            indices.push(topCenterIndex, next + 1, current + 1);
+        }
+    } else {
+        // Original hollow room code
+        for (let i = 0; i <= segments; i++) {
+            const theta = (i / segments) * Math.PI * 2;
+            const x = centerX + radius * Math.cos(theta);
+            const z = centerZ + radius * Math.sin(theta);
 
-                    // Bottom vertices
-                    positions.push(
-                      centerX + radius * x,
-                      0,
-                      centerZ + radius * z
-                    );
-                    normals.push(x, 0, z);
-                    uvs.push(i / segments, 0);
+            positions.push(x, 0, z);
+            positions.push(x, boxHeight, z);
 
-                    // Top vertices
-                    positions.push(
-                      centerX + radius * x,
-                      boxHeight,
-                      centerZ + radius * z
-                    );
-                    normals.push(x, 0, z);
-                    uvs.push(i / segments, 1);
-                  }
+            const normal = [Math.cos(theta), 0, Math.sin(theta)];
+            normals.push(...normal, ...normal);
 
-                  // Create faces for cylinder walls
-                  for (let i = 0; i < segments; i++) {
-                    const base = i * 2;
-                    indices.push(
-                      base,
-                      base + 1,
-                      base + 2,
-                      base + 1,
-                      base + 3,
-                      base + 2
-                    );
-                  }
+            uvs.push(i / segments, 0, i / segments, 1);
+        }
 
-                  // Add center vertices for top and bottom caps
-                  const bottomCenterIndex = positions.length / 3;
-                  positions.push(centerX, 0, centerZ);
-                  normals.push(0, -1, 0);
-                  uvs.push(0.5, 0.5);
-
-                  const topCenterIndex = positions.length / 3;
-                  positions.push(centerX, boxHeight, centerZ);
-                  normals.push(0, 1, 0);
-                  uvs.push(0.5, 0.5);
-
-                  // Add cap faces
-                  for (let i = 0; i < segments; i++) {
-                    const current = i * 2;
-                    const next = ((i + 1) % segments) * 2;
-                    // Bottom cap
-                    indices.push(bottomCenterIndex, current, next);
-                    // Top cap
-                    indices.push(topCenterIndex, next + 1, current + 1);
-                  }
-                } else {
-                  // Original hollow room code
-                  for (let i = 0; i <= segments; i++) {
-                    const theta = (i / segments) * Math.PI * 2;
-                    const x = centerX + radius * Math.cos(theta);
-                    const z = centerZ + radius * Math.sin(theta);
-
-                    positions.push(x, 0, z);
-                    positions.push(x, boxHeight, z);
-
-                    const normal = [Math.cos(theta), 0, Math.sin(theta)];
-                    normals.push(...normal, ...normal);
-
-                    uvs.push(i / segments, 0, i / segments, 1);
-                  }
-
-                  for (let i = 0; i < segments; i++) {
-                    const base = i * 2;
-                    indices.push(
-                      base,
-                      base + 1,
-                      base + 2,
-                      base + 1,
-                      base + 3,
-                      base + 2
-                    );
-                  }
-                }
-                break;
-              }
+        for (let i = 0; i < segments; i++) {
+            const base = i * 2;
+            indices.push(
+                base, base + 1, base + 2,
+                base + 1, base + 3, base + 2
+            );
+        }
+    }
+    break;
+}
 
               case "polygon": {
                 if (!room.points || room.points.length < 3) return null;
@@ -7565,87 +7653,232 @@ this.markers.forEach(marker => {
 
 
 
-          const createRaisedBlockGeometry = (room) => {
-    const positions = [];
-    const normals = [];
-    const uvs = [];
-    const indices = [];
+//           const createRaisedBlockGeometry = (room) => {
+//     const positions = [];
+//     const normals = [];
+//     const uvs = [];
+//     const indices = [];
 
-    const x1 = room.bounds.x / 50 - boxWidth / 2;
-    const x2 = x1 + room.bounds.width / 50;
-    const z1 = room.bounds.y / 50 - boxDepth / 2;
-    const z2 = z1 + room.bounds.height / 50;
-    const height = room.blockHeight;
+//     const x1 = room.bounds.x / 50 - boxWidth / 2;
+//     const x2 = x1 + room.bounds.width / 50;
+//     const z1 = room.bounds.y / 50 - boxDepth / 2;
+//     const z2 = z1 + room.bounds.height / 50;
+//     const height = room.blockHeight;
 
-    positions.push(
-        x1, 0, z1,
-        x2, 0, z1,
-        x2, 0, z2,
-        x1, 0, z2,
-        x1, height, z1,
-        x2, height, z1,
-        x2, height, z2,
-        x1, height, z2,
-        x1, 0, z1,
-        x2, 0, z1,
-        x2, height, z1,
-        x1, height, z1,
-        x1, 0, z2,
-        x2, 0, z2,
-        x2, height, z2,
-        x1, height, z2,
-        x1, 0, z1,
-        x1, 0, z2,
-        x1, height, z2,
-        x1, height, z1,
-        x2, 0, z1,
-        x2, 0, z2,
-        x2, height, z2,
-        x2, height, z1
-    );
+//     positions.push(
+//         x1, 0, z1,
+//         x2, 0, z1,
+//         x2, 0, z2,
+//         x1, 0, z2,
+//         x1, height, z1,
+//         x2, height, z1,
+//         x2, height, z2,
+//         x1, height, z2,
+//         x1, 0, z1,
+//         x2, 0, z1,
+//         x2, height, z1,
+//         x1, height, z1,
+//         x1, 0, z2,
+//         x2, 0, z2,
+//         x2, height, z2,
+//         x1, height, z2,
+//         x1, 0, z1,
+//         x1, 0, z2,
+//         x1, height, z2,
+//         x1, height, z1,
+//         x2, 0, z1,
+//         x2, 0, z2,
+//         x2, height, z2,
+//         x2, height, z1
+//     );
 
-    for (let i = 0; i < 4; i++) normals.push(0, -1, 0);
-    for (let i = 0; i < 4; i++) normals.push(0, 1, 0);
-    for (let i = 0; i < 4; i++) normals.push(0, 0, -1);
-    for (let i = 0; i < 4; i++) normals.push(0, 0, 1);
-    for (let i = 0; i < 4; i++) normals.push(-1, 0, 0);
-    for (let i = 0; i < 4; i++) normals.push(1, 0, 0);
+//     for (let i = 0; i < 4; i++) normals.push(0, -1, 0);
+//     for (let i = 0; i < 4; i++) normals.push(0, 1, 0);
+//     for (let i = 0; i < 4; i++) normals.push(0, 0, -1);
+//     for (let i = 0; i < 4; i++) normals.push(0, 0, 1);
+//     for (let i = 0; i < 4; i++) normals.push(-1, 0, 0);
+//     for (let i = 0; i < 4; i++) normals.push(1, 0, 0);
 
-    const textureRepeatsU = wallTexture ? wallTexture.repeat.x : 1;
-    const textureRepeatsV = wallTexture ? wallTexture.repeat.y : 1;
+//     const textureRepeatsU = wallTexture ? wallTexture.repeat.x : 1;
+//     const textureRepeatsV = wallTexture ? wallTexture.repeat.y : 1;
 
-    for (let face = 0; face < 6; face++) {
-        uvs.push(
-            0, 0,
-            textureRepeatsU, 0,
-            textureRepeatsU, textureRepeatsV,
-            0, textureRepeatsV
-        );
-    }
+//     for (let face = 0; face < 6; face++) {
+//         uvs.push(
+//             0, 0,
+//             textureRepeatsU, 0,
+//             textureRepeatsU, textureRepeatsV,
+//             0, textureRepeatsV
+//         );
+//     }
 
-    for (let face = 0; face < 6; face++) {
-        const base = face * 4;
-        indices.push(
-            base, base + 1, base + 2,
-            base, base + 2, base + 3
-        );
-    }
+//     for (let face = 0; face < 6; face++) {
+//         const base = face * 4;
+//         indices.push(
+//             base, base + 1, base + 2,
+//             base, base + 2, base + 3
+//         );
+//     }
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    geometry.setIndex(indices);
+//     const geometry = new THREE.BufferGeometry();
+//     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+//     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+//     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+//     geometry.setIndex(indices);
 
-    return new THREE.Mesh(geometry, room.type === "wall" ?
-        this.textureManager.createMaterial(room, wallTextureRoom) :
-        this.textureManager.createMaterial(room, roomTextureRoom)
-    );
-};
+//     return new THREE.Mesh(geometry, room.type === "wall" ?
+//         this.textureManager.createMaterial(room, wallTextureRoom) :
+//         this.textureManager.createMaterial(room, roomTextureRoom)
+//     );
+// };
 
 
           // Create rooms and subtract from main mesh
-updateStatus(20);
+
+          const createRaisedBlockGeometry = (room) => {
+    let geometry;
+
+    switch(room.shape) {
+
+case "circle": {
+    const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
+    geometry = new THREE.CylinderGeometry(radius, radius, room.blockHeight, 32);
+    geometry.rotateZ(0);  // Keep it horizontal
+    break;
+}
+case "polygon": {
+
+
+    if (!room.points || room.points.length < 3) return null;
+
+    const shape = new THREE.Shape();
+    // Use absolute positions since we'll position the whole mesh later
+    room.points.forEach((point, index) => {
+        const x = point.x / 50;
+        const y = -point.y / 50;  // Added negative to flip
+        if (index === 0) shape.moveTo(x, y);
+        else shape.lineTo(x, y);
+    });
+    shape.closePath();
+
+    geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: room.blockHeight,
+        bevelEnabled: false
+    });
+    geometry.rotateX(-Math.PI / 2);
+    // Center the geometry
+    geometry.center();
+    break;
+}
+
+        default: {
+            // Rectangle case - use all the existing buffer geometry code
+            const positions = [];
+            const normals = [];
+            const uvs = [];
+            const indices = [];
+
+            const x1 = room.bounds.x / 50 - boxWidth / 2;
+            const x2 = x1 + room.bounds.width / 50;
+            const z1 = room.bounds.y / 50 - boxDepth / 2;
+            const z2 = z1 + room.bounds.height / 50;
+            const height = room.blockHeight;
+
+            positions.push(
+                x1, 0, z1,
+                x2, 0, z1,
+                x2, 0, z2,
+                x1, 0, z2,
+                x1, height, z1,
+                x2, height, z1,
+                x2, height, z2,
+                x1, height, z2,
+                x1, 0, z1,
+                x2, 0, z1,
+                x2, height, z1,
+                x1, height, z1,
+                x1, 0, z2,
+                x2, 0, z2,
+                x2, height, z2,
+                x1, height, z2,
+                x1, 0, z1,
+                x1, 0, z2,
+                x1, height, z2,
+                x1, height, z1,
+                x2, 0, z1,
+                x2, 0, z2,
+                x2, height, z2,
+                x2, height, z1
+            );
+
+            for (let i = 0; i < 4; i++) normals.push(0, -1, 0);
+            for (let i = 0; i < 4; i++) normals.push(0, 1, 0);
+            for (let i = 0; i < 4; i++) normals.push(0, 0, -1);
+            for (let i = 0; i < 4; i++) normals.push(0, 0, 1);
+            for (let i = 0; i < 4; i++) normals.push(-1, 0, 0);
+            for (let i = 0; i < 4; i++) normals.push(1, 0, 0);
+
+            const textureRepeatsU = wallTexture ? wallTexture.repeat.x : 1;
+            const textureRepeatsV = wallTexture ? wallTexture.repeat.y : 1;
+
+            for (let face = 0; face < 6; face++) {
+                uvs.push(
+                    0, 0,
+                    textureRepeatsU, 0,
+                    textureRepeatsU, textureRepeatsV,
+                    0, textureRepeatsV
+                );
+            }
+
+            for (let face = 0; face < 6; face++) {
+                const base = face * 4;
+                indices.push(
+                    base, base + 1, base + 2,
+                    base, base + 2, base + 3
+                );
+            }
+
+            geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+            geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+            geometry.setIndex(indices);
+            break;
+        }
+    }
+
+    const mesh = new THREE.Mesh(geometry, room.type === "wall" ?
+        this.textureManager.createMaterial(room, wallTextureRoom) :
+        this.textureManager.createMaterial(room, roomTextureRoom)
+    );
+
+// Position mesh correctly based on room bounds
+if (room.shape === "polygon") {
+    mesh.position.set(
+        (room.bounds.x + room.bounds.width/2) / 50 - boxWidth / 2,
+        0,
+        (room.bounds.y + room.bounds.height/2) / 50 - boxDepth / 2
+    );
+} else if (room.shape === "circle") {
+    mesh.position.set(
+        (room.bounds.x + room.bounds.width/2) / 50 - boxWidth / 2,
+        0,
+        (room.bounds.y + room.bounds.height/2) / 50 - boxDepth / 2
+    );
+} else {
+  // mesh.position.set(
+  //       room.bounds.x / 50 - boxWidth / 2,
+  //       0,
+  //       room.bounds.y / 50 - boxDepth / 2
+  //   );
+  mesh.position.set(0, 0, 0);
+}
+
+    return mesh;
+};
+
+
+
+          updateStatus(20);
 this.rooms.forEach((room, index) => {
     // Skip the WallTexture room in 3D view
     if (room.name === "WallTexture" || room.name === "RoomTexture") {
@@ -8190,7 +8423,31 @@ createProp(structure, assignment) {
     return prop;
 }
 
+createTextureFromArea(room) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = room.bounds.width;
+    canvas.height = room.bounds.height;
 
+    // Draw the portion of the map that contains the texture
+    ctx.drawImage(
+        this.mapEditor.baseImage,
+        room.bounds.x,
+        room.bounds.y,
+        room.bounds.width,
+        room.bounds.height,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    
+    return texture;
+}
 
 
       }
