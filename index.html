@@ -3701,18 +3701,21 @@ createLayerItem(room) {
             ` : ''}
         </div>
         
-<div style="margin-top: 16px;">
-    <sl-button class="dock-room-btn" variant="neutral" style="width: 100%;">
-        <span class="material-icons" style="margin-right: 8px;">link</span>
-        Dock to Another Room
-    </sl-button>
-</div>
+<-- Dock/Undock position holder -->
     
     <div slot="footer">
         <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
         <sl-button variant="primary" class="save-btn">Save</sl-button>
     </div>
 `;
+
+
+// <div style="margin-top: 16px;">
+//     <sl-button class="dock-room-btn" variant="neutral" style="width: 100%;">
+//         <span class="material-icons" style="margin-right: 8px;">link</span>
+//         Dock to Another Room
+//     </sl-button>
+// </div>
 
     document.body.appendChild(dialog);
 
@@ -3732,7 +3735,22 @@ createLayerItem(room) {
             });
         });
 
-        const blockHeightSlider = dialog.querySelector('#blockHeight');
+//         const blockHeightSlider = dialog.querySelector('#blockHeight');
+// if (blockHeightSlider) {
+//     // Set initial value if room is a raised block
+//     if (room.isRaisedBlock && room.blockHeight) {
+//         blockHeightSlider.value = Math.round(room.blockHeight * 2);
+//     }
+
+//     blockHeightSlider.addEventListener('sl-input', (e) => {
+//         // Update label while sliding
+//         const value = parseInt(e.target.value);
+//         const height = value / 2;
+//         blockHeightSlider.label = `Block Height: ${height} ${height === 1 ? 'block' : 'blocks'}`;
+//     });
+// }
+
+const blockHeightSlider = dialog.querySelector('#blockHeight');
 if (blockHeightSlider) {
     // Set initial value if room is a raised block
     if (room.isRaisedBlock && room.blockHeight) {
@@ -3744,54 +3762,59 @@ if (blockHeightSlider) {
         const value = parseInt(e.target.value);
         const height = value / 2;
         blockHeightSlider.label = `Block Height: ${height} ${height === 1 ? 'block' : 'blocks'}`;
+
+        // Handle Prop- naming as slider moves
+        const currentName = nameInput.value.trim();
+        if (value > 0) {  // If any height is set
+            if (currentName.startsWith("Wall")) {
+                nameInput.value = currentName.replace("Wall", "Prop");
+            } else if (!currentName.startsWith("Prop-")) {
+                nameInput.value = `Prop-${currentName}`;
+            }
+        } else {  // If height is 0
+            if (currentName.startsWith("Prop-")) {
+                nameInput.value = currentName.substring(5);  // Remove Prop- prefix
+            }
+        }
     });
 }
 
+      const handleSave = () => {
+        const newName = nameInput.value.trim();
+        if (newName) {
+    room.name = setAsTextureCheckbox?.checked ? "WallTexture" : newName;
 
-        const handleSave = () => {
-            const newName = nameInput.value.trim();
-            if (newName) {
-                room.name = setAsTextureCheckbox?.checked ? "WallTexture" : newName;
+    // Save raised block settings
+    const blockHeight = parseInt(blockHeightSlider.value) / 2;
+    room.isRaisedBlock = blockHeight > 0;
+    room.blockHeight = room.isRaisedBlock ? blockHeight : undefined;
 
-                        // Save raised block settings
-                        const blockHeight = parseInt(blockHeightSlider.value) / 2;
-room.isRaisedBlock = blockHeight > 0;
-room.blockHeight = room.isRaisedBlock ? blockHeight : undefined;
-                
-                if (dialog.selectedTextureId && this.editor.resourceManager) {
-                    this.editor.resourceManager.assignTextureToStructure(room.id, dialog.selectedTextureId, 'walls');
-                }
+    if (dialog.selectedTextureId && this.editor.resourceManager) {
+        this.editor.resourceManager.assignTextureToStructure(room.id, dialog.selectedTextureId, 'walls');
+    }
 
-                // Handle folder assignment
-                if (folderSelect.value) {
-                    this.folders.forEach(folder => {
-                        folder.rooms = folder.rooms.filter(r => r.id !== room.id);
-                    });
-                    const newFolder = this.folders.find(f => f.id === parseInt(folderSelect.value));
-                    if (newFolder) {
-                        newFolder.rooms.push(room);
-                    }
-                }
+    // Handle folder assignment
+    if (folderSelect.value) {
+        this.folders.forEach(folder => {
+            folder.rooms = folder.rooms.filter(r => r.id !== room.id);
+        });
+        const newFolder = this.folders.find(f => f.id === parseInt(folderSelect.value));
+        if (newFolder) {
+            newFolder.rooms.push(room);
+        }
+    }
 
-                this.updateLayersList();
-                dialog.hide();
-                resolve(true);
-            }
-        };
+    this.updateLayersList();
+    dialog.hide();
+    resolve(true);
+}
+      };
 
         saveBtn.addEventListener('click', handleSave);
         cancelBtn.addEventListener('click', () => {
             dialog.hide();
             resolve(false);
         });
-
-//         const dockBtn = dialog.querySelector('.dock-room-btn');
-// if (dockBtn) {
-//     dockBtn.addEventListener('click', () => {
-//         dialog.hide();
-//         this.showDockDialog(room);
-//     });
-// }
 
 const dockBtn = dialog.querySelector('.dock-room-btn');
 if (dockBtn) {
@@ -3814,125 +3837,6 @@ if (undockBtn) {
     });
   }
 
-//   async showDockDialog(room) {
-//     const dialog = document.createElement('sl-dialog');
-//     dialog.label = 'Dock Room';
-    
-//     // Make dialog wider
-//     dialog.style.setProperty('--width', '800px');  // Increased from default
-    
-//     const availableRooms = this.editor.rooms.filter(r => 
-//         r.id !== room.id && !this.editor.dockedRooms.has(r.id)
-//     );
-
-//     dialog.innerHTML = `
-//         <div style="display: grid; grid-template-columns: 250px 1fr; gap: 16px;">
-//             <!-- Room List -->
-//             <div class="room-list" style="border-right: 1px solid #444; padding-right: 16px; overflow-y: auto; max-height: 500px;">
-//                 <div style="margin-bottom: 8px; font-weight: bold;">Available Rooms</div>
-//                 ${availableRooms.map(r => `
-//                     <div class="room-option" data-room-id="${r.id}" style="cursor: pointer; padding: 8px; margin-bottom: 8px; border: 1px solid #666; border-radius: 4px;">
-//                         <div style="font-weight: bold; margin-bottom: 4px;">${r.name}</div>
-//                         <div style="width: 100%; height: 80px; background: #333; border-radius: 2px; overflow: hidden;">
-//                             ${r.thumbnail ? `<img src="${r.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">` : ''}
-//                         </div>
-//                     </div>
-//                 `).join('')}
-//             </div>
-
-//             <!-- Docking Preview -->
-//             <div class="dock-preview" style="position: relative; min-height: 500px; background: #2a2a2a; border-radius: 4px;">
-//                 <!-- Instructions -->
-//                 <div style="position: absolute; top: 8px; left: 8px; right: 8px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px;">
-//                     1. Select a room from the left
-//                     2. Click a docking point to set position
-//                 </div>
-
-//                 <!-- Current room preview -->
-//                 <div class="target-room" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 150px; background: #444; border: 2px solid #666;">
-//                     <div style="padding: 8px; text-align: center;">Current Room: ${room.name}</div>
-//                 </div>
-
-//                 <!-- Docking points -->
-//                 <div class="dock-points">
-//                     <!-- Left side -->
-//                     <div class="dock-point" data-position="left-top" style="left: 20%; top: 25%"></div>
-//                     <div class="dock-point" data-position="left-middle" style="left: 20%; top: 50%"></div>
-//                     <div class="dock-point" data-position="left-bottom" style="left: 20%; top: 75%"></div>
-
-//                     <!-- Right side -->
-//                     <div class="dock-point" data-position="right-top" style="right: 20%; top: 25%"></div>
-//                     <div class="dock-point" data-position="right-middle" style="right: 20%; top: 50%"></div>
-//                     <div class="dock-point" data-position="right-bottom" style="right: 20%; top: 75%"></div>
-
-//                     <!-- Top side -->
-//                     <div class="dock-point" data-position="top-left" style="left: 25%; top: 20%"></div>
-//                     <div class="dock-point" data-position="top-center" style="left: 50%; top: 20%"></div>
-//                     <div class="dock-point" data-position="top-right" style="left: 75%; top: 20%"></div>
-
-//                     <!-- Bottom side -->
-//                     <div class="dock-point" data-position="bottom-left" style="left: 25%; bottom: 20%"></div>
-//                     <div class="dock-point" data-position="bottom-center" style="left: 50%; bottom: 20%"></div>
-//                     <div class="dock-point" data-position="bottom-right" style="left: 75%; bottom: 20%"></div>
-//                 </div>
-//             </div>
-//         </div>
-
-//         <div slot="footer">
-//             <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
-//             <sl-button variant="primary" class="dock-btn" disabled>Dock</sl-button>
-//         </div>
-//     `;
-
-//     // Add the dock dialog to the document
-//     document.body.appendChild(dialog);
-
-//     // Return promise that resolves when docking is complete
-//     return new Promise((resolve) => {
-//         let selectedRoom = null;
-//         let selectedPosition = null;
-
-//         // Add event handlers
-//         dialog.querySelectorAll('.room-option').forEach(option => {
-//             option.addEventListener('click', () => {
-//                 dialog.querySelectorAll('.room-option').forEach(opt => 
-//                     opt.classList.remove('selected'));
-//                 option.classList.add('selected');
-//                 selectedRoom = availableRooms.find(r => 
-//                     r.id === parseInt(option.dataset.roomId));
-//                 dialog.querySelector('.dock-btn').disabled = !selectedPosition;
-//             });
-//         });
-
-//         dialog.querySelectorAll('.dock-point').forEach(point => {
-//             point.addEventListener('click', () => {
-//                 dialog.querySelectorAll('.dock-point').forEach(p => 
-//                     p.classList.remove('active'));
-//                 point.classList.add('active');
-//                 selectedPosition = point.dataset.position;
-//                 dialog.querySelector('.dock-btn').disabled = !selectedRoom;
-//             });
-//         });
-
-//         // Handle dock button click
-//         dialog.querySelector('.dock-btn').addEventListener('click', () => {
-//             if (selectedRoom && selectedPosition) {
-//                 this.editor.dockRooms(room, selectedRoom, selectedPosition);
-//                 dialog.hide();
-//                 resolve(true);
-//             }
-//         });
-
-//         // Handle cancel button click
-//         dialog.querySelector('.cancel-btn').addEventListener('click', () => {
-//             dialog.hide();
-//             resolve(false);
-//         });
-
-//         dialog.addEventListener('sl-after-hide', () => dialog.remove());
-//         dialog.show();
-//     });
-// }
 
 
 async showDockDialog(room) {
@@ -4012,95 +3916,64 @@ async showDockDialog(room) {
 
     document.body.appendChild(dialog);
 
-    // Single selection logic
-dialog.querySelectorAll('.dock-button').forEach(button => {
-    button.addEventListener('click', () => {
-        // Deselect all buttons
-        dialog.querySelectorAll('.dock-button').forEach(btn => 
-            btn.classList.remove('selected'));
-        // Select clicked button
-        button.classList.add('selected');
-        selectedPosition = button.dataset.position;
-        dialog.querySelector('.dock-btn').disabled = !selectedRoom;
-    });
-});
+return new Promise((resolve) => {
+    let selectedRoom = null;
+    let selectedPosition = null;
 
-    return new Promise((resolve) => {
-        let selectedRoom = null;
-        let selectedPosition = null;
-
-        // Room selection
-        // dialog.querySelectorAll('.room-option').forEach(option => {
-        //     option.addEventListener('click', () => {
-        //         dialog.querySelectorAll('.room-option').forEach(opt => 
-        //             opt.classList.remove('selected'));
-        //         option.classList.add('selected');
-        //         selectedRoom = availableRooms.find(r => 
-        //             r.id === parseInt(option.dataset.roomId));
-        //         dialog.querySelector('.dock-btn').disabled = !selectedPosition;
-        //     });
-        // });
-
-        // // Position selection
-        // dialog.querySelectorAll('sl-radio').forEach(radio => {
-        //     radio.addEventListener('sl-change', (e) => {
-        //         if (e.target.checked) {
-        //             selectedPosition = e.target.value;
-        //             dialog.querySelector('.dock-btn').disabled = !selectedRoom;
-        //         }
-        //     });
-        // });
-
-        // Room selection
-dialog.querySelectorAll('.room-option').forEach(option => {
-    option.addEventListener('click', () => {
-        console.log('Room selected:', option.dataset.roomId); // Debug log
-        dialog.querySelectorAll('.room-option').forEach(opt => 
-            opt.classList.remove('selected'));
-        option.classList.add('selected');
-        selectedRoom = availableRooms.find(r => 
-            r.id === parseInt(option.dataset.roomId));
-        const dockBtn = dialog.querySelector('.dock-btn');
-        dockBtn.disabled = !(selectedRoom && selectedPosition);
-        console.log('Dock button state:', {
-            selectedRoom: !!selectedRoom,
-            selectedPosition: !!selectedPosition,
-            buttonDisabled: dockBtn.disabled
+    // Room selection
+    dialog.querySelectorAll('.room-option').forEach(option => {
+        option.addEventListener('click', () => {
+            console.log('Room selected:', option.dataset.roomId);
+            dialog.querySelectorAll('.room-option').forEach(opt => 
+                opt.classList.remove('selected'));
+            option.classList.add('selected');
+            selectedRoom = availableRooms.find(r => 
+                r.id === parseInt(option.dataset.roomId));
+            dialog.querySelector('.dock-btn').disabled = !(selectedRoom && selectedPosition);
+            console.log('Dock button state:', {
+                selectedRoom: !!selectedRoom,
+                selectedPosition: !!selectedPosition,
+                buttonDisabled: dialog.querySelector('.dock-btn').disabled
+            });
         });
     });
-});
 
-// Position selection - Listen to radio-group changes instead of individual radios
-dialog.querySelectorAll('sl-radio-group').forEach(group => {
-    group.addEventListener('sl-change', (e) => {
-        console.log('Position selected:', e.target.value);
-        selectedPosition = e.target.value;
-        const dockBtn = dialog.querySelector('.dock-btn');
-        dockBtn.disabled = !(selectedRoom && selectedPosition);
-        console.log('Dock button state:', {
-            selectedRoom: !!selectedRoom,
-            selectedPosition: !!selectedPosition,
-            buttonDisabled: dockBtn.disabled
+    // Position selection using grid buttons
+    dialog.querySelectorAll('.dock-button').forEach(button => {
+        button.addEventListener('click', () => {
+            console.log('Position selected:', button.dataset.position);
+            dialog.querySelectorAll('.dock-button').forEach(btn => 
+                btn.classList.remove('selected'));
+            button.classList.add('selected');
+            selectedPosition = button.dataset.position;
+            dialog.querySelector('.dock-btn').disabled = !(selectedRoom && selectedPosition);
+            console.log('Dock button state:', {
+                selectedRoom: !!selectedRoom,
+                selectedPosition: !!selectedPosition,
+                buttonDisabled: dialog.querySelector('.dock-btn').disabled
+            });
         });
     });
-});
 
-        dialog.querySelector('.dock-btn').addEventListener('click', () => {
-            if (selectedRoom && selectedPosition) {
-                this.editor.dockRooms(room, selectedRoom, selectedPosition);
-                dialog.hide();
-                resolve(true);
-            }
-        });
-
-        dialog.querySelector('.cancel-btn').addEventListener('click', () => {
+    // Dock button handler
+    dialog.querySelector('.dock-btn').addEventListener('click', () => {
+        if (selectedRoom && selectedPosition) {
+            this.editor.dockRooms(room, selectedRoom, selectedPosition);
             dialog.hide();
-            resolve(false);
-        });
-
-        dialog.addEventListener('sl-after-hide', () => dialog.remove());
-        dialog.show();
+            resolve(true);
+        }
     });
+
+    // Cancel button handler
+    dialog.querySelector('.cancel-btn').addEventListener('click', () => {
+        dialog.hide();
+        resolve(false);
+    });
+
+    dialog.addEventListener('sl-after-hide', () => dialog.remove());
+    dialog.show();
+});
+
 }
 
 }
@@ -4229,107 +4102,143 @@ checkTextureManager(callback) {
             return value;
         }
 
-        dockRooms(sourceRoom, targetRoom, position) {
-    if (!sourceRoom || !targetRoom) return;
+        calculateDockOffset(mainRoom, dockingRoom, position) {
+    let newX = dockingRoom.bounds.x;  // Start with current position
+    let newY = dockingRoom.bounds.y;
 
-    // Calculate offset
-    const offset = this.calculateDockOffset(sourceRoom, targetRoom, position);
-    
-    // Update source room position relative to target room
-    sourceRoom.bounds.x = targetRoom.bounds.x + offset.x;
-    sourceRoom.bounds.y = targetRoom.bounds.y + offset.y;
-    
-    // Store docking relationship
-    if (!this.dockedRooms.has(sourceRoom.id)) {
-        this.dockedRooms.set(sourceRoom.id, []);
-    }
-    this.dockedRooms.get(sourceRoom.id).push({
-        room: targetRoom,
-        position: position
-    });
-
-    // Update visual elements
-    sourceRoom.updateElement();
-    targetRoom.updateElement();
-
-    // Add visual feedback
-    sourceRoom.element.classList.add('docked');
-    targetRoom.element.classList.add('docked');
-}
-
-    calculateDockOffset(sourceRoom, targetRoom, position) {
-    const offset = { x: 0, y: 0 };
-    
     switch(position) {
-        // Left side positions
-        case 'left-top':
-            offset.x = -sourceRoom.bounds.width;
-            offset.y = 0;
-            break;
-        case 'left-middle':
-            offset.x = -sourceRoom.bounds.width;
-            offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
-            break;
-        case 'left-bottom':
-            offset.x = -sourceRoom.bounds.width;
-            offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
-            break;
-
         // Right side positions
         case 'right-top':
-            offset.x = targetRoom.bounds.width;
-            offset.y = 0;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width;
+            newY = mainRoom.bounds.y;
             break;
         case 'right-middle':
-            offset.x = targetRoom.bounds.width;
-            offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width;
+            newY = mainRoom.bounds.y + (mainRoom.bounds.height - dockingRoom.bounds.height) / 2;
             break;
         case 'right-bottom':
-            offset.x = targetRoom.bounds.width;
-            offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height - dockingRoom.bounds.height;
+            break;
+
+        // Left side positions
+        case 'left-top':
+            newX = mainRoom.bounds.x - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y;
+            break;
+        case 'left-middle':
+            newX = mainRoom.bounds.x - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y + (mainRoom.bounds.height - dockingRoom.bounds.height) / 2;
+            break;
+        case 'left-bottom':
+            newX = mainRoom.bounds.x - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height - dockingRoom.bounds.height;
             break;
 
         // Top side positions
         case 'top-left':
-            offset.x = 0;
-            offset.y = -sourceRoom.bounds.height;
+            newX = mainRoom.bounds.x;
+            newY = mainRoom.bounds.y - dockingRoom.bounds.height;
             break;
         case 'top-center':
-            offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
-            offset.y = -sourceRoom.bounds.height;
+            newX = mainRoom.bounds.x + (mainRoom.bounds.width - dockingRoom.bounds.width) / 2;
+            newY = mainRoom.bounds.y - dockingRoom.bounds.height;
             break;
         case 'top-right':
-            offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
-            offset.y = -sourceRoom.bounds.height;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y - dockingRoom.bounds.height;
             break;
 
         // Bottom side positions
         case 'bottom-left':
-            offset.x = 0;
-            offset.y = targetRoom.bounds.height;
+            newX = mainRoom.bounds.x;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height;
             break;
         case 'bottom-center':
-            offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
-            offset.y = targetRoom.bounds.height;
+            newX = mainRoom.bounds.x + (mainRoom.bounds.width - dockingRoom.bounds.width) / 2;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height;
             break;
         case 'bottom-right':
-            offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
-            offset.y = targetRoom.bounds.height;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height;
             break;
     }
 
-    return offset;
+    // Calculate the offset from current position
+    return {
+        x: newX - dockingRoom.bounds.x,
+        y: newY - dockingRoom.bounds.y
+    };
 }
-    undockRoom(room) {
-        if (this.dockedRooms.has(room.id)) {
-            const dockings = this.dockedRooms.get(room.id);
-            dockings.forEach(({ room: targetRoom }) => {
-                targetRoom.element.classList.remove('docked');
-            });
-            room.element.classList.remove('docked');
-            this.dockedRooms.delete(room.id);
-        }
+
+dockRooms(mainRoom, dockingRoom, position) {
+    if (!mainRoom || !dockingRoom) return;
+
+    // Calculate where dockingRoom should move to
+    const offset = this.calculateDockOffset(mainRoom, dockingRoom, position);
+    
+    // Move the docking room
+    dockingRoom.bounds.x += offset.x;
+    dockingRoom.bounds.y += offset.y;
+    
+    // Store docking relationship
+    if (!this.dockedRooms.has(dockingRoom.id)) {
+        this.dockedRooms.set(dockingRoom.id, []);
     }
+    
+    this.dockedRooms.get(dockingRoom.id).push({
+        room: mainRoom,
+        position: position,
+        offset: { ...offset }
+    });
+
+    // Update visual elements
+    dockingRoom.updateElement();
+    dockingRoom.element.classList.add('docked');
+    mainRoom.element.classList.add('docked');
+
+    console.log('Docking complete:', {
+        mainRoomId: mainRoom.id,
+        dockingRoomId: dockingRoom.id,
+        position,
+        newPosition: {
+            x: dockingRoom.bounds.x,
+            y: dockingRoom.bounds.y
+        },
+        offset
+    });
+}
+
+
+undockRoom(room) {
+    if (this.dockedRooms.has(room.id)) {
+        // Get all docking relationships for this room
+        const dockings = this.dockedRooms.get(room.id);
+        
+        dockings.forEach(({ room: targetRoom, offset }) => {
+            // Remove visual indicators
+            targetRoom.element.classList.remove('docked');
+            
+            // Remove any stored relationships where this room is the target
+            this.dockedRooms.forEach((relationships, key) => {
+                if (relationships.some(rel => rel.room.id === room.id)) {
+                    this.dockedRooms.delete(key);
+                }
+            });
+        });
+
+        // Remove visual indicator from source room
+        room.element.classList.remove('docked');
+        
+        // Remove all docking relationships for this room
+        this.dockedRooms.delete(room.id);
+
+        console.log('Room undocked:', {
+            roomId: room.id,
+            previousDockings: dockings
+        });
+    }
+}
 
 
         showLockedMessage() {
@@ -6284,10 +6193,24 @@ startResizing(room, handle, e) {
         }
 
         // Update room bounds
-        room.bounds.x = newX;
-        room.bounds.y = newY;
-        room.bounds.width = Math.max(newWidth, this.cellSize || 20);
-        room.bounds.height = Math.max(newHeight, this.cellSize || 20);
+        // room.bounds.x = newX;
+        // room.bounds.y = newY;
+        // room.bounds.width = Math.max(newWidth, this.cellSize || 20);
+        // room.bounds.height = Math.max(newHeight, this.cellSize || 20);
+
+        // Update room bounds
+room.bounds.x = newX;
+room.bounds.y = newY;
+
+if (room.name.startsWith("Prop-")) {
+    // Props can be any size, just prevent negative values
+    room.bounds.width = Math.max(newWidth, 1);
+    room.bounds.height = Math.max(newHeight, 1);
+} else {
+    // Regular rooms maintain minimum cell size
+    room.bounds.width = Math.max(newWidth, this.cellSize || 20);
+    room.bounds.height = Math.max(newHeight, this.cellSize || 20);
+}
 
         // Update polygon points if this is a polygon room
         if (room.shape === 'polygon' && startPoints) {
