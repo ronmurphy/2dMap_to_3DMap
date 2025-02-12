@@ -1237,7 +1237,64 @@ sl-input::part(form-control-label) {
     transform: rotateY(90deg);
 }
 
+.room-block.docked {
+    border: 2px solid #ae33c7;
+    position: relative;
+}
 
+.room-block.docked::after {
+    content: "Shift + Drag to dock";
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.room-block.docked:hover::after {
+    opacity: 1;
+}
+
+.dock-point {
+            position: absolute;
+            width: 16px;  /* Bigger dots */
+            height: 16px;
+            background: #666;
+            border: 2px solid #888;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .dock-point:hover {
+            background: var(--sl-color-primary-600);
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        .dock-point.active {
+            background: var(--sl-color-primary-600);
+            box-shadow: 0 0 0 4px rgba(var(--sl-color-primary-600), 0.3);
+        }
+
+        .room-option {
+            transition: all 0.2s;
+        }
+
+        .room-option:hover {
+            background: #444;
+        }
+
+        .room-option.selected {
+            border-color: var(--sl-color-primary-600);
+            background: #333;
+        }
 
 
     </style>
@@ -3525,11 +3582,19 @@ createLayerItem(room) {
                 </div>
             ` : ''}
         </div>
-        <div slot="footer">
-            <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
-            <sl-button variant="primary" class="save-btn">Save</sl-button>
-        </div>
-    `;
+        
+<div style="margin-top: 16px;">
+    <sl-button class="dock-room-btn" variant="neutral" style="width: 100%;">
+        <span class="material-icons" style="margin-right: 8px;">link</span>
+        Dock to Another Room
+    </sl-button>
+</div>
+    
+    <div slot="footer">
+        <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+        <sl-button variant="primary" class="save-btn">Save</sl-button>
+    </div>
+`;
 
     document.body.appendChild(dialog);
 
@@ -3602,10 +3667,156 @@ room.blockHeight = room.isRaisedBlock ? blockHeight : undefined;
             resolve(false);
         });
 
+//         const dockBtn = dialog.querySelector('.dock-room-btn');
+// if (dockBtn) {
+//     dockBtn.addEventListener('click', () => {
+//         dialog.hide();
+//         this.showDockDialog(room);
+//     });
+// }
+
+const dockBtn = dialog.querySelector('.dock-room-btn');
+if (dockBtn) {
+    dockBtn.addEventListener('click', () => {
+        dialog.hide();
+        this.showDockDialog(room);
+    });
+}
+
+const undockBtn = dialog.querySelector('.undock-room-btn');
+if (undockBtn) {
+    undockBtn.addEventListener('click', () => {
+        this.editor.undockRoom(room);
+        dialog.hide();
+    });
+}
+
         dialog.addEventListener('sl-after-hide', () => dialog.remove());
         dialog.show();
     });
   }
+
+  async showDockDialog(room) {
+    const dialog = document.createElement('sl-dialog');
+    dialog.label = 'Dock Room';
+    
+    // Make dialog wider
+    dialog.style.setProperty('--width', '800px');  // Increased from default
+    
+    const availableRooms = this.editor.rooms.filter(r => 
+        r.id !== room.id && !this.editor.dockedRooms.has(r.id)
+    );
+
+    dialog.innerHTML = `
+        <div style="display: grid; grid-template-columns: 250px 1fr; gap: 16px;">
+            <!-- Room List -->
+            <div class="room-list" style="border-right: 1px solid #444; padding-right: 16px; overflow-y: auto; max-height: 500px;">
+                <div style="margin-bottom: 8px; font-weight: bold;">Available Rooms</div>
+                ${availableRooms.map(r => `
+                    <div class="room-option" data-room-id="${r.id}" style="cursor: pointer; padding: 8px; margin-bottom: 8px; border: 1px solid #666; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 4px;">${r.name}</div>
+                        <div style="width: 100%; height: 80px; background: #333; border-radius: 2px; overflow: hidden;">
+                            ${r.thumbnail ? `<img src="${r.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <!-- Docking Preview -->
+            <div class="dock-preview" style="position: relative; min-height: 500px; background: #2a2a2a; border-radius: 4px;">
+                <!-- Instructions -->
+                <div style="position: absolute; top: 8px; left: 8px; right: 8px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px;">
+                    1. Select a room from the left
+                    2. Click a docking point to set position
+                </div>
+
+                <!-- Current room preview -->
+                <div class="target-room" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 150px; background: #444; border: 2px solid #666;">
+                    <div style="padding: 8px; text-align: center;">Current Room: ${room.name}</div>
+                </div>
+
+                <!-- Docking points -->
+                <div class="dock-points">
+                    <!-- Left side -->
+                    <div class="dock-point" data-position="left-top" style="left: 20%; top: 25%"></div>
+                    <div class="dock-point" data-position="left-middle" style="left: 20%; top: 50%"></div>
+                    <div class="dock-point" data-position="left-bottom" style="left: 20%; top: 75%"></div>
+
+                    <!-- Right side -->
+                    <div class="dock-point" data-position="right-top" style="right: 20%; top: 25%"></div>
+                    <div class="dock-point" data-position="right-middle" style="right: 20%; top: 50%"></div>
+                    <div class="dock-point" data-position="right-bottom" style="right: 20%; top: 75%"></div>
+
+                    <!-- Top side -->
+                    <div class="dock-point" data-position="top-left" style="left: 25%; top: 20%"></div>
+                    <div class="dock-point" data-position="top-center" style="left: 50%; top: 20%"></div>
+                    <div class="dock-point" data-position="top-right" style="left: 75%; top: 20%"></div>
+
+                    <!-- Bottom side -->
+                    <div class="dock-point" data-position="bottom-left" style="left: 25%; bottom: 20%"></div>
+                    <div class="dock-point" data-position="bottom-center" style="left: 50%; bottom: 20%"></div>
+                    <div class="dock-point" data-position="bottom-right" style="left: 75%; bottom: 20%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div slot="footer">
+            <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
+            <sl-button variant="primary" class="dock-btn" disabled>Dock</sl-button>
+        </div>
+    `;
+
+    // Add the dock dialog to the document
+    document.body.appendChild(dialog);
+
+    // Return promise that resolves when docking is complete
+    return new Promise((resolve) => {
+        let selectedRoom = null;
+        let selectedPosition = null;
+
+        // Add event handlers
+        dialog.querySelectorAll('.room-option').forEach(option => {
+            option.addEventListener('click', () => {
+                dialog.querySelectorAll('.room-option').forEach(opt => 
+                    opt.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedRoom = availableRooms.find(r => 
+                    r.id === parseInt(option.dataset.roomId));
+                dialog.querySelector('.dock-btn').disabled = !selectedPosition;
+            });
+        });
+
+        dialog.querySelectorAll('.dock-point').forEach(point => {
+            point.addEventListener('click', () => {
+                dialog.querySelectorAll('.dock-point').forEach(p => 
+                    p.classList.remove('active'));
+                point.classList.add('active');
+                selectedPosition = point.dataset.position;
+                dialog.querySelector('.dock-btn').disabled = !selectedRoom;
+            });
+        });
+
+        // Handle dock button click
+        dialog.querySelector('.dock-btn').addEventListener('click', () => {
+            if (selectedRoom && selectedPosition) {
+                this.editor.dockRooms(room, selectedRoom, selectedPosition);
+                dialog.hide();
+                resolve(true);
+            }
+        });
+
+        // Handle cancel button click
+        dialog.querySelector('.cancel-btn').addEventListener('click', () => {
+            dialog.hide();
+            resolve(false);
+        });
+
+        dialog.addEventListener('sl-after-hide', () => dialog.remove());
+        dialog.show();
+    });
+}
+
+
 }
 
 
@@ -3635,7 +3846,10 @@ constructor() {
     this.layersPanel = new LayersPanel(this);
     this.originalMapName = null;
     this.monsterManager = new MonsterManager(this);
-    
+    this.dockingDistance = 5; // Distance in pixels to trigger docking
+    this.dockedRooms = new Map(); // Store docked room relationships
+    this.isDraggingDocked = false; // Prevent recursive drag handling
+
     // Initialize managers in correct order
     this.resourceManager = null;  // Initialize to null first
     this.textureManager = null;   // Initialize to null first
@@ -3728,6 +3942,110 @@ checkTextureManager(callback) {
             
             return value;
         }
+
+        dockRooms(sourceRoom, targetRoom, position) {
+        if (!sourceRoom || !targetRoom) return;
+
+        // Calculate offset based on position
+        const offset = this.calculateDockOffset(sourceRoom, targetRoom, position);
+        
+        // Update source room position
+        sourceRoom.bounds.x = targetRoom.bounds.x + offset.x;
+        sourceRoom.bounds.y = targetRoom.bounds.y + offset.y;
+        
+        // Update visual elements
+        sourceRoom.updateElement();
+        targetRoom.updateElement();
+
+        // Store docking relationship
+        if (!this.dockedRooms.has(sourceRoom.id)) {
+            this.dockedRooms.set(sourceRoom.id, []);
+        }
+        this.dockedRooms.get(sourceRoom.id).push({
+            room: targetRoom,
+            position: position
+        });
+
+        // Add visual indicator
+        sourceRoom.element.classList.add('docked');
+        targetRoom.element.classList.add('docked');
+    }
+
+    calculateDockOffset(sourceRoom, targetRoom, position) {
+        const offset = { x: 0, y: 0 };
+        
+        switch(position) {
+            // Left side positions
+            case 'left-top':
+                offset.x = -sourceRoom.bounds.width;
+                offset.y = 0;
+                break;
+            case 'left-middle':
+                offset.x = -sourceRoom.bounds.width;
+                offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
+                break;
+            case 'left-bottom':
+                offset.x = -sourceRoom.bounds.width;
+                offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
+                break;
+
+            // Right side positions
+            case 'right-top':
+                offset.x = targetRoom.bounds.width;
+                offset.y = 0;
+                break;
+            case 'right-middle':
+                offset.x = targetRoom.bounds.width;
+                offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
+                break;
+            case 'right-bottom':
+                offset.x = targetRoom.bounds.width;
+                offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
+                break;
+
+            // Top side positions
+            case 'top-left':
+                offset.x = 0;
+                offset.y = -sourceRoom.bounds.height;
+                break;
+            case 'top-center':
+                offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
+                offset.y = -sourceRoom.bounds.height;
+                break;
+            case 'top-right':
+                offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
+                offset.y = -sourceRoom.bounds.height;
+                break;
+
+            // Bottom side positions
+            case 'bottom-left':
+                offset.x = 0;
+                offset.y = targetRoom.bounds.height;
+                break;
+            case 'bottom-center':
+                offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
+                offset.y = targetRoom.bounds.height;
+                break;
+            case 'bottom-right':
+                offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
+                offset.y = targetRoom.bounds.height;
+                break;
+        }
+
+        return offset;
+    }
+
+    undockRoom(room) {
+        if (this.dockedRooms.has(room.id)) {
+            const dockings = this.dockedRooms.get(room.id);
+            dockings.forEach(({ room: targetRoom }) => {
+                targetRoom.element.classList.remove('docked');
+            });
+            room.element.classList.remove('docked');
+            this.dockedRooms.delete(room.id);
+        }
+    }
+
 
         showLockedMessage() {
     const toast = document.createElement('sl-dialog');
@@ -3913,6 +4231,10 @@ async saveMap() {
                     shape: room.shape,
                     bounds: { ...room.bounds },
                     points: room.points ? [...room.points] : null,
+                    isRaisedBlock: room.isRaisedBlock || false,
+        blockHeight: room.blockHeight || 0,
+        finalized: room.finalized,
+        locked: room.locked,
                     thumbnail: room.thumbnail,
                     type: room.type,
                     locked: room.locked
@@ -4163,9 +4485,13 @@ console.log("Grid settings restored:", {
             });
 
             const room = Room.createFromSaved(roomData, this);
-            if (roomData.locked) {
-                room.locked = true;
-            }
+    // Restore raised block properties
+    room.isRaisedBlock = roomData.isRaisedBlock || false;
+    room.blockHeight = roomData.blockHeight || 0;
+    
+    if (roomData.locked) {
+        room.locked = true;
+    }
             this.rooms.push(room);
             document.querySelector('.canvas-container').appendChild(room.element);
         }
@@ -5471,39 +5797,163 @@ snapToStructure(x, y, structure) {
           }
         }
 
-        startDragging(room, e) {
-            if (room.locked) {
+//         startDragging(room, e) {
+//             if (room.locked) {
+//         this.showLockedMessage();
+//         return;
+//     }
+//     if (!["rectangle", "circle", "poly"].includes(this.currentTool)) return;
+
+//     const startX = e.clientX;
+//     const startY = e.clientY;
+//     const startBounds = { ...room.bounds };
+
+//     const moveHandler = (e) => {
+//         const dx = (e.clientX - startX) / this.scale;
+//         const dy = (e.clientY - startY) / this.scale;
+
+//         // Snap new position to grid
+//         const newX = this.snapToGrid(startBounds.x + dx, this.cellSize);
+//         const newY = this.snapToGrid(startBounds.y + dy, this.cellSize);
+
+//         room.bounds.x = newX;
+//         room.bounds.y = newY;
+
+//         room.updateElement();
+//     };
+
+//     const upHandler = () => {
+//         document.removeEventListener("mousemove", moveHandler);
+//         document.removeEventListener("mouseup", upHandler);
+//     };
+
+//     document.addEventListener("mousemove", moveHandler);
+//     document.addEventListener("mouseup", upHandler);
+// }
+
+startDragging(room, e) {
+    if (room.locked) {
         this.showLockedMessage();
         return;
     }
-    if (!["rectangle", "circle", "poly"].includes(this.currentTool)) return;
 
     const startX = e.clientX;
     const startY = e.clientY;
     const startBounds = { ...room.bounds };
+    
+    // Get all connected rooms recursively
+    const getAllConnectedRooms = (roomId, visited = new Set()) => {
+        if (visited.has(roomId)) return [];
+        visited.add(roomId);
+        
+        const connected = [];
+        const directConnections = this.dockedRooms.get(roomId) || [];
+        
+        directConnections.forEach(({ room: dockedRoom }) => {
+            connected.push(dockedRoom);
+            // Get rooms docked to this room recursively
+            const subConnected = getAllConnectedRooms(dockedRoom.id, visited);
+            connected.push(...subConnected);
+        });
+        
+        return connected;
+    };
+
+    // Get all connected rooms at the start
+    const connectedRooms = getAllConnectedRooms(room.id);
 
     const moveHandler = (e) => {
         const dx = (e.clientX - startX) / this.scale;
         const dy = (e.clientY - startY) / this.scale;
 
-        // Snap new position to grid
+        // Calculate new position with grid snapping
         const newX = this.snapToGrid(startBounds.x + dx, this.cellSize);
         const newY = this.snapToGrid(startBounds.y + dy, this.cellSize);
 
+        // Move the main room
         room.bounds.x = newX;
         room.bounds.y = newY;
-
         room.updateElement();
+
+        // Move all connected rooms while maintaining their relative positions
+        connectedRooms.forEach(connectedRoom => {
+            const docking = this.dockedRooms.get(connectedRoom.id)?.[0];
+            if (docking) {
+                const offset = this.calculateDockOffset(connectedRoom, docking.room, docking.position);
+                connectedRoom.bounds.x = docking.room.bounds.x + offset.x;
+                connectedRoom.bounds.y = docking.room.bounds.y + offset.y;
+                connectedRoom.updateElement();
+            }
+        });
     };
 
     const upHandler = () => {
-        document.removeEventListener("mousemove", moveHandler);
-        document.removeEventListener("mouseup", upHandler);
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', upHandler);
     };
 
-    document.addEventListener("mousemove", moveHandler);
-    document.addEventListener("mouseup", upHandler);
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('mouseup', upHandler);
 }
+
+// startDragging(room, e) {
+//     if (room.locked) {
+//         this.showLockedMessage();
+//         return;
+//     }
+
+//     const startX = e.clientX;
+//     const startY = e.clientY;
+//     const startBounds = { ...room.bounds };
+//     let dockedRooms = this.dockedRooms.get(room.id) || [];
+
+//     const moveHandler = (e) => {
+//         const dx = (e.clientX - startX) / this.scale;
+//         const dy = (e.clientY - startY) / this.scale;
+
+//         // Calculate new position
+//         const newX = this.snapToGrid(startBounds.x + dx, this.cellSize);
+//         const newY = this.snapToGrid(startBounds.y + dy, this.cellSize);
+
+//         // Check for docking if not already docked and Shift is held
+//         if (!dockedRooms.length && e.shiftKey) {
+//             const dockResult = this.checkForDocking(room, newX, newY);
+//             if (dockResult) {
+//                 dockedRooms = [dockResult];
+//                 this.dockedRooms.set(room.id, dockedRooms);
+                
+//                 // Visual feedback
+//                 room.element.classList.add('docked');
+//                 dockResult.room.element.classList.add('docked');
+//             }
+//         }
+
+//         // Move the room
+//         room.bounds.x = newX;
+//         room.bounds.y = newY;
+//         room.updateElement();
+
+//         // Move docked rooms
+//         if (dockedRooms.length && !this.isDraggingDocked) {
+//             this.isDraggingDocked = true;
+//             dockedRooms.forEach(({ room: dockedRoom, edge }) => {
+//                 const offset = this.calculateDockOffset(room, dockedRoom, edge);
+//                 dockedRoom.bounds.x = newX + offset.x;
+//                 dockedRoom.bounds.y = newY + offset.y;
+//                 dockedRoom.updateElement();
+//             });
+//             this.isDraggingDocked = false;
+//         }
+//     };
+
+//     const upHandler = () => {
+//         document.removeEventListener('mousemove', moveHandler);
+//         document.removeEventListener('mouseup', upHandler);
+//     };
+
+//     document.addEventListener('mousemove', moveHandler);
+//     document.addEventListener('mouseup', upHandler);
+// }
         
 
 startResizing(room, handle, e) {
@@ -7653,108 +8103,77 @@ this.markers.forEach(marker => {
 
 
 
-//           const createRaisedBlockGeometry = (room) => {
-//     const positions = [];
-//     const normals = [];
-//     const uvs = [];
-//     const indices = [];
-
-//     const x1 = room.bounds.x / 50 - boxWidth / 2;
-//     const x2 = x1 + room.bounds.width / 50;
-//     const z1 = room.bounds.y / 50 - boxDepth / 2;
-//     const z2 = z1 + room.bounds.height / 50;
-//     const height = room.blockHeight;
-
-//     positions.push(
-//         x1, 0, z1,
-//         x2, 0, z1,
-//         x2, 0, z2,
-//         x1, 0, z2,
-//         x1, height, z1,
-//         x2, height, z1,
-//         x2, height, z2,
-//         x1, height, z2,
-//         x1, 0, z1,
-//         x2, 0, z1,
-//         x2, height, z1,
-//         x1, height, z1,
-//         x1, 0, z2,
-//         x2, 0, z2,
-//         x2, height, z2,
-//         x1, height, z2,
-//         x1, 0, z1,
-//         x1, 0, z2,
-//         x1, height, z2,
-//         x1, height, z1,
-//         x2, 0, z1,
-//         x2, 0, z2,
-//         x2, height, z2,
-//         x2, height, z1
-//     );
-
-//     for (let i = 0; i < 4; i++) normals.push(0, -1, 0);
-//     for (let i = 0; i < 4; i++) normals.push(0, 1, 0);
-//     for (let i = 0; i < 4; i++) normals.push(0, 0, -1);
-//     for (let i = 0; i < 4; i++) normals.push(0, 0, 1);
-//     for (let i = 0; i < 4; i++) normals.push(-1, 0, 0);
-//     for (let i = 0; i < 4; i++) normals.push(1, 0, 0);
-
-//     const textureRepeatsU = wallTexture ? wallTexture.repeat.x : 1;
-//     const textureRepeatsV = wallTexture ? wallTexture.repeat.y : 1;
-
-//     for (let face = 0; face < 6; face++) {
-//         uvs.push(
-//             0, 0,
-//             textureRepeatsU, 0,
-//             textureRepeatsU, textureRepeatsV,
-//             0, textureRepeatsV
-//         );
-//     }
-
-//     for (let face = 0; face < 6; face++) {
-//         const base = face * 4;
-//         indices.push(
-//             base, base + 1, base + 2,
-//             base, base + 2, base + 3
-//         );
-//     }
-
-//     const geometry = new THREE.BufferGeometry();
-//     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-//     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-//     geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-//     geometry.setIndex(indices);
-
-//     return new THREE.Mesh(geometry, room.type === "wall" ?
-//         this.textureManager.createMaterial(room, wallTextureRoom) :
-//         this.textureManager.createMaterial(room, roomTextureRoom)
-//     );
-// };
-
-
           // Create rooms and subtract from main mesh
+        const createRaisedBlockGeometry = (room) => {
+        let geometry;
+        const materials = [];
+        
+        // Side material (using wall texture)
+        const sideMaterial = room.type === "wall" ?
+            this.textureManager.createMaterial(room, wallTextureRoom) :
+            new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                roughness: 0.7,
+                metalness: 0.2,
+                side: THREE.DoubleSide
+            });
+        materials.push(sideMaterial);
+        // Create and configure top texture
+        const topTexture = this.createTextureFromArea(room);
+        topTexture.center.set(0.5, 0.5); // Set rotation center to middle
+        // Remove the rotation line
+        topTexture.repeat.set(1, 1); // Ensure 1:1 mapping
+        topTexture.needsUpdate = true;
 
-          const createRaisedBlockGeometry = (room) => {
-    let geometry;
+        // Create top material with the configured texture
+        const topMaterial = new THREE.MeshStandardMaterial({
+            map: topTexture,
+            roughness: 0.6,
+            metalness: 0.1,
+            side: THREE.DoubleSide
+        });
+        materials.push(topMaterial);
+    
+        // Bottom material (use same as sides)
+        materials.push(sideMaterial);
+    
 
     switch(room.shape) {
 
 case "circle": {
+        topTexture.rotation = Math.PI / 2; 
+
+   topTexture.needsUpdate = true;
     const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
     geometry = new THREE.CylinderGeometry(radius, radius, room.blockHeight, 32);
     geometry.rotateZ(0);  // Keep it horizontal
     break;
 }
+
+
+
 case "polygon": {
-
-
     if (!room.points || room.points.length < 3) return null;
 
+    // Swap materials first
+    const tempMaterial = materials[0];
+    materials[0] = materials[1];
+    materials[1] = tempMaterial;
+
     const shape = new THREE.Shape();
-    // Use absolute positions since we'll position the whole mesh later
+    
+    // Calculate bounds for UV mapping
+    const minX = Math.min(...room.points.map(p => p.x));
+    const maxX = Math.max(...room.points.map(p => p.x));
+    const minY = Math.min(...room.points.map(p => p.y));
+    const maxY = Math.max(...room.points.map(p => p.y));
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // Create shape with normalized coordinates
     room.points.forEach((point, index) => {
-        const x = point.x / 50;
-        const y = -point.y / 50;  // Added negative to flip
+        const x = (point.x - minX) / 50;
+        const y = -(point.y - minY) / 50;  // Flip Y and normalize
         if (index === 0) shape.moveTo(x, y);
         else shape.lineTo(x, y);
     });
@@ -7762,94 +8181,228 @@ case "polygon": {
 
     geometry = new THREE.ExtrudeGeometry(shape, {
         depth: room.blockHeight,
-        bevelEnabled: false
+        bevelEnabled: false,
+        UVGenerator: {
+            generateTopUV: function(geometry, vertices, indexA, indexB, indexC) {
+                const vA = new THREE.Vector3(vertices[indexA * 3], vertices[indexA * 3 + 1], vertices[indexA * 3 + 2]);
+                const vB = new THREE.Vector3(vertices[indexB * 3], vertices[indexB * 3 + 1], vertices[indexB * 3 + 2]);
+                const vC = new THREE.Vector3(vertices[indexC * 3], vertices[indexC * 3 + 1], vertices[indexC * 3 + 2]);
+
+                return [
+                    new THREE.Vector2(vA.x / width * 50, vA.y / height * 50),
+                    new THREE.Vector2(vB.x / width * 50, vB.y / height * 50),
+                    new THREE.Vector2(vC.x / width * 50, vC.y / height * 50)
+                ];
+            },
+            generateSideWallUV: function(geometry, vertices, indexA, indexB, indexC, indexD) {
+                return [
+                    new THREE.Vector2(0, 0),
+                    new THREE.Vector2(1, 0),
+                    new THREE.Vector2(1, 1),
+                    new THREE.Vector2(0, 1)
+                ];
+            }
+        }
     });
+
     geometry.rotateX(-Math.PI / 2);
-    // Center the geometry
-    geometry.center();
+    
+    // Remove the translate line - let mesh positioning handle it
+    // geometry.translate(minX / 50, 0, minY / 50);
+
+    const topBottomFaces = room.points.length - 2;
+    const sideFaces = room.points.length * 2;
+    
+    geometry.clearGroups();
+    geometry.addGroup(0, sideFaces * 3, 0);
+    geometry.addGroup(sideFaces * 3, topBottomFaces * 3, 1);
+    geometry.addGroup((sideFaces + topBottomFaces) * 3, topBottomFaces * 3, 2);
+
     break;
 }
 
-        default: {
-            // Rectangle case - use all the existing buffer geometry code
-            const positions = [];
-            const normals = [];
-            const uvs = [];
-            const indices = [];
 
-            const x1 = room.bounds.x / 50 - boxWidth / 2;
-            const x2 = x1 + room.bounds.width / 50;
-            const z1 = room.bounds.y / 50 - boxDepth / 2;
-            const z2 = z1 + room.bounds.height / 50;
-            const height = room.blockHeight;
+// case "polygon": {
+//     if (!room.points || room.points.length < 3) return null;
 
-            positions.push(
-                x1, 0, z1,
-                x2, 0, z1,
-                x2, 0, z2,
-                x1, 0, z2,
-                x1, height, z1,
-                x2, height, z1,
-                x2, height, z2,
-                x1, height, z2,
-                x1, 0, z1,
-                x2, 0, z1,
-                x2, height, z1,
-                x1, height, z1,
-                x1, 0, z2,
-                x2, 0, z2,
-                x2, height, z2,
-                x1, height, z2,
-                x1, 0, z1,
-                x1, 0, z2,
-                x1, height, z2,
-                x1, height, z1,
-                x2, 0, z1,
-                x2, 0, z2,
-                x2, height, z2,
-                x2, height, z1
-            );
+//     // Swap materials first
+//     const tempMaterial = materials[0];
+//     materials[0] = materials[1];
+//     materials[1] = tempMaterial;
 
-            for (let i = 0; i < 4; i++) normals.push(0, -1, 0);
-            for (let i = 0; i < 4; i++) normals.push(0, 1, 0);
-            for (let i = 0; i < 4; i++) normals.push(0, 0, -1);
-            for (let i = 0; i < 4; i++) normals.push(0, 0, 1);
-            for (let i = 0; i < 4; i++) normals.push(-1, 0, 0);
-            for (let i = 0; i < 4; i++) normals.push(1, 0, 0);
+//     const shape = new THREE.Shape();
+    
+//     // Calculate bounds for UV mapping
+//     const minX = Math.min(...room.points.map(p => p.x));
+//     const maxX = Math.max(...room.points.map(p => p.x));
+//     const minY = Math.min(...room.points.map(p => p.y));
+//     const maxY = Math.max(...room.points.map(p => p.y));
+//     const width = maxX - minX;
+//     const height = maxY - minY;
 
-            const textureRepeatsU = wallTexture ? wallTexture.repeat.x : 1;
-            const textureRepeatsV = wallTexture ? wallTexture.repeat.y : 1;
+//     // Create shape with normalized coordinates
+//     room.points.forEach((point, index) => {
+//         const x = (point.x - minX) / 50;
+//         const y = -(point.y - minY) / 50;  // Flip Y and normalize
+//         if (index === 0) shape.moveTo(x, y);
+//         else shape.lineTo(x, y);
+//     });
+//     shape.closePath();
 
-            for (let face = 0; face < 6; face++) {
-                uvs.push(
-                    0, 0,
-                    textureRepeatsU, 0,
-                    textureRepeatsU, textureRepeatsV,
-                    0, textureRepeatsV
-                );
-            }
+//     geometry = new THREE.ExtrudeGeometry(shape, {
+//         depth: room.blockHeight,
+//         bevelEnabled: false,
+//         UVGenerator: {
+//             generateTopUV: function(geometry, vertices, indexA, indexB, indexC) {
+//                 const vA = new THREE.Vector3(vertices[indexA * 3], vertices[indexA * 3 + 1], vertices[indexA * 3 + 2]);
+//                 const vB = new THREE.Vector3(vertices[indexB * 3], vertices[indexB * 3 + 1], vertices[indexB * 3 + 2]);
+//                 const vC = new THREE.Vector3(vertices[indexC * 3], vertices[indexC * 3 + 1], vertices[indexC * 3 + 2]);
 
-            for (let face = 0; face < 6; face++) {
-                const base = face * 4;
-                indices.push(
-                    base, base + 1, base + 2,
-                    base, base + 2, base + 3
-                );
-            }
+//                 // Normalize UV coordinates
+//                 return [
+//                     new THREE.Vector2((vA.x - minX/50) / (width/50), (vA.y + minY/50) / (height/50)),
+//                     new THREE.Vector2((vB.x - minX/50) / (width/50), (vB.y + minY/50) / (height/50)),
+//                     new THREE.Vector2((vC.x - minX/50) / (width/50), (vC.y + minY/50) / (height/50))
+//                 ];
+//             },
+//             generateSideWallUV: function(geometry, vertices, indexA, indexB, indexC, indexD) {
+//                 return [
+//                     new THREE.Vector2(0, 0),
+//                     new THREE.Vector2(1, 0),
+//                     new THREE.Vector2(1, 1),
+//                     new THREE.Vector2(0, 1)
+//                 ];
+//             }
+//         }
+//     });
 
-            geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-            geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-            geometry.setIndex(indices);
-            break;
-        }
+//     geometry.rotateX(-Math.PI / 2);
+
+//     const topBottomFaces = room.points.length - 2;
+//     const sideFaces = room.points.length * 2;
+    
+//     geometry.clearGroups();
+//     geometry.addGroup(0, sideFaces * 3, 0);
+//     geometry.addGroup(sideFaces * 3, topBottomFaces * 3, 1);
+//     geometry.addGroup((sideFaces + topBottomFaces) * 3, topBottomFaces * 3, 2);
+
+//     break;
+// }
+
+default: {
+    // Rectangle case
+    const positions = [];
+    const normals = [];
+    const uvs = [];
+    const indices = [];
+    // Keep track of where each face starts for material mapping
+    const materialGroups = [];
+    let faceCount = 0;
+
+    const x1 = room.bounds.x / 50 - boxWidth / 2;
+    const x2 = x1 + room.bounds.width / 50;
+    const z1 = room.bounds.y / 50 - boxDepth / 2;
+    const z2 = z1 + room.bounds.height / 50;
+    const height = room.blockHeight;
+
+    // Create and configure top texture
+    topTexture.repeat.set(1, -1);  // Flip vertically by setting Y to negative
+        topTexture.needsUpdate = true;
+
+    // All vertices remain the same
+    positions.push(
+        // Bottom face
+        x1, 0, z1,
+        x2, 0, z1,
+        x2, 0, z2,
+        x1, 0, z2,
+        // Top face
+        x1, height, z1,
+        x2, height, z1,
+        x2, height, z2,
+        x1, height, z2,
+        // Front
+        x1, 0, z1,
+        x2, 0, z1,
+        x2, height, z1,
+        x1, height, z1,
+        // Back
+        x1, 0, z2,
+        x2, 0, z2,
+        x2, height, z2,
+        x1, height, z2,
+        // Left
+        x1, 0, z1,
+        x1, 0, z2,
+        x1, height, z2,
+        x1, height, z1,
+        // Right
+        x2, 0, z1,
+        x2, 0, z2,
+        x2, height, z2,
+        x2, height, z1
+    );
+
+    // Normals stay the same
+    for (let i = 0; i < 4; i++) normals.push(0, -1, 0);  // Bottom
+    for (let i = 0; i < 4; i++) normals.push(0, 1, 0);   // Top
+    for (let i = 0; i < 4; i++) normals.push(0, 0, -1);  // Front
+    for (let i = 0; i < 4; i++) normals.push(0, 0, 1);   // Back
+    for (let i = 0; i < 4; i++) normals.push(-1, 0, 0);  // Left
+    for (let i = 0; i < 4; i++) normals.push(1, 0, 0);   // Right
+
+    // UVs for each face
+    const textureRepeatsU = wallTexture ? wallTexture.repeat.x : 1;
+    const textureRepeatsV = wallTexture ? wallTexture.repeat.y : 1;
+
+    // Add UVs for each face
+    for (let face = 0; face < 6; face++) {
+        uvs.push(
+            0, 0,
+            textureRepeatsU, 0,
+            textureRepeatsU, textureRepeatsV,
+            0, textureRepeatsV
+        );
     }
 
-    const mesh = new THREE.Mesh(geometry, room.type === "wall" ?
-        this.textureManager.createMaterial(room, wallTextureRoom) :
-        this.textureManager.createMaterial(room, roomTextureRoom)
-    );
+    // Add indices with material groups
+    // Bottom face (material index 2)
+    materialGroups.push({ startIndex: faceCount * 3, count: 6, materialIndex: 2 });
+    indices.push(0, 1, 2, 0, 2, 3);
+    faceCount += 2;
+
+    // Top face (material index 1)
+    materialGroups.push({ startIndex: faceCount * 3, count: 6, materialIndex: 1 });
+    indices.push(4, 5, 6, 4, 6, 7);
+    faceCount += 2;
+
+    // Side faces (material index 0)
+    materialGroups.push({ startIndex: faceCount * 3, count: 24, materialIndex: 0 });
+    for (let face = 2; face < 6; face++) {
+        const base = face * 4;
+        indices.push(
+            base, base + 1, base + 2,
+            base, base + 2, base + 3
+        );
+        faceCount += 2;
+    }
+
+    geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+
+    // Add material groups to geometry
+    materialGroups.forEach(group => {
+        geometry.addGroup(group.startIndex, group.count, group.materialIndex);
+    });
+
+    break;
+}
+    }
+
+    const mesh = new THREE.Mesh(geometry, materials);
 
 // Position mesh correctly based on room bounds
 if (room.shape === "polygon") {
@@ -7865,11 +8418,6 @@ if (room.shape === "polygon") {
         (room.bounds.y + room.bounds.height/2) / 50 - boxDepth / 2
     );
 } else {
-  // mesh.position.set(
-  //       room.bounds.x / 50 - boxWidth / 2,
-  //       0,
-  //       room.bounds.y / 50 - boxDepth / 2
-  //   );
   mesh.position.set(0, 0, 0);
 }
 
@@ -8175,109 +8723,140 @@ this.rooms.forEach((room, index) => {
         }
 
         setupDrawer() {
-          const drawer = document.createElement("sl-drawer");
-          drawer.label = "3D View";
-          drawer.placement = "end";
-          drawer.classList.add("drawer-3d-view");
-          // Use CSS custom property for width
-          drawer.style.setProperty("--size", "85vw");
+    const drawer = document.createElement("sl-drawer");
+    drawer.label = "3D View";
+    drawer.placement = "end";
+    drawer.classList.add("drawer-3d-view");
 
-          // Container for Three.js
-          const container = document.createElement("div");
-          container.style.width = "100%";
-          container.style.height = "100%";
-          drawer.appendChild(container);
+    // Calculate width based on viewport and sidebar
+    const sidebar = document.querySelector(".sidebar");
+    const sidebarWidth = sidebar ? sidebar.offsetWidth : 0;
+    const availableWidth = window.innerWidth - sidebarWidth;
+    const drawerWidth = `${Math.floor(availableWidth)}px`; // Use pixels instead of vw
 
-          // Progress indicator
-          const progress = document.createElement("sl-progress-bar");
-          progress.style.display = "none";
-          drawer.appendChild(progress);
+    // Set drawer width
+    drawer.style.setProperty("--size", drawerWidth);
 
-          document.body.appendChild(drawer);
-          return { drawer, container, progress };
-        }
+    // Container for Three.js
+    const container = document.createElement("div");
+    container.style.width = "100%";
+    container.style.height = "100%";
+    container.style.overflow = "hidden"; // Prevent scrollbars
+    drawer.appendChild(container);
 
-        async show3DView() {
-          const { drawer, container, progress } = this.setupDrawer();
+    // Progress indicator
+    const progress = document.createElement("sl-progress-bar");
+    progress.style.display = "none";
+    drawer.appendChild(progress);
 
-          progress.style.display = "block";
-          progress.value = 0;
+    document.body.appendChild(drawer);
+    return { drawer, container, progress };
+}
 
-          const updateStatus = (percent) => {
-            progress.value = percent;
-            progress.innerHTML = `Processing... ${Math.round(percent)}%`;
-          };
+async show3DView() {
+    const { drawer, container, progress } = this.setupDrawer();
 
-          try {
-            drawer.show();
-            const { scene, camera, renderer, animate, controls, cleanup } =
-              await this.init3DScene(updateStatus);
+    progress.style.display = "block";
+    progress.value = 0;
 
-            container.appendChild(renderer.domElement);
+    const updateStatus = (percent) => {
+        progress.value = percent;
+        progress.innerHTML = `Processing... ${Math.round(percent)}%`;
+    };
 
-            // Instructions overlay
-            const instructions = document.createElement("div");
-            instructions.style.cssText = `
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 20px;
-    border-radius: 5px;
-    text-align: center;
-    pointer-events: none;
-`;
-            instructions.innerHTML = `
-    Click to start<br>
-    WASD or Arrow Keys to move<br>
-    Hold Shift to sprint<br>
-    C to toggle wall clipping<br>
-    ESC to exit
-`;
-            container.appendChild(instructions);
+    try {
+        drawer.show();
+        const { scene, camera, renderer, animate, controls, cleanup } = await this.init3DScene(updateStatus);
 
-            // Hide instructions when controls are locked
-            controls.addEventListener("lock", () => {
-              instructions.style.display = "none";
-            });
+        // Calculate available width for renderer
+        const sidebar = document.querySelector(".sidebar");
+        const sidebarWidth = sidebar ? sidebar.offsetWidth : 0;
+        const availableWidth = window.innerWidth - sidebarWidth;
+        
+        // Set renderer size
+        renderer.setSize(availableWidth, window.innerHeight);
+        
+        // Update camera aspect ratio
+        camera.aspect = availableWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
 
-            controls.addEventListener("unlock", () => {
-              instructions.style.display = "block";
-            });
+        container.appendChild(renderer.domElement);
 
-            // Animation loop that respects drawer state
-            let animationFrameId;
-            const animationLoop = () => {
-              if (drawer.open) {
+        // Instructions overlay
+        const instructions = document.createElement("div");
+        instructions.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            width: 75vw;
+            border-radius: 5px;
+            text-align: center;
+            pointer-events: none;
+        `;
+        instructions.innerHTML = `
+            Click to start<br>
+            WASD or Arrow Keys to move<br>
+            Hold Shift to sprint<br>
+            C to toggle wall clipping<br>
+            ESC to exit
+        `;
+        container.appendChild(instructions);
+
+        // Hide instructions when controls are locked
+        controls.addEventListener("lock", () => {
+            instructions.style.display = "none";
+        });
+
+        controls.addEventListener("unlock", () => {
+            instructions.style.display = "block";
+        });
+
+        // Animation loop that respects drawer state
+        let animationFrameId;
+        const animationLoop = () => {
+            if (drawer.open) {
                 animationFrameId = requestAnimationFrame(animationLoop);
                 animate();
-              }
-            };
-            animationLoop();
+            }
+        };
+        animationLoop();
 
-            // Cleanup when drawer closes
-            drawer.addEventListener(
-              "sl-after-hide",
-              () => {
-                cancelAnimationFrame(animationFrameId);
-                cleanup();
-                container.innerHTML = "";
-              },
-              { once: true }
-            );
-          } catch (error) {
-            console.error("Error creating 3D view:", error);
-            container.innerHTML = `
+        // Handle window resize
+        const handleResize = () => {
+            const sidebar = document.querySelector(".sidebar");
+            const sidebarWidth = sidebar ? sidebar.offsetWidth : 0;
+            const availableWidth = window.innerWidth - sidebarWidth;
+            
+            renderer.setSize(availableWidth, window.innerHeight);
+            camera.aspect = availableWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Cleanup when drawer closes
+        drawer.addEventListener("sl-after-hide", () => {
+            cancelAnimationFrame(animationFrameId);
+            window.removeEventListener('resize', handleResize);
+            cleanup();
+            container.innerHTML = "";
+        }, { once: true });
+
+    } catch (error) {
+        console.error("Error creating 3D view:", error);
+        container.innerHTML = `
             <div style="color: red; padding: 20px;">
                 Error creating 3D view: ${error.message}
             </div>
         `;
-          } finally {
-            progress.style.display = "none";
-          }
-        }
+    } finally {
+        progress.style.display = "none";
+    }
+}
 
         createRoomShape(room) {
           let geometry;
@@ -8423,6 +9002,7 @@ createProp(structure, assignment) {
     return prop;
 }
 
+
 createTextureFromArea(room) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -8431,7 +9011,7 @@ createTextureFromArea(room) {
 
     // Draw the portion of the map that contains the texture
     ctx.drawImage(
-        this.mapEditor.baseImage,
+        this.baseImage,  // Changed from this.mapEditor.baseImage
         room.bounds.x,
         room.bounds.y,
         room.bounds.width,
