@@ -35,7 +35,7 @@ createDoorMesh(marker, boxWidth, boxHeight, boxDepth) {
     // Calculate door dimensions
     const doorHeight = boxHeight * 0.8;
     const doorWidth = this.mapEditor.cellSize / 50;
-    const doorDepth = 0.2;  // Standard door depth
+    const doorDepth = 0.1;  // Standard door depth
 
     // Create door geometry
     const doorGeometry = new THREE.BoxGeometry(doorWidth, doorHeight, doorDepth);
@@ -49,8 +49,8 @@ createDoorMesh(marker, boxWidth, boxHeight, boxDepth) {
         depthWrite: true,
         depthTest: true,
         polygonOffset: true,
-        polygonOffsetFactor: -1,
-        polygonOffsetUnits: -1
+        polygonOffsetFactor: -9, // -1
+        polygonOffsetUnits: -9 // -1
     });
 
     const doorMesh = new THREE.Mesh(doorGeometry, doorMaterial);
