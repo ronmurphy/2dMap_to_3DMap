@@ -3701,18 +3701,21 @@ createLayerItem(room) {
             ` : ''}
         </div>
         
-<div style="margin-top: 16px;">
-    <sl-button class="dock-room-btn" variant="neutral" style="width: 100%;">
-        <span class="material-icons" style="margin-right: 8px;">link</span>
-        Dock to Another Room
-    </sl-button>
-</div>
+<-- Dock/Undock position holder -->
     
     <div slot="footer">
         <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
         <sl-button variant="primary" class="save-btn">Save</sl-button>
     </div>
 `;
+
+
+// <div style="margin-top: 16px;">
+//     <sl-button class="dock-room-btn" variant="neutral" style="width: 100%;">
+//         <span class="material-icons" style="margin-right: 8px;">link</span>
+//         Dock to Another Room
+//     </sl-button>
+// </div>
 
     document.body.appendChild(dialog);
 
@@ -3732,7 +3735,22 @@ createLayerItem(room) {
             });
         });
 
-        const blockHeightSlider = dialog.querySelector('#blockHeight');
+//         const blockHeightSlider = dialog.querySelector('#blockHeight');
+// if (blockHeightSlider) {
+//     // Set initial value if room is a raised block
+//     if (room.isRaisedBlock && room.blockHeight) {
+//         blockHeightSlider.value = Math.round(room.blockHeight * 2);
+//     }
+
+//     blockHeightSlider.addEventListener('sl-input', (e) => {
+//         // Update label while sliding
+//         const value = parseInt(e.target.value);
+//         const height = value / 2;
+//         blockHeightSlider.label = `Block Height: ${height} ${height === 1 ? 'block' : 'blocks'}`;
+//     });
+// }
+
+const blockHeightSlider = dialog.querySelector('#blockHeight');
 if (blockHeightSlider) {
     // Set initial value if room is a raised block
     if (room.isRaisedBlock && room.blockHeight) {
@@ -3744,54 +3762,59 @@ if (blockHeightSlider) {
         const value = parseInt(e.target.value);
         const height = value / 2;
         blockHeightSlider.label = `Block Height: ${height} ${height === 1 ? 'block' : 'blocks'}`;
+
+        // Handle Prop- naming as slider moves
+        const currentName = nameInput.value.trim();
+        if (value > 0) {  // If any height is set
+            if (currentName.startsWith("Wall")) {
+                nameInput.value = currentName.replace("Wall", "Prop");
+            } else if (!currentName.startsWith("Prop-")) {
+                nameInput.value = `Prop-${currentName}`;
+            }
+        } else {  // If height is 0
+            if (currentName.startsWith("Prop-")) {
+                nameInput.value = currentName.substring(5);  // Remove Prop- prefix
+            }
+        }
     });
 }
 
+      const handleSave = () => {
+        const newName = nameInput.value.trim();
+        if (newName) {
+    room.name = setAsTextureCheckbox?.checked ? "WallTexture" : newName;
 
-        const handleSave = () => {
-            const newName = nameInput.value.trim();
-            if (newName) {
-                room.name = setAsTextureCheckbox?.checked ? "WallTexture" : newName;
+    // Save raised block settings
+    const blockHeight = parseInt(blockHeightSlider.value) / 2;
+    room.isRaisedBlock = blockHeight > 0;
+    room.blockHeight = room.isRaisedBlock ? blockHeight : undefined;
 
-                        // Save raised block settings
-                        const blockHeight = parseInt(blockHeightSlider.value) / 2;
-room.isRaisedBlock = blockHeight > 0;
-room.blockHeight = room.isRaisedBlock ? blockHeight : undefined;
-                
-                if (dialog.selectedTextureId && this.editor.resourceManager) {
-                    this.editor.resourceManager.assignTextureToStructure(room.id, dialog.selectedTextureId, 'walls');
-                }
+    if (dialog.selectedTextureId && this.editor.resourceManager) {
+        this.editor.resourceManager.assignTextureToStructure(room.id, dialog.selectedTextureId, 'walls');
+    }
 
-                // Handle folder assignment
-                if (folderSelect.value) {
-                    this.folders.forEach(folder => {
-                        folder.rooms = folder.rooms.filter(r => r.id !== room.id);
-                    });
-                    const newFolder = this.folders.find(f => f.id === parseInt(folderSelect.value));
-                    if (newFolder) {
-                        newFolder.rooms.push(room);
-                    }
-                }
+    // Handle folder assignment
+    if (folderSelect.value) {
+        this.folders.forEach(folder => {
+            folder.rooms = folder.rooms.filter(r => r.id !== room.id);
+        });
+        const newFolder = this.folders.find(f => f.id === parseInt(folderSelect.value));
+        if (newFolder) {
+            newFolder.rooms.push(room);
+        }
+    }
 
-                this.updateLayersList();
-                dialog.hide();
-                resolve(true);
-            }
-        };
+    this.updateLayersList();
+    dialog.hide();
+    resolve(true);
+}
+      };
 
         saveBtn.addEventListener('click', handleSave);
         cancelBtn.addEventListener('click', () => {
             dialog.hide();
             resolve(false);
         });
-
-//         const dockBtn = dialog.querySelector('.dock-room-btn');
-// if (dockBtn) {
-//     dockBtn.addEventListener('click', () => {
-//         dialog.hide();
-//         this.showDockDialog(room);
-//     });
-// }
 
 const dockBtn = dialog.querySelector('.dock-room-btn');
 if (dockBtn) {
@@ -3814,125 +3837,6 @@ if (undockBtn) {
     });
   }
 
-//   async showDockDialog(room) {
-//     const dialog = document.createElement('sl-dialog');
-//     dialog.label = 'Dock Room';
-    
-//     // Make dialog wider
-//     dialog.style.setProperty('--width', '800px');  // Increased from default
-    
-//     const availableRooms = this.editor.rooms.filter(r => 
-//         r.id !== room.id && !this.editor.dockedRooms.has(r.id)
-//     );
-
-//     dialog.innerHTML = `
-//         <div style="display: grid; grid-template-columns: 250px 1fr; gap: 16px;">
-//             <!-- Room List -->
-//             <div class="room-list" style="border-right: 1px solid #444; padding-right: 16px; overflow-y: auto; max-height: 500px;">
-//                 <div style="margin-bottom: 8px; font-weight: bold;">Available Rooms</div>
-//                 ${availableRooms.map(r => `
-//                     <div class="room-option" data-room-id="${r.id}" style="cursor: pointer; padding: 8px; margin-bottom: 8px; border: 1px solid #666; border-radius: 4px;">
-//                         <div style="font-weight: bold; margin-bottom: 4px;">${r.name}</div>
-//                         <div style="width: 100%; height: 80px; background: #333; border-radius: 2px; overflow: hidden;">
-//                             ${r.thumbnail ? `<img src="${r.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">` : ''}
-//                         </div>
-//                     </div>
-//                 `).join('')}
-//             </div>
-
-//             <!-- Docking Preview -->
-//             <div class="dock-preview" style="position: relative; min-height: 500px; background: #2a2a2a; border-radius: 4px;">
-//                 <!-- Instructions -->
-//                 <div style="position: absolute; top: 8px; left: 8px; right: 8px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px;">
-//                     1. Select a room from the left
-//                     2. Click a docking point to set position
-//                 </div>
-
-//                 <!-- Current room preview -->
-//                 <div class="target-room" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 150px; background: #444; border: 2px solid #666;">
-//                     <div style="padding: 8px; text-align: center;">Current Room: ${room.name}</div>
-//                 </div>
-
-//                 <!-- Docking points -->
-//                 <div class="dock-points">
-//                     <!-- Left side -->
-//                     <div class="dock-point" data-position="left-top" style="left: 20%; top: 25%"></div>
-//                     <div class="dock-point" data-position="left-middle" style="left: 20%; top: 50%"></div>
-//                     <div class="dock-point" data-position="left-bottom" style="left: 20%; top: 75%"></div>
-
-//                     <!-- Right side -->
-//                     <div class="dock-point" data-position="right-top" style="right: 20%; top: 25%"></div>
-//                     <div class="dock-point" data-position="right-middle" style="right: 20%; top: 50%"></div>
-//                     <div class="dock-point" data-position="right-bottom" style="right: 20%; top: 75%"></div>
-
-//                     <!-- Top side -->
-//                     <div class="dock-point" data-position="top-left" style="left: 25%; top: 20%"></div>
-//                     <div class="dock-point" data-position="top-center" style="left: 50%; top: 20%"></div>
-//                     <div class="dock-point" data-position="top-right" style="left: 75%; top: 20%"></div>
-
-//                     <!-- Bottom side -->
-//                     <div class="dock-point" data-position="bottom-left" style="left: 25%; bottom: 20%"></div>
-//                     <div class="dock-point" data-position="bottom-center" style="left: 50%; bottom: 20%"></div>
-//                     <div class="dock-point" data-position="bottom-right" style="left: 75%; bottom: 20%"></div>
-//                 </div>
-//             </div>
-//         </div>
-
-//         <div slot="footer">
-//             <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
-//             <sl-button variant="primary" class="dock-btn" disabled>Dock</sl-button>
-//         </div>
-//     `;
-
-//     // Add the dock dialog to the document
-//     document.body.appendChild(dialog);
-
-//     // Return promise that resolves when docking is complete
-//     return new Promise((resolve) => {
-//         let selectedRoom = null;
-//         let selectedPosition = null;
-
-//         // Add event handlers
-//         dialog.querySelectorAll('.room-option').forEach(option => {
-//             option.addEventListener('click', () => {
-//                 dialog.querySelectorAll('.room-option').forEach(opt => 
-//                     opt.classList.remove('selected'));
-//                 option.classList.add('selected');
-//                 selectedRoom = availableRooms.find(r => 
-//                     r.id === parseInt(option.dataset.roomId));
-//                 dialog.querySelector('.dock-btn').disabled = !selectedPosition;
-//             });
-//         });
-
-//         dialog.querySelectorAll('.dock-point').forEach(point => {
-//             point.addEventListener('click', () => {
-//                 dialog.querySelectorAll('.dock-point').forEach(p => 
-//                     p.classList.remove('active'));
-//                 point.classList.add('active');
-//                 selectedPosition = point.dataset.position;
-//                 dialog.querySelector('.dock-btn').disabled = !selectedRoom;
-//             });
-//         });
-
-//         // Handle dock button click
-//         dialog.querySelector('.dock-btn').addEventListener('click', () => {
-//             if (selectedRoom && selectedPosition) {
-//                 this.editor.dockRooms(room, selectedRoom, selectedPosition);
-//                 dialog.hide();
-//                 resolve(true);
-//             }
-//         });
-
-//         // Handle cancel button click
-//         dialog.querySelector('.cancel-btn').addEventListener('click', () => {
-//             dialog.hide();
-//             resolve(false);
-//         });
-
-//         dialog.addEventListener('sl-after-hide', () => dialog.remove());
-//         dialog.show();
-//     });
-// }
 
 
 async showDockDialog(room) {
@@ -4012,95 +3916,64 @@ async showDockDialog(room) {
 
     document.body.appendChild(dialog);
 
-    // Single selection logic
-dialog.querySelectorAll('.dock-button').forEach(button => {
-    button.addEventListener('click', () => {
-        // Deselect all buttons
-        dialog.querySelectorAll('.dock-button').forEach(btn => 
-            btn.classList.remove('selected'));
-        // Select clicked button
-        button.classList.add('selected');
-        selectedPosition = button.dataset.position;
-        dialog.querySelector('.dock-btn').disabled = !selectedRoom;
-    });
-});
+return new Promise((resolve) => {
+    let selectedRoom = null;
+    let selectedPosition = null;
 
-    return new Promise((resolve) => {
-        let selectedRoom = null;
-        let selectedPosition = null;
-
-        // Room selection
-        // dialog.querySelectorAll('.room-option').forEach(option => {
-        //     option.addEventListener('click', () => {
-        //         dialog.querySelectorAll('.room-option').forEach(opt => 
-        //             opt.classList.remove('selected'));
-        //         option.classList.add('selected');
-        //         selectedRoom = availableRooms.find(r => 
-        //             r.id === parseInt(option.dataset.roomId));
-        //         dialog.querySelector('.dock-btn').disabled = !selectedPosition;
-        //     });
-        // });
-
-        // // Position selection
-        // dialog.querySelectorAll('sl-radio').forEach(radio => {
-        //     radio.addEventListener('sl-change', (e) => {
-        //         if (e.target.checked) {
-        //             selectedPosition = e.target.value;
-        //             dialog.querySelector('.dock-btn').disabled = !selectedRoom;
-        //         }
-        //     });
-        // });
-
-        // Room selection
-dialog.querySelectorAll('.room-option').forEach(option => {
-    option.addEventListener('click', () => {
-        console.log('Room selected:', option.dataset.roomId); // Debug log
-        dialog.querySelectorAll('.room-option').forEach(opt => 
-            opt.classList.remove('selected'));
-        option.classList.add('selected');
-        selectedRoom = availableRooms.find(r => 
-            r.id === parseInt(option.dataset.roomId));
-        const dockBtn = dialog.querySelector('.dock-btn');
-        dockBtn.disabled = !(selectedRoom && selectedPosition);
-        console.log('Dock button state:', {
-            selectedRoom: !!selectedRoom,
-            selectedPosition: !!selectedPosition,
-            buttonDisabled: dockBtn.disabled
+    // Room selection
+    dialog.querySelectorAll('.room-option').forEach(option => {
+        option.addEventListener('click', () => {
+            console.log('Room selected:', option.dataset.roomId);
+            dialog.querySelectorAll('.room-option').forEach(opt => 
+                opt.classList.remove('selected'));
+            option.classList.add('selected');
+            selectedRoom = availableRooms.find(r => 
+                r.id === parseInt(option.dataset.roomId));
+            dialog.querySelector('.dock-btn').disabled = !(selectedRoom && selectedPosition);
+            console.log('Dock button state:', {
+                selectedRoom: !!selectedRoom,
+                selectedPosition: !!selectedPosition,
+                buttonDisabled: dialog.querySelector('.dock-btn').disabled
+            });
         });
     });
-});
 
-// Position selection - Listen to radio-group changes instead of individual radios
-dialog.querySelectorAll('sl-radio-group').forEach(group => {
-    group.addEventListener('sl-change', (e) => {
-        console.log('Position selected:', e.target.value);
-        selectedPosition = e.target.value;
-        const dockBtn = dialog.querySelector('.dock-btn');
-        dockBtn.disabled = !(selectedRoom && selectedPosition);
-        console.log('Dock button state:', {
-            selectedRoom: !!selectedRoom,
-            selectedPosition: !!selectedPosition,
-            buttonDisabled: dockBtn.disabled
+    // Position selection using grid buttons
+    dialog.querySelectorAll('.dock-button').forEach(button => {
+        button.addEventListener('click', () => {
+            console.log('Position selected:', button.dataset.position);
+            dialog.querySelectorAll('.dock-button').forEach(btn => 
+                btn.classList.remove('selected'));
+            button.classList.add('selected');
+            selectedPosition = button.dataset.position;
+            dialog.querySelector('.dock-btn').disabled = !(selectedRoom && selectedPosition);
+            console.log('Dock button state:', {
+                selectedRoom: !!selectedRoom,
+                selectedPosition: !!selectedPosition,
+                buttonDisabled: dialog.querySelector('.dock-btn').disabled
+            });
         });
     });
-});
 
-        dialog.querySelector('.dock-btn').addEventListener('click', () => {
-            if (selectedRoom && selectedPosition) {
-                this.editor.dockRooms(room, selectedRoom, selectedPosition);
-                dialog.hide();
-                resolve(true);
-            }
-        });
-
-        dialog.querySelector('.cancel-btn').addEventListener('click', () => {
+    // Dock button handler
+    dialog.querySelector('.dock-btn').addEventListener('click', () => {
+        if (selectedRoom && selectedPosition) {
+            this.editor.dockRooms(room, selectedRoom, selectedPosition);
             dialog.hide();
-            resolve(false);
-        });
-
-        dialog.addEventListener('sl-after-hide', () => dialog.remove());
-        dialog.show();
+            resolve(true);
+        }
     });
+
+    // Cancel button handler
+    dialog.querySelector('.cancel-btn').addEventListener('click', () => {
+        dialog.hide();
+        resolve(false);
+    });
+
+    dialog.addEventListener('sl-after-hide', () => dialog.remove());
+    dialog.show();
+});
+
 }
 
 }
@@ -4229,107 +4102,143 @@ checkTextureManager(callback) {
             return value;
         }
 
-        dockRooms(sourceRoom, targetRoom, position) {
-    if (!sourceRoom || !targetRoom) return;
+        calculateDockOffset(mainRoom, dockingRoom, position) {
+    let newX = dockingRoom.bounds.x;  // Start with current position
+    let newY = dockingRoom.bounds.y;
 
-    // Calculate offset
-    const offset = this.calculateDockOffset(sourceRoom, targetRoom, position);
-    
-    // Update source room position relative to target room
-    sourceRoom.bounds.x = targetRoom.bounds.x + offset.x;
-    sourceRoom.bounds.y = targetRoom.bounds.y + offset.y;
-    
-    // Store docking relationship
-    if (!this.dockedRooms.has(sourceRoom.id)) {
-        this.dockedRooms.set(sourceRoom.id, []);
-    }
-    this.dockedRooms.get(sourceRoom.id).push({
-        room: targetRoom,
-        position: position
-    });
-
-    // Update visual elements
-    sourceRoom.updateElement();
-    targetRoom.updateElement();
-
-    // Add visual feedback
-    sourceRoom.element.classList.add('docked');
-    targetRoom.element.classList.add('docked');
-}
-
-    calculateDockOffset(sourceRoom, targetRoom, position) {
-    const offset = { x: 0, y: 0 };
-    
     switch(position) {
-        // Left side positions
-        case 'left-top':
-            offset.x = -sourceRoom.bounds.width;
-            offset.y = 0;
-            break;
-        case 'left-middle':
-            offset.x = -sourceRoom.bounds.width;
-            offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
-            break;
-        case 'left-bottom':
-            offset.x = -sourceRoom.bounds.width;
-            offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
-            break;
-
         // Right side positions
         case 'right-top':
-            offset.x = targetRoom.bounds.width;
-            offset.y = 0;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width;
+            newY = mainRoom.bounds.y;
             break;
         case 'right-middle':
-            offset.x = targetRoom.bounds.width;
-            offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width;
+            newY = mainRoom.bounds.y + (mainRoom.bounds.height - dockingRoom.bounds.height) / 2;
             break;
         case 'right-bottom':
-            offset.x = targetRoom.bounds.width;
-            offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height - dockingRoom.bounds.height;
+            break;
+
+        // Left side positions
+        case 'left-top':
+            newX = mainRoom.bounds.x - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y;
+            break;
+        case 'left-middle':
+            newX = mainRoom.bounds.x - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y + (mainRoom.bounds.height - dockingRoom.bounds.height) / 2;
+            break;
+        case 'left-bottom':
+            newX = mainRoom.bounds.x - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height - dockingRoom.bounds.height;
             break;
 
         // Top side positions
         case 'top-left':
-            offset.x = 0;
-            offset.y = -sourceRoom.bounds.height;
+            newX = mainRoom.bounds.x;
+            newY = mainRoom.bounds.y - dockingRoom.bounds.height;
             break;
         case 'top-center':
-            offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
-            offset.y = -sourceRoom.bounds.height;
+            newX = mainRoom.bounds.x + (mainRoom.bounds.width - dockingRoom.bounds.width) / 2;
+            newY = mainRoom.bounds.y - dockingRoom.bounds.height;
             break;
         case 'top-right':
-            offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
-            offset.y = -sourceRoom.bounds.height;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y - dockingRoom.bounds.height;
             break;
 
         // Bottom side positions
         case 'bottom-left':
-            offset.x = 0;
-            offset.y = targetRoom.bounds.height;
+            newX = mainRoom.bounds.x;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height;
             break;
         case 'bottom-center':
-            offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
-            offset.y = targetRoom.bounds.height;
+            newX = mainRoom.bounds.x + (mainRoom.bounds.width - dockingRoom.bounds.width) / 2;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height;
             break;
         case 'bottom-right':
-            offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
-            offset.y = targetRoom.bounds.height;
+            newX = mainRoom.bounds.x + mainRoom.bounds.width - dockingRoom.bounds.width;
+            newY = mainRoom.bounds.y + mainRoom.bounds.height;
             break;
     }
 
-    return offset;
+    // Calculate the offset from current position
+    return {
+        x: newX - dockingRoom.bounds.x,
+        y: newY - dockingRoom.bounds.y
+    };
 }
-    undockRoom(room) {
-        if (this.dockedRooms.has(room.id)) {
-            const dockings = this.dockedRooms.get(room.id);
-            dockings.forEach(({ room: targetRoom }) => {
-                targetRoom.element.classList.remove('docked');
-            });
-            room.element.classList.remove('docked');
-            this.dockedRooms.delete(room.id);
-        }
+
+dockRooms(mainRoom, dockingRoom, position) {
+    if (!mainRoom || !dockingRoom) return;
+
+    // Calculate where dockingRoom should move to
+    const offset = this.calculateDockOffset(mainRoom, dockingRoom, position);
+    
+    // Move the docking room
+    dockingRoom.bounds.x += offset.x;
+    dockingRoom.bounds.y += offset.y;
+    
+    // Store docking relationship
+    if (!this.dockedRooms.has(dockingRoom.id)) {
+        this.dockedRooms.set(dockingRoom.id, []);
     }
+    
+    this.dockedRooms.get(dockingRoom.id).push({
+        room: mainRoom,
+        position: position,
+        offset: { ...offset }
+    });
+
+    // Update visual elements
+    dockingRoom.updateElement();
+    dockingRoom.element.classList.add('docked');
+    mainRoom.element.classList.add('docked');
+
+    console.log('Docking complete:', {
+        mainRoomId: mainRoom.id,
+        dockingRoomId: dockingRoom.id,
+        position,
+        newPosition: {
+            x: dockingRoom.bounds.x,
+            y: dockingRoom.bounds.y
+        },
+        offset
+    });
+}
+
+
+undockRoom(room) {
+    if (this.dockedRooms.has(room.id)) {
+        // Get all docking relationships for this room
+        const dockings = this.dockedRooms.get(room.id);
+        
+        dockings.forEach(({ room: targetRoom, offset }) => {
+            // Remove visual indicators
+            targetRoom.element.classList.remove('docked');
+            
+            // Remove any stored relationships where this room is the target
+            this.dockedRooms.forEach((relationships, key) => {
+                if (relationships.some(rel => rel.room.id === room.id)) {
+                    this.dockedRooms.delete(key);
+                }
+            });
+        });
+
+        // Remove visual indicator from source room
+        room.element.classList.remove('docked');
+        
+        // Remove all docking relationships for this room
+        this.dockedRooms.delete(room.id);
+
+        console.log('Room undocked:', {
+            roomId: room.id,
+            previousDockings: dockings
+        });
+    }
+}
 
 
         showLockedMessage() {
@@ -6284,10 +6193,24 @@ startResizing(room, handle, e) {
         }
 
         // Update room bounds
-        room.bounds.x = newX;
-        room.bounds.y = newY;
-        room.bounds.width = Math.max(newWidth, this.cellSize || 20);
-        room.bounds.height = Math.max(newHeight, this.cellSize || 20);
+        // room.bounds.x = newX;
+        // room.bounds.y = newY;
+        // room.bounds.width = Math.max(newWidth, this.cellSize || 20);
+        // room.bounds.height = Math.max(newHeight, this.cellSize || 20);
+
+        // Update room bounds
+room.bounds.x = newX;
+room.bounds.y = newY;
+
+if (room.name.startsWith("Prop-")) {
+    // Props can be any size, just prevent negative values
+    room.bounds.width = Math.max(newWidth, 1);
+    room.bounds.height = Math.max(newHeight, 1);
+} else {
+    // Regular rooms maintain minimum cell size
+    room.bounds.width = Math.max(newWidth, this.cellSize || 20);
+    room.bounds.height = Math.max(newHeight, this.cellSize || 20);
+}
 
         // Update polygon points if this is a polygon room
         if (room.shape === 'polygon' && startPoints) {
@@ -6976,31 +6899,80 @@ async showStructureContextMenu(structure, event) {
         }
 
 
-        getMonsterTokenData(marker) {
-    console.log("Processing marker:", marker);
+//         getMonsterTokenData(marker) {
+//     console.log("Processing marker:", marker);
+
+//     if (!marker || !marker.data || !marker.data.monster) {
+//         console.log("Invalid marker data");
+//         return null;
+//     }
+
+//     // Get correct token image source
+//     const tokenSource = marker.data.monster.token.data || marker.data.monster.token.url;
+//     console.log("Token image source:", tokenSource);
+
+//     const monsterSize = this.getMonsterSizeInSquares(marker.data.monster.basic.size || "medium");
+
+//     const tokenData = {
+//         x: marker.x,
+//         y: marker.y,
+//         size: monsterSize,
+//         image: tokenSource,
+//         type: "monster",
+//         name: marker.data.monster.name || "Unknown Monster",
+//         height: 2 * monsterSize
+//     };
+
+//     console.log("Created token data:", tokenData);
+//     return tokenData;
+// }
+
+getMonsterTokenData(marker) {
+    console.log("Processing marker:", {
+        type: marker.type,
+        data: marker.data,
+        hasMonster: !!marker.data?.monster,
+        hasToken: !!marker.data?.monster?.token,
+        tokenData: marker.data?.monster?.token?.data,
+        tokenUrl: marker.data?.monster?.token?.url
+    });
 
     if (!marker || !marker.data || !marker.data.monster) {
         console.log("Invalid marker data");
         return null;
     }
 
+    if (!marker.data.monster.token || (!marker.data.monster.token.data && !marker.data.monster.token.url)) {
+        console.log("No valid token data found");
+        return null;
+    }
+
     // Get correct token image source
     const tokenSource = marker.data.monster.token.data || marker.data.monster.token.url;
-    console.log("Token image source:", tokenSource);
+    console.log("Token image source type:", {
+        isBase64: tokenSource.startsWith('data:'),
+        length: tokenSource.length,
+        preview: tokenSource.substring(0, 100) + '...'
+    });
 
     const monsterSize = this.getMonsterSizeInSquares(marker.data.monster.basic.size || "medium");
-
     const tokenData = {
         x: marker.x,
         y: marker.y,
         size: monsterSize,
         image: tokenSource,
         type: "monster",
-        name: marker.data.monster.name || "Unknown Monster",
+        name: marker.data.monster.basic?.name || "Unknown Monster",
         height: 2 * monsterSize
     };
 
-    console.log("Created token data:", tokenData);
+    console.log("Created token data:", {
+        position: `${tokenData.x}, ${tokenData.y}`,
+        size: tokenData.size,
+        height: tokenData.height,
+        hasImage: !!tokenData.image
+    });
+
     return tokenData;
 }
 
@@ -7351,30 +7323,25 @@ showMarkerContextMenu(marker, event) {
                 </div>
             </div>
         `;
-        } else if (marker.type === 'encounter') {
-          if (marker.data.monster) {
-            // Create monster URL using name and source
-            const baseUrl = "https://5e.tools/bestiary.html";
-            const monsterName = marker.data.monster.basic.name
-              .toLowerCase()
-              .replace(/\s+/g, "_");
-            const sourceCode = "xphb"; // We could extract this from source data if available
-            const monsterUrl = `${baseUrl}#${monsterName}_${sourceCode}`;
+      } else if (marker.type === 'encounter') {
+    if (marker.data.monster) {
+        // Create monster URL using name and source
+        const baseUrl = "https://5e.tools/bestiary.html";
+        const monsterName = marker.data.monster.basic.name
+            .toLowerCase()
+            .replace(/\s+/g, "_");
+        const sourceCode = "xphb"; // We could extract this from source data if available
+        const monsterUrl = `${baseUrl}#${monsterName}_${sourceCode}`;
 
-            content += `
+        content += `
             <div style="margin-bottom: 16px;">
                 <div style="display: flex; gap: 16px; margin-bottom: 12px;">
-                    ${marker.data.monster.token
-                ? `
+                    ${marker.data.monster.token ? `
                         <div style="width: 100px; height: 100px; border-radius: 8px; border: 2px solid #f44336; overflow: hidden;">
-                            <img src="${marker.data.monster.token.data ||
-                marker.data.monster.token.url
-                }" 
+                            <img src="${marker.data.monster.token.data || marker.data.monster.token.url}" 
                                  style="width: 100%; height: 100%; object-fit: cover;" />
                         </div>
-                    `
-                : ""
-              }
+                    ` : ""}
                     <div style="flex: 1;">
                         <h3 style="margin: 0 0 4px 0; font-size: 1.2em;">
                             <a href="${monsterUrl}" target="_blank" style="color: #2196F3; text-decoration: none;">
@@ -7383,13 +7350,11 @@ showMarkerContextMenu(marker, event) {
                             </a>
                         </h3>
                         <div style="color: #666; font-style: italic; margin-bottom: 8px;">
-                            ${marker.data.monster.basic.size} ${marker.data.monster.basic.type
-              }, 
+                            ${marker.data.monster.basic.size} ${marker.data.monster.basic.type}, 
                             ${marker.data.monster.basic.alignment}
                         </div>
                         <div style="color: #666;">
-                            CR ${marker.data.monster.basic.cr} (${marker.data.monster.basic.xp
-              } XP)
+                            CR ${marker.data.monster.basic.cr} (${marker.data.monster.basic.xp} XP)
                         </div>
                     </div>
                 </div>
@@ -7401,8 +7366,7 @@ showMarkerContextMenu(marker, event) {
                     </div>
                     <div>
                         <div style="font-weight: bold;">Hit Points</div>
-                        <div>${marker.data.monster.stats.hp.average} (${marker.data.monster.stats.hp.roll
-              })</div>
+                        <div>${marker.data.monster.stats.hp.average} (${marker.data.monster.stats.hp.roll})</div>
                     </div>
                     <div>
                         <div style="font-weight: bold;">Speed</div>
@@ -7413,77 +7377,72 @@ showMarkerContextMenu(marker, event) {
                 <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; text-align: center; background: #f5f5f5; padding: 8px; border-radius: 4px;">
                     <div>
                         <div style="font-weight: bold;">STR</div>
-                        <div>${marker.data.monster.abilities.str.score} (${marker.data.monster.abilities.str.modifier >= 0 ? "+" : ""
-              }${marker.data.monster.abilities.str.modifier})</div>
+                        <div>${marker.data.monster.abilities.str.score} (${marker.data.monster.abilities.str.modifier >= 0 ? "+" : ""}${marker.data.monster.abilities.str.modifier})</div>
                     </div>
                     <div>
                         <div style="font-weight: bold;">DEX</div>
-                        <div>${marker.data.monster.abilities.dex.score} (${marker.data.monster.abilities.dex.modifier >= 0 ? "+" : ""
-              }${marker.data.monster.abilities.dex.modifier})</div>
+                        <div>${marker.data.monster.abilities.dex.score} (${marker.data.monster.abilities.dex.modifier >= 0 ? "+" : ""}${marker.data.monster.abilities.dex.modifier})</div>
                     </div>
                     <div>
                         <div style="font-weight: bold;">CON</div>
-                        <div>${marker.data.monster.abilities.con.score} (${marker.data.monster.abilities.con.modifier >= 0 ? "+" : ""
-              }${marker.data.monster.abilities.con.modifier})</div>
+                        <div>${marker.data.monster.abilities.con.score} (${marker.data.monster.abilities.con.modifier >= 0 ? "+" : ""}${marker.data.monster.abilities.con.modifier})</div>
                     </div>
                     <div>
                         <div style="font-weight: bold;">INT</div>
-                        <div>${marker.data.monster.abilities.int.score} (${marker.data.monster.abilities.int.modifier >= 0 ? "+" : ""
-              }${marker.data.monster.abilities.int.modifier})</div>
+                        <div>${marker.data.monster.abilities.int.score} (${marker.data.monster.abilities.int.modifier >= 0 ? "+" : ""}${marker.data.monster.abilities.int.modifier})</div>
                     </div>
                     <div>
                         <div style="font-weight: bold;">WIS</div>
-                        <div>${marker.data.monster.abilities.wis.score} (${marker.data.monster.abilities.wis.modifier >= 0 ? "+" : ""
-              }${marker.data.monster.abilities.wis.modifier})</div>
+                        <div>${marker.data.monster.abilities.wis.score} (${marker.data.monster.abilities.wis.modifier >= 0 ? "+" : ""}${marker.data.monster.abilities.wis.modifier})</div>
                     </div>
                     <div>
                         <div style="font-weight: bold;">CHA</div>
-                        <div>${marker.data.monster.abilities.cha.score} (${marker.data.monster.abilities.cha.modifier >= 0 ? "+" : ""
-              }${marker.data.monster.abilities.cha.modifier})</div>
+                        <div>${marker.data.monster.abilities.cha.score} (${marker.data.monster.abilities.cha.modifier >= 0 ? "+" : ""}${marker.data.monster.abilities.cha.modifier})</div>
                     </div>
                 </div>
             </div>
         `;
+    }
 
-
-            content += `
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                    <sl-button id="cloneMonster" size="small">
-                        <span class="material-icons">content_copy</span>
-                        Clone
-                    </sl-button>
-                    <sl-button id="linkMonster" size="small">
-                        <span class="material-icons">link</span>
-                        ${marker.data.monster ? "Change" : "Link"}
-                    </sl-button>
-                </div>
-            `;
-          }
-        } else if (["treasure", "trap"].includes(marker.type)) {
-          content += `
-            <sl-input id="markerDescription" 
-                     label="Description"
-                     value="${marker.data.description || ""}">
-            </sl-input>
-        `;
-        }
-
-        content += "</div>";
-
-
-        // Add standardized footer with delete button
-        content += `
-        <div slot="footer" style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="flex-spacer"></div>
-            <sl-button class="delete-marker-btn" variant="danger">
-                <span class="material-icons" style="margin-right: 4px;">delete</span>
-                Remove ${marker.type.charAt(0).toUpperCase() + marker.type.slice(1)}
+    // Buttons always show for encounter markers
+    content += `
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+            ${marker.data.monster ? `
+                <sl-button id="cloneMonster" size="small">
+                    <span class="material-icons">content_copy</span>
+                    Clone
+                </sl-button>
+            ` : ''}
+            <sl-button id="linkMonster" size="small" style="grid-column: ${marker.data.monster ? 'auto' : '1 / -1'}">
+                <span class="material-icons">link</span>
+                ${marker.data.monster ? "Change" : "Add"} Monster
             </sl-button>
         </div>
     `;
+} else if (["treasure", "trap"].includes(marker.type)) {
+    content += `
+        <sl-input id="markerDescription"
+                 label="Description"
+                 value="${marker.data.description || ""}">
+        </sl-input>
+    `;
+}
 
-        dialog.innerHTML = content;
-        document.body.appendChild(dialog);
+content += "</div>";
+
+// Add standardized footer with delete button
+content += `
+    <div slot="footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="flex-spacer"></div>
+        <sl-button class="delete-marker-btn" variant="danger">
+            <span class="material-icons" style="margin-right: 4px;">delete</span>
+            Remove ${marker.type.charAt(0).toUpperCase() + marker.type.slice(1)}
+        </sl-button>
+    </div>
+`;
+
+dialog.innerHTML = content;
+document.body.appendChild(dialog);
 
         // Add texture selection handler
         const textureOptions = dialog.querySelectorAll('.texture-option');
@@ -7648,17 +7607,47 @@ showMarkerContextMenu(marker, event) {
           this.tokens = [];
 
           // Add encounter markers to tokens array
-this.markers.forEach(marker => {
-    if (marker.type === "encounter" && marker.data.monster) {
-        console.log("Processing encounter marker for 3D:", marker);
+// this.markers.forEach(marker => {
+//     if (marker.type === "encounter" && marker.data.monster) {
+//         console.log("Processing encounter marker for 3D:", marker);
         
+//         const tokenData = this.getMonsterTokenData(marker);
+//         if (tokenData) {
+//             this.tokens.push(tokenData);
+//             console.log("Added token data:", tokenData);
+//         }
+//     }
+// });
+
+// Add encounter markers to tokens array
+console.log("Starting to process markers for tokens:", this.markers.length);
+this.markers.forEach((marker, index) => {
+    console.log(`Processing marker ${index}:`, {
+        type: marker.type,
+        hasMonster: !!marker.data?.monster
+    });
+
+    if (marker.type === "encounter" && marker.data?.monster) {
+        console.log("Processing encounter marker for 3D:", {
+            name: marker.data.monster.basic?.name,
+            hasToken: !!marker.data.monster.token
+        });
+       
         const tokenData = this.getMonsterTokenData(marker);
         if (tokenData) {
             this.tokens.push(tokenData);
-            console.log("Added token data:", tokenData);
+            console.log("Successfully added token data:", {
+                name: tokenData.name,
+                position: `${tokenData.x}, ${tokenData.y}`,
+                size: tokenData.size
+            });
+        } else {
+            console.log("Failed to get token data for marker");
         }
     }
 });
+
+console.log("Finished processing markers, total tokens:", this.tokens.length);
 
 const camera = new THREE.PerspectiveCamera(
             75,
@@ -7739,129 +7728,6 @@ this.markers.forEach(marker => {
             });
 
             switch (room.shape) {
-              // case "circle": {
-              //   const segments = 32;
-
-              //   // Calculate grid-aligned position
-              //   const gridX = Math.floor(room.bounds.x / this.cellSize);
-              //   const gridY = Math.floor(room.bounds.y / this.cellSize);
-
-              //   const radius =
-              //     Math.max(room.bounds.width, room.bounds.height) / 100;
-              //   // console.log("Radius:", radius);
-              //   // console.log("Cell Size:", this.cellSize);
-
-              //   const dimensionFactor =
-              //     Math.max(
-              //       this.gridDimensions.width,
-              //       this.gridDimensions.height
-              //     ) / 10;
-              //   const hiddenNumber = Math.ceil(dimensionFactor) * 2;
-              //   // Add a small adjustment for smaller maps
-              //   const adjustment = this.gridDimensions.width < 40 ? -1 : 0;
-              //   const finalNumber = hiddenNumber + adjustment;
-
-              //   const offsetX =
-              //     room.bounds.width / (this.cellSize - finalNumber);
-              //   const offsetZ =
-              //     room.bounds.height / (this.cellSize - finalNumber);
-
-              //   const centerX =
-              //     (gridX * this.cellSize) / 50 + offsetX - boxWidth / 2;
-              //   const centerZ =
-              //     (gridY * this.cellSize) / 50 + offsetZ - boxDepth / 2;
-
-
-              //   if (isWall) {
-              //     // For walls, create solid cylinder including top and bottom
-              //     for (let i = 0; i <= segments; i++) {
-              //       const theta = (i / segments) * Math.PI * 2;
-              //       const x = Math.cos(theta);
-              //       const z = Math.sin(theta);
-
-              //       // Bottom vertices
-              //       positions.push(
-              //         centerX + radius * x,
-              //         0,
-              //         centerZ + radius * z
-              //       );
-              //       normals.push(x, 0, z);
-              //       uvs.push(i / segments, 0);
-
-              //       // Top vertices
-              //       positions.push(
-              //         centerX + radius * x,
-              //         boxHeight,
-              //         centerZ + radius * z
-              //       );
-              //       normals.push(x, 0, z);
-              //       uvs.push(i / segments, 1);
-              //     }
-
-              //     // Create faces for cylinder walls
-              //     for (let i = 0; i < segments; i++) {
-              //       const base = i * 2;
-              //       indices.push(
-              //         base,
-              //         base + 1,
-              //         base + 2,
-              //         base + 1,
-              //         base + 3,
-              //         base + 2
-              //       );
-              //     }
-
-              //     // Add center vertices for top and bottom caps
-              //     const bottomCenterIndex = positions.length / 3;
-              //     positions.push(centerX, 0, centerZ);
-              //     normals.push(0, -1, 0);
-              //     uvs.push(0.5, 0.5);
-
-              //     const topCenterIndex = positions.length / 3;
-              //     positions.push(centerX, boxHeight, centerZ);
-              //     normals.push(0, 1, 0);
-              //     uvs.push(0.5, 0.5);
-
-              //     // Add cap faces
-              //     for (let i = 0; i < segments; i++) {
-              //       const current = i * 2;
-              //       const next = ((i + 1) % segments) * 2;
-              //       // Bottom cap
-              //       indices.push(bottomCenterIndex, current, next);
-              //       // Top cap
-              //       indices.push(topCenterIndex, next + 1, current + 1);
-              //     }
-              //   } else {
-              //     // Original hollow room code
-              //     for (let i = 0; i <= segments; i++) {
-              //       const theta = (i / segments) * Math.PI * 2;
-              //       const x = centerX + radius * Math.cos(theta);
-              //       const z = centerZ + radius * Math.sin(theta);
-
-              //       positions.push(x, 0, z);
-              //       positions.push(x, boxHeight, z);
-
-              //       const normal = [Math.cos(theta), 0, Math.sin(theta)];
-              //       normals.push(...normal, ...normal);
-
-              //       uvs.push(i / segments, 0, i / segments, 1);
-              //     }
-
-              //     for (let i = 0; i < segments; i++) {
-              //       const base = i * 2;
-              //       indices.push(
-              //         base,
-              //         base + 1,
-              //         base + 2,
-              //         base + 1,
-              //         base + 3,
-              //         base + 2
-              //       );
-              //     }
-              //   }
-              //   break;
-              // }
-
               case "circle": {
     const segments = 32;
     const radius = Math.max(room.bounds.width, room.bounds.height) / 100;
@@ -8671,12 +8537,12 @@ this.rooms.forEach((room, index) => {
 
     if (roomMesh) {
         if (roomMesh.userData.isWall) {
-            console.log("Creating wall mesh:", {
-                roomName: room.name,
-                hasTexture: !!roomMesh.material.map,
-                isTransparent: roomMesh.material.transparent,
-                opacity: roomMesh.material.opacity
-            });
+            // console.log("Creating wall mesh:", {
+            //     roomName: room.name,
+            //     hasTexture: !!roomMesh.material.map,
+            //     isTransparent: roomMesh.material.transparent,
+            //     opacity: roomMesh.material.opacity
+            // });
         }
         scene.add(roomMesh);
     }
@@ -8710,17 +8576,74 @@ this.rooms.forEach((room, index) => {
           }
 
 
-        if (this.tokens && this.tokens.length > 0) {
-    console.log("Creating 3D tokens:", this.tokens);
-    this.tokens.forEach((token) => {
+    //     if (this.tokens && this.tokens.length > 0) {
+    // console.log("Creating 3D tokens:", this.tokens);
+    // this.tokens.forEach((token) => {
+    //     const textureLoader = new THREE.TextureLoader();
+    //     textureLoader.load(
+    //         token.image,
+    //         (texture) => {
+    //             console.log("Token texture loaded:", texture);
+
+    //             const spriteMaterial = new THREE.SpriteMaterial({
+    //                 map: texture,  // Add this line - it was missing
+    //                 sizeAttenuation: true
+    //             });
+
+    //             const sprite = new THREE.Sprite(spriteMaterial);
+    //             const scale = token.size * (this.cellSize / 25);
+    //             const aspectRatio = texture.image.width / texture.image.height;
+    //             sprite.scale.set(scale * aspectRatio, scale, 1);
+
+    //             // Position at grid location - FIXED HEIGHT CALCULATION
+    //             const x = token.x / 50 - boxWidth / 2;
+    //             const z = token.y / 50 - boxDepth / 2;
+    //             const y = token.size * (this.cellSize / 50); // This is the key change
+
+    //             sprite.position.set(x, y, z);
+    //             scene.add(sprite);
+    //         },
+    //         undefined,
+    //         (error) => {
+    //             console.error("Error loading token texture:", error);
+    //         }
+    //     );
+
+    //           // Keep debug box for reference
+    //           const debugGeometry = new THREE.BoxGeometry(
+    //             token.size * (this.cellSize / 25),
+    //             0.1,
+    //             token.size * (this.cellSize / 25)
+    //           );
+    //           const debugMaterial = new THREE.MeshBasicMaterial({
+    //             color: 0xff0000,
+    //             transparent: true,
+    //             opacity: 0.5
+    //           });
+    //           const debugBox = new THREE.Mesh(debugGeometry, debugMaterial);
+    //           debugBox.position.set(
+    //             token.x / 50 - boxWidth / 2,
+    //             0.05,
+    //             token.y / 50 - boxDepth / 2
+    //           );
+    //           scene.add(debugBox);
+    //         });
+    //       }
+
+          // Setup controls
+          
+          const createTokenMesh = (token) => {
+    // Debug log the token data
+    console.log("Creating token mesh with data:", token);
+
+    return new Promise((resolve, reject) => {
         const textureLoader = new THREE.TextureLoader();
+        
         textureLoader.load(
             token.image,
             (texture) => {
-                console.log("Token texture loaded:", texture);
-
                 const spriteMaterial = new THREE.SpriteMaterial({
-                    map: texture,  // Add this line - it was missing
+                    map: texture,
                     sizeAttenuation: true
                 });
 
@@ -8729,42 +8652,45 @@ this.rooms.forEach((room, index) => {
                 const aspectRatio = texture.image.width / texture.image.height;
                 sprite.scale.set(scale * aspectRatio, scale, 1);
 
-                // Position at grid location - FIXED HEIGHT CALCULATION
+                // Position at grid location
                 const x = token.x / 50 - boxWidth / 2;
                 const z = token.y / 50 - boxDepth / 2;
-                const y = token.size * (this.cellSize / 50); // This is the key change
+                const y = token.size * (this.cellSize / 50); // Height adjustment
 
                 sprite.position.set(x, y, z);
-                scene.add(sprite);
+                
+                console.log("Token sprite created:", {
+                    position: sprite.position,
+                    scale: sprite.scale,
+                    aspectRatio
+                });
+
+                resolve(sprite);
             },
             undefined,
             (error) => {
                 console.error("Error loading token texture:", error);
+                reject(error);
             }
         );
+    });
+};
 
-              // Keep debug box for reference
-              const debugGeometry = new THREE.BoxGeometry(
-                token.size * (this.cellSize / 25),
-                0.1,
-                token.size * (this.cellSize / 25)
-              );
-              const debugMaterial = new THREE.MeshBasicMaterial({
-                color: 0xff0000,
-                transparent: true,
-                opacity: 0.5
-              });
-              const debugBox = new THREE.Mesh(debugGeometry, debugMaterial);
-              debugBox.position.set(
-                token.x / 50 - boxWidth / 2,
-                0.05,
-                token.y / 50 - boxDepth / 2
-              );
-              scene.add(debugBox);
-            });
-          }
-
-          // Setup controls
+// Then when creating tokens:
+if (this.tokens && this.tokens.length > 0) {
+    console.log("Processing tokens for 3D view:", this.tokens);
+    
+    Promise.all(this.tokens.map(token => createTokenMesh(token)))
+        .then(sprites => {
+            sprites.forEach(sprite => scene.add(sprite));
+            console.log("All token sprites added to scene");
+        })
+        .catch(error => {
+            console.error("Error creating token sprites:", error);
+        });
+}
+          
+          
           const controls = new THREE.PointerLockControls(
             camera,
             renderer.domElement

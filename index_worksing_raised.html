@@ -1262,7 +1262,7 @@ sl-input::part(form-control-label) {
 
 .dock-point {
             position: absolute;
-            width: 16px;  
+            width: 16px;  /* Bigger dots */
             height: 16px;
             background: #666;
             border: 2px solid #888;
@@ -1295,125 +1295,6 @@ sl-input::part(form-control-label) {
             background: #333;
         }
 
-        .dock-preview {
-    border: 1px solid #444;
-    position: relative;
-    min-height: 500px;
-    background: #2a2a2a;
-    border-radius: 4px;
-}
-
-.dock-positions {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 20px;
-}
-
-.room-option {
-    cursor: pointer;
-    padding: 8px;
-    margin-bottom: 8px;
-    border: 1px solid #666;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.room-option:hover {
-    background: #444;
-}
-
-.room-option.selected {
-    border-color: var(--sl-color-primary-600);
-    background: #333;
-}
-
-.room-option img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 2px;
-}
-
-sl-radio {
-    --sl-input-border-color: #666;
-    --sl-input-border-color-hover: #888;
-    padding: 8px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-
-sl-radio:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-sl-radio[checked] {
-    background-color: rgba(var(--sl-color-primary-500), 0.1);
-}
-
-.docked {
-    border: 2px solid var(--sl-color-primary-500);
-    position: relative;
-}
-
-.docked::after {
-    content: "Docked";
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--sl-color-primary-500);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.docked:hover::after {
-    opacity: 1;
-}
-
-.dock-grid {
-    aspect-ratio: 1;
-    background: #2a2a2a;
-    border-radius: 8px;
-    padding: 20px;
-}
-
-.dock-button {
-    all: unset;
-    aspect-ratio: 1;
-    background: #444;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    transition: all 0.2s;
-}
-
-.dock-button:hover {
-    background: #666;
-}
-
-.dock-button.selected {
-    background: var(--sl-color-primary-600);
-}
-
-.dock-spacer {
-    aspect-ratio: 1;
-}
-
-.room-preview {
-    aspect-ratio: 1;
-    border: 2px solid #666;
-    border-radius: 4px;
-    overflow: hidden;
-}
 
     </style>
   </head>
@@ -3814,195 +3695,69 @@ if (undockBtn) {
     });
   }
 
-//   async showDockDialog(room) {
-//     const dialog = document.createElement('sl-dialog');
-//     dialog.label = 'Dock Room';
-    
-//     // Make dialog wider
-//     dialog.style.setProperty('--width', '800px');  // Increased from default
-    
-//     const availableRooms = this.editor.rooms.filter(r => 
-//         r.id !== room.id && !this.editor.dockedRooms.has(r.id)
-//     );
-
-//     dialog.innerHTML = `
-//         <div style="display: grid; grid-template-columns: 250px 1fr; gap: 16px;">
-//             <!-- Room List -->
-//             <div class="room-list" style="border-right: 1px solid #444; padding-right: 16px; overflow-y: auto; max-height: 500px;">
-//                 <div style="margin-bottom: 8px; font-weight: bold;">Available Rooms</div>
-//                 ${availableRooms.map(r => `
-//                     <div class="room-option" data-room-id="${r.id}" style="cursor: pointer; padding: 8px; margin-bottom: 8px; border: 1px solid #666; border-radius: 4px;">
-//                         <div style="font-weight: bold; margin-bottom: 4px;">${r.name}</div>
-//                         <div style="width: 100%; height: 80px; background: #333; border-radius: 2px; overflow: hidden;">
-//                             ${r.thumbnail ? `<img src="${r.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">` : ''}
-//                         </div>
-//                     </div>
-//                 `).join('')}
-//             </div>
-
-//             <!-- Docking Preview -->
-//             <div class="dock-preview" style="position: relative; min-height: 500px; background: #2a2a2a; border-radius: 4px;">
-//                 <!-- Instructions -->
-//                 <div style="position: absolute; top: 8px; left: 8px; right: 8px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px;">
-//                     1. Select a room from the left
-//                     2. Click a docking point to set position
-//                 </div>
-
-//                 <!-- Current room preview -->
-//                 <div class="target-room" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 150px; background: #444; border: 2px solid #666;">
-//                     <div style="padding: 8px; text-align: center;">Current Room: ${room.name}</div>
-//                 </div>
-
-//                 <!-- Docking points -->
-//                 <div class="dock-points">
-//                     <!-- Left side -->
-//                     <div class="dock-point" data-position="left-top" style="left: 20%; top: 25%"></div>
-//                     <div class="dock-point" data-position="left-middle" style="left: 20%; top: 50%"></div>
-//                     <div class="dock-point" data-position="left-bottom" style="left: 20%; top: 75%"></div>
-
-//                     <!-- Right side -->
-//                     <div class="dock-point" data-position="right-top" style="right: 20%; top: 25%"></div>
-//                     <div class="dock-point" data-position="right-middle" style="right: 20%; top: 50%"></div>
-//                     <div class="dock-point" data-position="right-bottom" style="right: 20%; top: 75%"></div>
-
-//                     <!-- Top side -->
-//                     <div class="dock-point" data-position="top-left" style="left: 25%; top: 20%"></div>
-//                     <div class="dock-point" data-position="top-center" style="left: 50%; top: 20%"></div>
-//                     <div class="dock-point" data-position="top-right" style="left: 75%; top: 20%"></div>
-
-//                     <!-- Bottom side -->
-//                     <div class="dock-point" data-position="bottom-left" style="left: 25%; bottom: 20%"></div>
-//                     <div class="dock-point" data-position="bottom-center" style="left: 50%; bottom: 20%"></div>
-//                     <div class="dock-point" data-position="bottom-right" style="left: 75%; bottom: 20%"></div>
-//                 </div>
-//             </div>
-//         </div>
-
-//         <div slot="footer">
-//             <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
-//             <sl-button variant="primary" class="dock-btn" disabled>Dock</sl-button>
-//         </div>
-//     `;
-
-//     // Add the dock dialog to the document
-//     document.body.appendChild(dialog);
-
-//     // Return promise that resolves when docking is complete
-//     return new Promise((resolve) => {
-//         let selectedRoom = null;
-//         let selectedPosition = null;
-
-//         // Add event handlers
-//         dialog.querySelectorAll('.room-option').forEach(option => {
-//             option.addEventListener('click', () => {
-//                 dialog.querySelectorAll('.room-option').forEach(opt => 
-//                     opt.classList.remove('selected'));
-//                 option.classList.add('selected');
-//                 selectedRoom = availableRooms.find(r => 
-//                     r.id === parseInt(option.dataset.roomId));
-//                 dialog.querySelector('.dock-btn').disabled = !selectedPosition;
-//             });
-//         });
-
-//         dialog.querySelectorAll('.dock-point').forEach(point => {
-//             point.addEventListener('click', () => {
-//                 dialog.querySelectorAll('.dock-point').forEach(p => 
-//                     p.classList.remove('active'));
-//                 point.classList.add('active');
-//                 selectedPosition = point.dataset.position;
-//                 dialog.querySelector('.dock-btn').disabled = !selectedRoom;
-//             });
-//         });
-
-//         // Handle dock button click
-//         dialog.querySelector('.dock-btn').addEventListener('click', () => {
-//             if (selectedRoom && selectedPosition) {
-//                 this.editor.dockRooms(room, selectedRoom, selectedPosition);
-//                 dialog.hide();
-//                 resolve(true);
-//             }
-//         });
-
-//         // Handle cancel button click
-//         dialog.querySelector('.cancel-btn').addEventListener('click', () => {
-//             dialog.hide();
-//             resolve(false);
-//         });
-
-//         dialog.addEventListener('sl-after-hide', () => dialog.remove());
-//         dialog.show();
-//     });
-// }
-
-
-async showDockDialog(room) {
-  const dialog = document.createElement('sl-dialog');
+  async showDockDialog(room) {
+    const dialog = document.createElement('sl-dialog');
     dialog.label = 'Dock Room';
-    dialog.style.setProperty('--width', '800px');
-
-    let selectedRoom = null;
-    let selectedPosition = null;  // Add this declaration
-
+    
+    // Make dialog wider
+    dialog.style.setProperty('--width', '800px');  // Increased from default
+    
     const availableRooms = this.editor.rooms.filter(r => 
         r.id !== room.id && !this.editor.dockedRooms.has(r.id)
     );
 
     dialog.innerHTML = `
-    <div style="display: grid; grid-template-columns: 250px 1fr; gap: 16px;">
-        <!-- Room List - left side -->
-        <div class="room-list" style="border-right: 1px solid #444; padding-right: 16px; overflow-y: auto; max-height: 500px;">
-            <div style="margin-bottom: 8px; font-weight: bold;">Available Rooms</div>
-            ${availableRooms.map(r => `
-                <div class="room-option" data-room-id="${r.id}" style="cursor: pointer; padding: 8px; margin-bottom: 8px; border: 1px solid #666; border-radius: 4px;">
-                    <div style="font-weight: bold; margin-bottom: 4px;">${r.name}</div>
-                    <div style="width: 100%; height: 80px; background: #333; border-radius: 2px; overflow: hidden;">
-                        ${r.thumbnail ? `<img src="${r.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">` : ''}
+        <div style="display: grid; grid-template-columns: 250px 1fr; gap: 16px;">
+            <!-- Room List -->
+            <div class="room-list" style="border-right: 1px solid #444; padding-right: 16px; overflow-y: auto; max-height: 500px;">
+                <div style="margin-bottom: 8px; font-weight: bold;">Available Rooms</div>
+                ${availableRooms.map(r => `
+                    <div class="room-option" data-room-id="${r.id}" style="cursor: pointer; padding: 8px; margin-bottom: 8px; border: 1px solid #666; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 4px;">${r.name}</div>
+                        <div style="width: 100%; height: 80px; background: #333; border-radius: 2px; overflow: hidden;">
+                            ${r.thumbnail ? `<img src="${r.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">` : ''}
+                        </div>
                     </div>
-                </div>
-            `).join('')}
-        </div>
-
-        <!-- Docking Grid - right side -->
-        <div class="dock-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 20px;">
-            <!-- Row 1 -->
-            <div class="dock-spacer"></div>
-            <button class="dock-button" data-position="top-left">⬆</button>
-            <button class="dock-button" data-position="top-center">⬆</button>
-            <button class="dock-button" data-position="top-right">⬆</button>
-            <div class="dock-spacer"></div>
-
-            <!-- Row 2 -->
-            <button class="dock-button" data-position="left-top">⬅</button>
-            <div class="dock-spacer"></div>
-            <div class="dock-spacer"></div>
-            <div class="dock-spacer"></div>
-            <button class="dock-button" data-position="right-top">➡</button>
-
-            <!-- Row 3 (Center) -->
-            <button class="dock-button" data-position="left-middle">⬅</button>
-            <div class="dock-spacer"></div>
-            <div class="room-preview">
-                <img src="${room.thumbnail}" style="width: 100%; height: 100%; object-fit: cover;">
+                `).join('')}
             </div>
-            <div class="dock-spacer"></div>
-            <button class="dock-button" data-position="right-middle">➡</button>
 
-            <!-- Row 4 -->
-            <button class="dock-button" data-position="left-bottom">⬅</button>
-            <div class="dock-spacer"></div>
-            <div class="dock-spacer"></div>
-            <div class="dock-spacer"></div>
-            <button class="dock-button" data-position="right-bottom">➡</button>
+            <!-- Docking Preview -->
+            <div class="dock-preview" style="position: relative; min-height: 500px; background: #2a2a2a; border-radius: 4px;">
+                <!-- Instructions -->
+                <div style="position: absolute; top: 8px; left: 8px; right: 8px; padding: 8px; background: rgba(0,0,0,0.5); border-radius: 4px;">
+                    1. Select a room from the left
+                    2. Click a docking point to set position
+                </div>
 
-            <!-- Row 5 -->
-            <div class="dock-spacer"></div>
-            <button class="dock-button" data-position="bottom-left">⬇</button>
-            <button class="dock-button" data-position="bottom-center">⬇</button>
-            <button class="dock-button" data-position="bottom-right">⬇</button>
-            <div class="dock-spacer"></div>
+                <!-- Current room preview -->
+                <div class="target-room" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 150px; background: #444; border: 2px solid #666;">
+                    <div style="padding: 8px; text-align: center;">Current Room: ${room.name}</div>
+                </div>
+
+                <!-- Docking points -->
+                <div class="dock-points">
+                    <!-- Left side -->
+                    <div class="dock-point" data-position="left-top" style="left: 20%; top: 25%"></div>
+                    <div class="dock-point" data-position="left-middle" style="left: 20%; top: 50%"></div>
+                    <div class="dock-point" data-position="left-bottom" style="left: 20%; top: 75%"></div>
+
+                    <!-- Right side -->
+                    <div class="dock-point" data-position="right-top" style="right: 20%; top: 25%"></div>
+                    <div class="dock-point" data-position="right-middle" style="right: 20%; top: 50%"></div>
+                    <div class="dock-point" data-position="right-bottom" style="right: 20%; top: 75%"></div>
+
+                    <!-- Top side -->
+                    <div class="dock-point" data-position="top-left" style="left: 25%; top: 20%"></div>
+                    <div class="dock-point" data-position="top-center" style="left: 50%; top: 20%"></div>
+                    <div class="dock-point" data-position="top-right" style="left: 75%; top: 20%"></div>
+
+                    <!-- Bottom side -->
+                    <div class="dock-point" data-position="bottom-left" style="left: 25%; bottom: 20%"></div>
+                    <div class="dock-point" data-position="bottom-center" style="left: 50%; bottom: 20%"></div>
+                    <div class="dock-point" data-position="bottom-right" style="left: 75%; bottom: 20%"></div>
+                </div>
+            </div>
         </div>
-    </div>
-
 
         <div slot="footer">
             <sl-button variant="neutral" class="cancel-btn">Cancel</sl-button>
@@ -4010,81 +3765,37 @@ async showDockDialog(room) {
         </div>
     `;
 
+    // Add the dock dialog to the document
     document.body.appendChild(dialog);
 
-    // Single selection logic
-dialog.querySelectorAll('.dock-button').forEach(button => {
-    button.addEventListener('click', () => {
-        // Deselect all buttons
-        dialog.querySelectorAll('.dock-button').forEach(btn => 
-            btn.classList.remove('selected'));
-        // Select clicked button
-        button.classList.add('selected');
-        selectedPosition = button.dataset.position;
-        dialog.querySelector('.dock-btn').disabled = !selectedRoom;
-    });
-});
-
+    // Return promise that resolves when docking is complete
     return new Promise((resolve) => {
         let selectedRoom = null;
         let selectedPosition = null;
 
-        // Room selection
-        // dialog.querySelectorAll('.room-option').forEach(option => {
-        //     option.addEventListener('click', () => {
-        //         dialog.querySelectorAll('.room-option').forEach(opt => 
-        //             opt.classList.remove('selected'));
-        //         option.classList.add('selected');
-        //         selectedRoom = availableRooms.find(r => 
-        //             r.id === parseInt(option.dataset.roomId));
-        //         dialog.querySelector('.dock-btn').disabled = !selectedPosition;
-        //     });
-        // });
-
-        // // Position selection
-        // dialog.querySelectorAll('sl-radio').forEach(radio => {
-        //     radio.addEventListener('sl-change', (e) => {
-        //         if (e.target.checked) {
-        //             selectedPosition = e.target.value;
-        //             dialog.querySelector('.dock-btn').disabled = !selectedRoom;
-        //         }
-        //     });
-        // });
-
-        // Room selection
-dialog.querySelectorAll('.room-option').forEach(option => {
-    option.addEventListener('click', () => {
-        console.log('Room selected:', option.dataset.roomId); // Debug log
-        dialog.querySelectorAll('.room-option').forEach(opt => 
-            opt.classList.remove('selected'));
-        option.classList.add('selected');
-        selectedRoom = availableRooms.find(r => 
-            r.id === parseInt(option.dataset.roomId));
-        const dockBtn = dialog.querySelector('.dock-btn');
-        dockBtn.disabled = !(selectedRoom && selectedPosition);
-        console.log('Dock button state:', {
-            selectedRoom: !!selectedRoom,
-            selectedPosition: !!selectedPosition,
-            buttonDisabled: dockBtn.disabled
+        // Add event handlers
+        dialog.querySelectorAll('.room-option').forEach(option => {
+            option.addEventListener('click', () => {
+                dialog.querySelectorAll('.room-option').forEach(opt => 
+                    opt.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedRoom = availableRooms.find(r => 
+                    r.id === parseInt(option.dataset.roomId));
+                dialog.querySelector('.dock-btn').disabled = !selectedPosition;
+            });
         });
-    });
-});
 
-// Position selection - Listen to radio-group changes instead of individual radios
-dialog.querySelectorAll('sl-radio-group').forEach(group => {
-    group.addEventListener('sl-change', (e) => {
-        console.log('Position selected:', e.target.value);
-        selectedPosition = e.target.value;
-        const dockBtn = dialog.querySelector('.dock-btn');
-        dockBtn.disabled = !(selectedRoom && selectedPosition);
-        console.log('Dock button state:', {
-            selectedRoom: !!selectedRoom,
-            selectedPosition: !!selectedPosition,
-            buttonDisabled: dockBtn.disabled
+        dialog.querySelectorAll('.dock-point').forEach(point => {
+            point.addEventListener('click', () => {
+                dialog.querySelectorAll('.dock-point').forEach(p => 
+                    p.classList.remove('active'));
+                point.classList.add('active');
+                selectedPosition = point.dataset.position;
+                dialog.querySelector('.dock-btn').disabled = !selectedRoom;
+            });
         });
-    });
-});
 
+        // Handle dock button click
         dialog.querySelector('.dock-btn').addEventListener('click', () => {
             if (selectedRoom && selectedPosition) {
                 this.editor.dockRooms(room, selectedRoom, selectedPosition);
@@ -4093,6 +3804,7 @@ dialog.querySelectorAll('sl-radio-group').forEach(group => {
             }
         });
 
+        // Handle cancel button click
         dialog.querySelector('.cancel-btn').addEventListener('click', () => {
             dialog.hide();
             resolve(false);
@@ -4102,6 +3814,7 @@ dialog.querySelectorAll('sl-radio-group').forEach(group => {
         dialog.show();
     });
 }
+
 
 }
 
@@ -4230,96 +3943,97 @@ checkTextureManager(callback) {
         }
 
         dockRooms(sourceRoom, targetRoom, position) {
-    if (!sourceRoom || !targetRoom) return;
+        if (!sourceRoom || !targetRoom) return;
 
-    // Calculate offset
-    const offset = this.calculateDockOffset(sourceRoom, targetRoom, position);
-    
-    // Update source room position relative to target room
-    sourceRoom.bounds.x = targetRoom.bounds.x + offset.x;
-    sourceRoom.bounds.y = targetRoom.bounds.y + offset.y;
-    
-    // Store docking relationship
-    if (!this.dockedRooms.has(sourceRoom.id)) {
-        this.dockedRooms.set(sourceRoom.id, []);
+        // Calculate offset based on position
+        const offset = this.calculateDockOffset(sourceRoom, targetRoom, position);
+        
+        // Update source room position
+        sourceRoom.bounds.x = targetRoom.bounds.x + offset.x;
+        sourceRoom.bounds.y = targetRoom.bounds.y + offset.y;
+        
+        // Update visual elements
+        sourceRoom.updateElement();
+        targetRoom.updateElement();
+
+        // Store docking relationship
+        if (!this.dockedRooms.has(sourceRoom.id)) {
+            this.dockedRooms.set(sourceRoom.id, []);
+        }
+        this.dockedRooms.get(sourceRoom.id).push({
+            room: targetRoom,
+            position: position
+        });
+
+        // Add visual indicator
+        sourceRoom.element.classList.add('docked');
+        targetRoom.element.classList.add('docked');
     }
-    this.dockedRooms.get(sourceRoom.id).push({
-        room: targetRoom,
-        position: position
-    });
-
-    // Update visual elements
-    sourceRoom.updateElement();
-    targetRoom.updateElement();
-
-    // Add visual feedback
-    sourceRoom.element.classList.add('docked');
-    targetRoom.element.classList.add('docked');
-}
 
     calculateDockOffset(sourceRoom, targetRoom, position) {
-    const offset = { x: 0, y: 0 };
-    
-    switch(position) {
-        // Left side positions
-        case 'left-top':
-            offset.x = -sourceRoom.bounds.width;
-            offset.y = 0;
-            break;
-        case 'left-middle':
-            offset.x = -sourceRoom.bounds.width;
-            offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
-            break;
-        case 'left-bottom':
-            offset.x = -sourceRoom.bounds.width;
-            offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
-            break;
+        const offset = { x: 0, y: 0 };
+        
+        switch(position) {
+            // Left side positions
+            case 'left-top':
+                offset.x = -sourceRoom.bounds.width;
+                offset.y = 0;
+                break;
+            case 'left-middle':
+                offset.x = -sourceRoom.bounds.width;
+                offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
+                break;
+            case 'left-bottom':
+                offset.x = -sourceRoom.bounds.width;
+                offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
+                break;
 
-        // Right side positions
-        case 'right-top':
-            offset.x = targetRoom.bounds.width;
-            offset.y = 0;
-            break;
-        case 'right-middle':
-            offset.x = targetRoom.bounds.width;
-            offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
-            break;
-        case 'right-bottom':
-            offset.x = targetRoom.bounds.width;
-            offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
-            break;
+            // Right side positions
+            case 'right-top':
+                offset.x = targetRoom.bounds.width;
+                offset.y = 0;
+                break;
+            case 'right-middle':
+                offset.x = targetRoom.bounds.width;
+                offset.y = (targetRoom.bounds.height - sourceRoom.bounds.height) / 2;
+                break;
+            case 'right-bottom':
+                offset.x = targetRoom.bounds.width;
+                offset.y = targetRoom.bounds.height - sourceRoom.bounds.height;
+                break;
 
-        // Top side positions
-        case 'top-left':
-            offset.x = 0;
-            offset.y = -sourceRoom.bounds.height;
-            break;
-        case 'top-center':
-            offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
-            offset.y = -sourceRoom.bounds.height;
-            break;
-        case 'top-right':
-            offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
-            offset.y = -sourceRoom.bounds.height;
-            break;
+            // Top side positions
+            case 'top-left':
+                offset.x = 0;
+                offset.y = -sourceRoom.bounds.height;
+                break;
+            case 'top-center':
+                offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
+                offset.y = -sourceRoom.bounds.height;
+                break;
+            case 'top-right':
+                offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
+                offset.y = -sourceRoom.bounds.height;
+                break;
 
-        // Bottom side positions
-        case 'bottom-left':
-            offset.x = 0;
-            offset.y = targetRoom.bounds.height;
-            break;
-        case 'bottom-center':
-            offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
-            offset.y = targetRoom.bounds.height;
-            break;
-        case 'bottom-right':
-            offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
-            offset.y = targetRoom.bounds.height;
-            break;
+            // Bottom side positions
+            case 'bottom-left':
+                offset.x = 0;
+                offset.y = targetRoom.bounds.height;
+                break;
+            case 'bottom-center':
+                offset.x = (targetRoom.bounds.width - sourceRoom.bounds.width) / 2;
+                offset.y = targetRoom.bounds.height;
+                break;
+            case 'bottom-right':
+                offset.x = targetRoom.bounds.width - sourceRoom.bounds.width;
+                offset.y = targetRoom.bounds.height;
+                break;
+        }
+
+        return offset;
     }
 
-    return offset;
-}
     undockRoom(room) {
         if (this.dockedRooms.has(room.id)) {
             const dockings = this.dockedRooms.get(room.id);

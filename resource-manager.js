@@ -506,13 +506,13 @@ window.ResourceManager = class {
         // This method will handle both walls and rooms
         const assignment = this.textureAssignments.get(structureId);
         if (assignment) {
-            console.log('Found texture assignment for structure:', {
-                structureId,
-                assignment
-            });
+            // console.log('Found texture assignment for structure:', {
+            //     structureId,
+            //     assignment
+            // });
             return assignment;
         }
-        console.log('No texture assignment found for structure:', structureId);
+        // console.log('No texture assignment found for structure:', structureId);
         return null;
     }
 
@@ -608,7 +608,7 @@ window.ResourceManager = class {
 
         // Create cards for each resource
         resources.forEach((resource, id) => {
-            console.log('Creating card for resource:', resource);
+            // console.log('Creating card for resource:', resource);
             const card = document.createElement('sl-card');
             card.className = 'resource-item';
 

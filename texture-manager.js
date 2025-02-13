@@ -101,12 +101,12 @@ createDoorMesh(marker, boxWidth, boxHeight, boxDepth) {
 
         createMaterial(structure, textureRoom) {
             // Treat everything as a wall for texture purposes
-            console.log('Creating material for:', {
-                structureId: structure.id,
-                type: structure.type,  // Keep this for logging only
-                hasResourceManager: !!this.resourceManager,
-                hasTextureRoom: !!textureRoom
-            });
+            // console.log('Creating material for:', {
+            //     structureId: structure.id,
+            //     type: structure.type,  // Keep this for logging only
+            //     hasResourceManager: !!this.resourceManager,
+            //     hasTextureRoom: !!textureRoom
+            // });
         
             // First try resource pack textures
             if (this.resourceManager) {
@@ -152,7 +152,7 @@ createMaterialFromTexture(textureData, roomWidth = 1000, roomHeight = 1000, cell
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
 
-    console.log('Texture data:', textureData.category);
+    // console.log('Texture data:', textureData.category);
 
     // Check texture category for special handling
     switch (textureData.category) {
